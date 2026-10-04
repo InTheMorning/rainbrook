@@ -99,8 +99,9 @@ public actor NWCClient {
      If it has `error`, throw `.walletError(code:message:)`. Else read `result.alias` and `result.methods`.
      If `result.methods` is missing, use the methods from the info event.
    - Ignore `NOTICE` and messages for other subscriptions.
-6. Close the connection on all paths, also after an error.
-7. The complete sequence has the time limit `timeout`. After it, throw `.timeout`. Use a task group in which one task sleeps.
+6. Accept an info event or a response event only if `isValid()` is true and its `pubkey` is the wallet key. Ignore other events. A relay can send forged events.
+7. Close the connection on all paths, also after an error.
+8. The complete sequence has the time limit `timeout`. After it, throw `.timeout`. Use a task group in which one task sleeps.
 
 Other constraints:
 
@@ -129,6 +130,7 @@ Mechanical:
 - A wallet error response throws `.walletError` with the code and message.
 - `OK` false throws `.relayRejected`.
 - No info event throws `.noInfoEvent`.
+- A response with a wrong signature, or from a different public key, is ignored. Without a correct response, `getInfo()` throws `.timeout`.
 - A wallet that does not answer throws `.timeout` within the test timeout of 200 milliseconds.
 - The fake connection is closed after success and after each error.
 - `scripts/check.sh` passes.
@@ -175,6 +177,7 @@ Goal:
 Constraints:
 - Use the exact API and the getInfo() sequence in the task file.
 - NWCClient uses only Foundation and core types. No network access in tests.
+- Accept only events with a correct signature from the wallet key.
 - Close the connection on all paths. Enforce the timeout with a task group.
 - No @unchecked Sendable or nonisolated(unsafe) without approval.
 - No secret or decrypted content in errors or logs. Prose and comments in ASD-STE100.

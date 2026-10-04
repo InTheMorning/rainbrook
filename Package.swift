@@ -34,7 +34,8 @@ let package = Package(
         .testTarget(
             name: "CitizenRadioCoreTests",
             dependencies: ["CitizenRadioCore"],
-            path: "Tests/CitizenRadioCoreTests"
+            path: "Tests/CitizenRadioCoreTests",
+            resources: [.copy("Vectors")]
         )
     ],
     swiftLanguageModes: [.v6]

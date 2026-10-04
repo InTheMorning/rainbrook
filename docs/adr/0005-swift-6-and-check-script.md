@@ -20,7 +20,7 @@ The development computer is Linux. xtool compiles the app with the iOS SDK, so a
 - The Swift package uses Swift tools 6.0 and Swift 6 language mode.
 - The Xcode target uses `SWIFT_VERSION` 6.0, so the two builds apply the same checks.
 - `scripts/check.sh` must pass before a commit. It runs these checks in sequence:
-  1. `swift test` on Linux.
+  1. `swift test --build-system native` on Linux.
   2. `xtool dev build`. Each Swift 6 error stops the build.
   3. The App Intents symbol check of [ADR 0003](0003-committed-app-intents-metadata.md).
 - Each failure message in the script names the decision record that owns the rule and the fix.
@@ -38,6 +38,7 @@ The development computer is Linux. xtool compiles the app with the iOS SDK, so a
 - The script needs `xtool` and `llvm-nm` on the PATH.
 - The checks do not replace the device checks in the [setup runbook](../runbooks/iphone-setup.md). They do not run the app.
 - Xcode can report problems that these checks do not find. Add a guard for each such problem when it causes a defect.
+- Step 1 uses `--build-system native` because [ADR 0007](0007-nwc-wallet-configuration.md) needs it for `swift-crypto`.
 
 ## Invariants
 

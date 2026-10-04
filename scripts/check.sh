@@ -12,7 +12,8 @@ fail() {
 }
 
 echo "==> Core tests (Linux)"
-swift test
+# Without --build-system native, swift test cannot find the GCC 16 C++ headers for BoringSSL in swift-crypto. See ADR 0007.
+swift test --build-system native
 
 echo "==> iOS build in Swift 6 language mode (xtool)"
 command -v xtool >/dev/null || fail "xtool is not on PATH. Install xtool, then run this script again."

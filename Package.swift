@@ -5,6 +5,10 @@ let package = Package(
     name: "CitizenRadio",
     platforms: [.iOS(.v17)],
     products: [.library(name: "CitizenRadio", targets: ["CitizenRadio"])],
+    dependencies: [
+        .package(url: "https://github.com/21-DOT-DEV/swift-secp256k1", exact: "0.23.2"),
+        .package(url: "https://github.com/apple/swift-crypto", "4.0.0"..<"6.0.0")
+    ],
     targets: [
         .target(
             name: "CitizenRadio",
@@ -18,7 +22,15 @@ let package = Package(
                 "forcdchime.wav"
             ]
         ),
-        .target(name: "CitizenRadioCore", path: "CitizenRadio/Core"),
+        .target(
+            name: "CitizenRadioCore",
+            dependencies: [
+                .product(name: "P256K", package: "swift-secp256k1"),
+                .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "CryptoExtras", package: "swift-crypto")
+            ],
+            path: "CitizenRadio/Core"
+        ),
         .testTarget(
             name: "CitizenRadioCoreTests",
             dependencies: ["CitizenRadioCore"],

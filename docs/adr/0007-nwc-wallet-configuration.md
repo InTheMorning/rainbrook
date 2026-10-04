@@ -51,7 +51,8 @@ The settings sheet gets a **Wallet** section with these items:
 - The scanner uses VisionKit `DataScannerViewController` for QR codes.
   The deployment target is iOS 17, and all iPhones with iOS 17 have the A12 chip or a newer chip that VisionKit requires.
 - The app asks for camera access only when the user taps **Scan QR Code**. `NSCameraUsageDescription` gives the reason.
-- If `DataScannerViewController.isSupported` or `isAvailable` is false, the app hides the button and shows the paste method only.
+- If `DataScannerViewController.isSupported` is false, the app hides the button and shows the paste method only.
+- `isAvailable` can depend on camera access. The app examines it after the permission step. If it is false, the app shows the camera access message and does not open the scanner.
 - The scanner passes the text to the same `NWCConnection` validation as the paste method. It closes after the first valid URI.
 
 ### Daily limit

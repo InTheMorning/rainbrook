@@ -38,6 +38,8 @@
         <key>NSAllowsArbitraryLoadsForMedia</key>
         <true/>
     </dict>
+    <key>NSCameraUsageDescription</key>
+    <string>CitizenRadio uses the camera only to scan the QR code of your wallet connection.</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>CitizenRadio connects to your stream when its server is on your local network.</string>
     <key>UIApplicationSceneManifest</key>

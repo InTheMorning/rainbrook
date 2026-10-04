@@ -44,7 +44,8 @@ struct QRScannerView: UIViewControllerRepresentable {
 
 Wallet section changes:
 
-- In `.notConnected`, add a **Scan QR Code** button below the paste button, only if `DataScannerViewController.isSupported && DataScannerViewController.isAvailable`.
+- In `.notConnected`, add a **Scan QR Code** button below the paste button, only if `DataScannerViewController.isSupported`.
+  `isAvailable` can depend on camera access, so examine it after the permission step. If it is false, show the camera access message.
 - Before the scanner opens: if `AVCaptureDevice.authorizationStatus(for: .video)` is `.notDetermined`, call `await AVCaptureDevice.requestAccess(for: .video)`. If access is denied or restricted, show "Allow camera access in Settings to scan a QR code." and do not open the scanner.
 - Show the scanner in a `.sheet` with a **Cancel** button and the text "Scan the connection QR code of your wallet."
 - `onText` parses the text with `NWCConnection(uri:)`. A valid text closes the sheet and calls `connect(text:)`. An invalid text shows "This QR code is not a wallet connection." and the scan continues.

@@ -90,3 +90,4 @@ xtool copies that PNG through its `iconPath` configuration.
 - [ADR 0005: Swift 6 and the check script](docs/adr/0005-swift-6-and-check-script.md)
 - [ADR 0006: Audio session activation off the main thread](docs/adr/0006-audio-session-off-main-thread.md)
 - [ADR 0007: NWC wallet configuration](docs/adr/0007-nwc-wallet-configuration.md)
+- [NWC wallet phase plan](docs/plans/nwc-wallet-phase-plan.md)

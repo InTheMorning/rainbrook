@@ -37,7 +37,7 @@ A different record will include the payments, the value data source and the paym
 The settings sheet gets a **Wallet** section with these items:
 
 - When no wallet is connected:
-  - **Paste Connection** reads the URI from the clipboard one time, when the user taps it.
+  - **Paste Connection** is a SwiftUI `PasteButton`. It reads the URI from the clipboard one time, when the user taps it. iOS shows no paste permission alert for this system button.
   - **Scan QR Code** opens the camera and reads a QR code that contains the URI.
 - When a wallet is connected:
   - The relay host, the first 8 characters of the wallet public key, and the `lud16` address if the URI has one.
@@ -106,9 +106,28 @@ The error message does not contain the URI or the secret.
   - With xtool, the iOS app built and linked these functions. It also linked the iOS system `libc++`. The debug binary grew from 0.8 MB to 4.3 MB.
   - On Linux, the default SwiftPM build system did not find the C++ headers of GCC 16 for BoringSSL in `swift-crypto`. The native build system (`swift test --build-system native`) worked.
 
+### Module boundaries
+
+- `CitizenRadioCore` contains all logic that Linux tests can examine:
+  the URI parser, the wallet summary, the daily limit, Nostr events, NIP-44 and NIP-04, the relay messages and `NWCClient`.
+- `CitizenRadioCore` defines two protocols for the parts that need iOS:
+  - `SecretStore` reads, writes and deletes the URI.
+  - `RelayConnection` sends and receives relay text messages.
+- The app target supplies `KeychainSecretStore` and `URLSessionRelayConnection`. Tests use fakes of the two protocols.
+- `NWCClient` uses only these protocols. It does not import Security or use `URLSession` directly.
+- The Xcode project gets the new files and the two package dependencies in one task at the end. Only a Mac build can examine that project file.
+
 ### Test wallet
 
 The tests use Alby Hub. It supports NWC with NIP-44 encryption and `pay_keysend`.
+
+## Non-goals
+
+- Payments of any kind: keysend, invoices, boosts and streaming payments.
+- The value data source, such as `podcast:value` in a feed.
+- Notifications from the wallet (NIP-47 kinds 23196 and 23197).
+- More than one wallet connection.
+- The `nostr+walletconnect` URL scheme and the NWC deep link flow.
 
 ## Alternatives considered
 
@@ -129,6 +148,17 @@ The tests use Alby Hub. It supports NWC with NIP-44 encryption and `pay_keysend`
 - The privacy manifest must be examined for the Keychain and network use before release.
 - Keychain access with an xtool free signing account is not tested.
 - The settings sheet gets a third section. ADR 0004 permits this, because it puts all configuration in the settings sheet.
+
+## Invariants
+
+These rules apply while this decision is current.
+
+- The URI and the secret are stored only through `SecretStore`, and the app implementation is the Keychain.
+- The URI and the secret do not appear in UserDefaults, logs or error messages.
+- Keychain, network and camera calls do not block the main thread.
+- `NWCClient` depends only on `SecretStore` and `RelayConnection`, not on iOS frameworks.
+
+The task that adds each rule also adds its test, or names the manual check.
 
 ## Acceptance criteria
 

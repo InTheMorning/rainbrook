@@ -22,14 +22,27 @@ public struct BufferSetting {
         nonmutating set { defaults.set(newValue, forKey: key) }
     }
 
-    /// Seconds of loaded audio after `currentTime` in the range that contains it.
+    /// Seconds of loaded audio that playback can use from `currentTime`.
+    /// A range that starts after `currentTime` counts from its start, because
+    /// AVPlayer can report the first range a little after zero.
     public static func bufferedAhead(currentTime: Double, loadedRanges: [ClosedRange<Double>]) -> Double {
-        guard let range = loadedRanges.first(where: { $0.contains(currentTime) }) else { return 0 }
-        return range.upperBound - currentTime
+        loadedRanges
+            .filter { $0.upperBound > currentTime }
+            .map { $0.upperBound - max(currentTime, $0.lowerBound) }
+            .max() ?? 0
     }
 
     public static func isReady(bufferedAhead: Double, target: Int) -> Bool {
         bufferedAhead >= Double(target)
+    }
+
+    /// Seconds the player waits for the buffer before it starts without it.
+    public static func maxWaitSeconds(target: Int) -> Int {
+        target + 5
+    }
+
+    public static func shouldStart(bufferedAhead: Double, target: Int, waitExpired: Bool) -> Bool {
+        waitExpired || isReady(bufferedAhead: bufferedAhead, target: target)
     }
 
     public static func timeoutSeconds(target: Int) -> Int {

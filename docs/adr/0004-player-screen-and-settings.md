@@ -30,6 +30,8 @@ The settings sheet contains:
 
 When the extra buffer is not Off, the player does not start until that many seconds of audio are loaded after the current position.
 After a stall, the player pauses and waits for the same buffer again.
+The player waits at most the buffer plus 5 seconds. Then it starts without the full buffer, so a buffer cannot cause a timeout.
+The loaded audio counts from the current position or from the start of a range that begins after it.
 The connection timeout is 20 seconds plus the extra buffer.
 A buffer change applies at the next connection.
 
@@ -41,7 +43,7 @@ The display, chime and buffer logic is in `CitizenRadioCore`:
 - `PlayerScreenModel` selects the status text and the Play or Stop control.
 - `StreamSettingsDraft` enables **Save**.
 - `ChimeSetting` stores the chime setting and selects the states that play the chime.
-- `BufferSetting` stores the buffer, measures the loaded audio after the current position, and gives the timeout.
+- `BufferSetting` stores the buffer, measures the loaded audio after the current position, and gives the maximum wait and the timeout.
 
 The SwiftUI views and `RadioPlayer` read these values and contain no other display, chime or buffer rules.
 
@@ -56,7 +58,9 @@ The SwiftUI views and `RadioPlayer` read these values and contain no other displ
 
 - An Icecast server sends audio at the stream rate after its first burst. A buffer of N seconds delays the start by about N seconds less the burst.
 - A large buffer helps in weak coverage, but playback is that much behind the live stream.
-- AVPlayer continues to load audio while it is paused for the buffer. This was not tested on a device.
+- The first device test with a buffer timed out each time. The cause is not known.
+  It is the range measurement, or AVPlayer does not load audio while it is paused.
+  The `buffer` log category in subsystem `org.citizenradio.CitizenRadio` records each check to find the cause.
 - The app does not show the Shortcuts help or the output device name.
 
 ## Invariants

@@ -29,11 +29,23 @@ final class BufferSettingTests: XCTestCase {
         XCTAssertEqual(BufferSetting(defaults: defaults).seconds, 3)
     }
 
-    func testBufferedAheadUsesRangeThatContainsCurrentTime() {
+    func testBufferedAheadCountsFromCurrentTime() {
         let ranges: [ClosedRange<Double>] = [0...2, 5...12]
         XCTAssertEqual(BufferSetting.bufferedAhead(currentTime: 6, loadedRanges: ranges), 6)
-        XCTAssertEqual(BufferSetting.bufferedAhead(currentTime: 3, loadedRanges: ranges), 0)
+        XCTAssertEqual(BufferSetting.bufferedAhead(currentTime: 3, loadedRanges: ranges), 7)
+        XCTAssertEqual(BufferSetting.bufferedAhead(currentTime: 13, loadedRanges: ranges), 0)
         XCTAssertEqual(BufferSetting.bufferedAhead(currentTime: 0, loadedRanges: []), 0)
+    }
+
+    func testRangeStartingAfterZeroCounts() {
+        XCTAssertEqual(BufferSetting.bufferedAhead(currentTime: 0, loadedRanges: [0.03...4.03]), 4, accuracy: 0.0001)
+    }
+
+    func testExpiredWaitStartsWithoutBuffer() {
+        XCTAssertEqual(BufferSetting.maxWaitSeconds(target: 3), 8)
+        XCTAssertFalse(BufferSetting.shouldStart(bufferedAhead: 0, target: 3, waitExpired: false))
+        XCTAssertTrue(BufferSetting.shouldStart(bufferedAhead: 0, target: 3, waitExpired: true))
+        XCTAssertLessThan(BufferSetting.maxWaitSeconds(target: 30), BufferSetting.timeoutSeconds(target: 30))
     }
 
     func testReadyOnlyWhenTargetIsLoaded() {

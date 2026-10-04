@@ -99,6 +99,8 @@ See [background execution modes](https://developer.apple.com/documentation/xcode
 - If the chime setting is on, `forcdchime.wav` plays in a loop while the state is `connecting`. It stops at all other states.
 - If the extra buffer is not **Off**, the player does not start until that many seconds of audio are loaded after the current position.
 - After a stall, the player pauses and waits for the same buffer again. The state is `connecting` during this wait.
+- The player waits at most the buffer plus 5 seconds, then starts without the full buffer.
+- The `buffer` log category in subsystem `org.citizenradio.CitizenRadio` records each buffer check.
 - An Icecast server sends audio at the stream rate after its first burst, so a buffer of N seconds delays the start by about N seconds less the burst.
 - The Play intent returns success after AVPlayer reports playback.
 - Invalid settings and connection failures return an error to Shortcuts.

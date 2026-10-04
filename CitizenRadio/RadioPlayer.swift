@@ -2,6 +2,7 @@
 import AVFoundation
 import Combine
 import MediaPlayer
+import os
 #if SWIFT_PACKAGE
 import CitizenRadioCore
 #endif
@@ -29,6 +30,9 @@ final class RadioPlayer: ObservableObject {
     private var bufferObservation: NSKeyValueObservation?
     private var bufferTarget = 0
     private var waitingForBuffer = false
+    private var bufferWaitExpired = false
+    private var bufferWait: Task<Void, Never>?
+    private let bufferLog = Logger(subsystem: "org.citizenradio.CitizenRadio", category: "buffer")
     private var sessionSubscriptions = Set<AnyCancellable>()
     private var itemSubscriptions = Set<AnyCancellable>()
     private var connectionTimeout: Task<Void, Never>?
@@ -127,22 +131,49 @@ final class RadioPlayer: ObservableObject {
         updateOutput()
         updateNowPlaying()
         startConnectionTimeout()
-        if !waitingForBuffer {
+        if waitingForBuffer {
+            startBufferWait(expectedID: expectedID)
+        } else {
             newPlayer.play()
+        }
+    }
+
+    private func startBufferWait(expectedID: UUID) {
+        bufferWait?.cancel()
+        bufferWaitExpired = false
+        let seconds = BufferSetting.maxWaitSeconds(target: bufferTarget)
+        bufferWait = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
+            } catch {
+                return
+            }
+            guard let self, self.sessionID == expectedID, self.waitingForBuffer else { return }
+            self.bufferLog.notice("Buffer wait expired after \(seconds, privacy: .public) s")
+            self.bufferWaitExpired = true
+            self.startWhenBuffered(expectedID: expectedID)
         }
     }
 
     private func startWhenBuffered(expectedID: UUID) {
         guard sessionID == expectedID, request.wantsPlayback, waitingForBuffer,
-              let player, let item = player.currentItem, item.status == .readyToPlay else { return }
+              let player, let item = player.currentItem else { return }
+        guard item.status == .readyToPlay else {
+            bufferLog.notice("Buffer check: item status \(item.status.rawValue, privacy: .public)")
+            return
+        }
         let ranges = item.loadedTimeRanges.map { value -> ClosedRange<Double> in
             let range = value.timeRangeValue
             let start = range.start.seconds
             return start...(start + range.duration.seconds)
         }
-        let ahead = BufferSetting.bufferedAhead(currentTime: item.currentTime().seconds, loadedRanges: ranges)
-        guard BufferSetting.isReady(bufferedAhead: ahead, target: bufferTarget) else { return }
+        let now = item.currentTime().seconds
+        let ahead = BufferSetting.bufferedAhead(currentTime: now, loadedRanges: ranges)
+        bufferLog.notice("Buffer check: time \(now, privacy: .public), ranges \(ranges.description, privacy: .public), ahead \(ahead, privacy: .public), target \(self.bufferTarget, privacy: .public)")
+        guard BufferSetting.shouldStart(bufferedAhead: ahead, target: bufferTarget, waitExpired: bufferWaitExpired) else { return }
         waitingForBuffer = false
+        bufferWait?.cancel()
+        bufferWait = nil
         player.play()
     }
 
@@ -200,6 +231,7 @@ final class RadioPlayer: ObservableObject {
                 if self.bufferTarget > 0 {
                     self.waitingForBuffer = true
                     self.player?.pause()
+                    self.startBufferWait(expectedID: expectedID)
                 } else {
                     self.player?.play()
                 }
@@ -281,6 +313,8 @@ final class RadioPlayer: ObservableObject {
         bufferObservation?.invalidate()
         bufferObservation = nil
         waitingForBuffer = false
+        bufferWait?.cancel()
+        bufferWait = nil
         itemSubscriptions.removeAll()
         player?.pause()
         player?.replaceCurrentItem(with: nil)

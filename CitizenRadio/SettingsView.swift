@@ -18,7 +18,8 @@ struct SettingsView: View {
         _draft = State(initialValue: StreamSettingsDraft(
             savedURL: savedURL.wrappedValue,
             chimeEnabled: ChimeSetting().isEnabled,
-            bufferSeconds: BufferSetting().seconds
+            bufferSeconds: BufferSetting().seconds,
+            dailyLimitSats: SpendingLimitStore().limit.dailySats
         ))
     }
 
@@ -89,6 +90,7 @@ struct SettingsView: View {
             }
             ChimeSetting().isEnabled = draft.chimeEnabled
             BufferSetting().seconds = draft.bufferSeconds
+            SpendingLimitStore().setDailySats(draft.dailyLimitSats)
             dismiss()
         } catch {
             self.error = error.localizedDescription

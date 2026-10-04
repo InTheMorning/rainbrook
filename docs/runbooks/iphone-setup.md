@@ -180,7 +180,8 @@ The core tests run through the Swift package.
 | `xtool` is not found. | Install xtool and add it to the terminal's PATH. |
 | xtool reports no iOS SDK. | Complete `xtool setup` on the development computer. |
 | xtool reports an identifier conflict. | Set a unique `bundleID` in `xtool.yml`. |
-| An xtool installation has no named Play action. | Use the URL shortcut described above. |
+| An xtool installation has no named Play action. | Examine `resources` in `xtool.yml`, then run `xtool dev` again. Use the URL shortcut until the actions show. |
+| Play or Stop CitizenRadio reports an internal error. | Run `llvm-nm xtool/CitizenRadio.app/CitizenRadio \| grep PlayB6IntentV`. If it shows no symbols, the binary has no intents. See [ADR 0003](../adr/0003-committed-app-intents-metadata.md). |
 | The URL shortcut requires unlocking. | Unlock the phone, or test the App Intent through an Xcode build. |
 | Xcode reports a signing error. | Select your development team and a unique bundle identifier. |
 | Shortcuts cannot find CitizenRadio. | Open the installed app, then search for its actions again. |

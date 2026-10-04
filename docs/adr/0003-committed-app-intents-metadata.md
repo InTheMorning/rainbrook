@@ -16,12 +16,18 @@ A first proposal copied the metadata into the app after `xtool dev build --sign`
 The xtool signer reads the prefixed bundle ID and adds the prefix again (`DeveloperServicesAddAppOperation.upsertApp`).
 The xtool source shows that the result is `XTL-<team>.XTL-<team>.<bundleID>` and one more App ID for each install.
 
+The first device test showed the actions in Shortcuts, but each action reported an internal error.
+SwiftPM links the `CitizenRadio` library into the xtool app as a static archive.
+The linker takes only the archive members that other code refers to, and no code referred to `RadioIntents.o`.
+The binary had no intent types and did not link AppIntents.
+
 ## Decision
 
 - The repository contains the metadata that Xcode makes, in `Configuration/AppIntents/Metadata.appintents`.
 - `xtool.yml` lists that directory in `resources`. xtool copies it to the bundle root before it signs.
 - `xtool dev` builds, signs one time, and installs. No script changes the app after signing.
 - The Swift package compiles `CitizenRadio/RadioIntents.swift`.
+- `CitizenRadioApp.init()` calls `RadioShortcuts.updateAppShortcutParameters()`. This reference keeps `RadioIntents.o` in the binary.
 - After a change to `RadioIntents.swift`, a person runs `scripts/generate-app-intents-metadata.sh` on a Mac with Xcode and commits the result.
 
 ## Alternatives considered
@@ -39,6 +45,10 @@ The xtool source shows that the result is `XTL-<team>.XTL-<team>.<bundleID>` and
 - A change to the intents without new metadata gives no build error. The actions can then fail on the iPhone.
 
 ## Invariants
+
+- The app entry refers to `RadioShortcuts`.
+  `AppIntentsLinkTests.testAppEntryKeepsIntentsInStaticArchive` enforces this rule.
+  Manual check after `xtool dev`: `llvm-nm xtool/CitizenRadio.app/CitizenRadio | grep PlayB6IntentV` shows symbols.
 
 - `Configuration/AppIntents/Metadata.appintents` agrees with `CitizenRadio/RadioIntents.swift`.
   Manual check: run `scripts/generate-app-intents-metadata.sh` on a Mac after a change to the intents. No test can run the Xcode tool on Linux.

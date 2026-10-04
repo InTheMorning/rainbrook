@@ -1,4 +1,4 @@
-> Archived: implemented, then superseded by [ADR 0002](../../adr/0002-player-screen-and-settings.md) on 2026-10-04.
+> Archived: implemented, then superseded by [ADR 0002](../adr/0002-player-screen-and-settings.md) on 2026-10-04.
 
 # Player screen plan
 

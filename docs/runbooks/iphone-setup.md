@@ -62,9 +62,10 @@ The current package declares an iOS 17 deployment target.
 1. Open CitizenRadio on the iPhone.
 2. Tap **Settings**.
 3. Enter the stream URL in **Stream URL**.
-4. Set **Chime while connecting** on or off.
-5. Tap **Save**.
-6. Tap **Play**.
+4. Select an **Extra buffer** value. The default is 3 seconds.
+5. Set **Chime while connecting** on or off.
+6. Tap **Save**.
+7. Tap **Play**.
 
 If the chime is on, it plays in a loop until the stream starts.
 The expected status is **Playing live**.
@@ -123,6 +124,9 @@ Complete these checks before normal use of the automation.
 | Tap Play with the chime on. | The chime plays in a loop and stops when the stream starts. |
 | Tap Stop while the chime plays. | The chime stops. |
 | Tap Play with the chime off. | No chime plays. |
+| Tap Play with an extra buffer of 10 seconds. | Playback starts about 10 seconds later than with **Off**. |
+| Drive through weak coverage with an extra buffer of 15 seconds. | Fewer stalls occur than with **Off**. |
+| Set the extra buffer to **Off** and tap Play. | Playback starts as soon as AVPlayer is ready. |
 | Open the app before a URL is saved. | The status shows **Add a stream in Settings** and Play is disabled. |
 | Run a Play action before a URL is saved. | The app reports missing settings. The Play CitizenRadio action also reports an error to Shortcuts. |
 | Lock the screen during playback. | Audio continues and Now Playing controls remain available. |

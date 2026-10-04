@@ -1,8 +1,8 @@
-> Archived: superseded by [ADR 0002](../../adr/0002-player-screen-and-settings.md) on 2026-10-04.
+> Archived: superseded by [ADR 0002](0002-player-screen-and-settings.md) on 2026-10-04.
 
 # ADR 0001: Player screen layout
 
-- Status: superseded by [ADR 0002](../../adr/0002-player-screen-and-settings.md)
+- Status: superseded by [ADR 0002](0002-player-screen-and-settings.md)
 - Date: 2026-10-04
 - Class: situational. Supersede this record when the primary screen changes.
 - Plan: [Player screen plan](../plans/player-screen-plan.md)

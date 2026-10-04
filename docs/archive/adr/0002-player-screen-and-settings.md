@@ -1,9 +1,11 @@
+> Archived: superseded by [ADR 0004](../../adr/0004-player-screen-and-settings.md) on 2026-10-04.
+
 # ADR 0002: Player screen and settings
 
-- Status: accepted
+- Status: superseded by [ADR 0004](../../adr/0004-player-screen-and-settings.md)
 - Date: 2026-10-04
 - Class: situational. Supersede this record when the primary screen or the settings change.
-- Supersedes: [ADR 0001](../archive/adr/0001-player-screen-layout.md)
+- Supersedes: [ADR 0001](0001-player-screen-layout.md)
 
 ## Context
 
@@ -47,7 +49,7 @@ The SwiftUI views and `RadioPlayer` read these values and contain no other displ
 
 ## Consequences
 
-- The app does not show the Shortcuts help. The [setup runbook](../runbooks/iphone-setup.md) contains these steps.
+- The app does not show the Shortcuts help. The [setup runbook](../../runbooks/iphone-setup.md) contains these steps.
 - The app does not show the output device name. The AirPlay button shows the output selection.
 - The app bundle contains `forcdchime.wav`. xtool copies it through `resources`, and the Xcode target copies it as a resource.
 - Linux tests can examine the display and chime rules. Only a person on an iPhone can examine the layout and the sound.

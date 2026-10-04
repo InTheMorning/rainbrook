@@ -17,7 +17,8 @@ struct SettingsView: View {
         _savedURL = savedURL
         _draft = State(initialValue: StreamSettingsDraft(
             savedURL: savedURL.wrappedValue,
-            chimeEnabled: ChimeSetting().isEnabled
+            chimeEnabled: ChimeSetting().isEnabled,
+            bufferSeconds: BufferSetting().seconds
         ))
     }
 
@@ -42,6 +43,17 @@ struct SettingsView: View {
                     Text("Stream URL")
                 } footer: {
                     Text("Enter a direct MP3 or AAC stream URL. Use HTTPS when available.")
+                }
+
+                Section {
+                    Picker("Extra buffer", selection: $draft.bufferSeconds) {
+                        ForEach(BufferSetting.choices, id: \.self) { seconds in
+                            Text(seconds == 0 ? "Off" : "\(seconds) seconds").tag(seconds)
+                        }
+                    }
+                    .accessibilityIdentifier("bufferPicker")
+                } footer: {
+                    Text("Playback starts after this much audio loads. A larger buffer helps in weak coverage, but playback starts later. The change applies at the next connection.")
                 }
 
                 Section {
@@ -76,6 +88,7 @@ struct SettingsView: View {
                 savedURL = address.url.absoluteString
             }
             ChimeSetting().isEnabled = draft.chimeEnabled
+            BufferSetting().seconds = draft.bufferSeconds
             dismiss()
         } catch {
             self.error = error.localizedDescription

@@ -34,8 +34,9 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `SettingsView` | Edits and saves the stream URL in a sheet. |
 | `PlaybackState` | Names the playback states and their status titles. |
 | `ChimeSetting` | Stores the chime setting and selects the states that play the chime. |
+| `BufferSetting` | Stores the extra buffer, measures the loaded audio, and sets the connection timeout. |
 | `PlayerScreenModel` | Selects the status text and the Play or Stop control for the player screen. |
-| `StreamSettingsDraft` | Enables Save for a changed, non-empty URL or a changed chime setting. |
+| `StreamSettingsDraft` | Enables Save for a changed, non-empty URL or a changed chime or buffer setting. |
 | `StreamAddress` | Validates the URL before storage or playback. |
 | `StreamStore` | Reads and writes the saved URL. |
 | `PlaybackRequest` | Controls if playback can continue after an interruption. |
@@ -45,7 +46,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `StopRadioIntent` | Stops playback and cancels pending connection work. |
 | `RadioShortcuts` | Makes the Play and Stop actions discoverable. |
 
-The Xcode target compiles all thirteen Swift source files into the app.
+The Xcode target compiles all fourteen Swift source files into the app.
 The Swift package exposes the `CitizenRadio` app library and an internal `CitizenRadioCore` target.
 The app target depends on the core target.
 Its four UI and playback files use an iOS compilation condition so host tests do not need Apple frameworks.
@@ -96,6 +97,9 @@ See [background execution modes](https://developer.apple.com/documentation/xcode
 
 - A repeated Play request keeps an active connection to the same stream.
 - If the chime setting is on, `forcdchime.wav` plays in a loop while the state is `connecting`. It stops at all other states.
+- If the extra buffer is not **Off**, the player does not start until that many seconds of audio are loaded after the current position.
+- After a stall, the player pauses and waits for the same buffer again. The state is `connecting` during this wait.
+- An Icecast server sends audio at the stream rate after its first burst, so a buffer of N seconds delays the start by about N seconds less the burst.
 - The Play intent returns success after AVPlayer reports playback.
 - Invalid settings and connection failures return an error to Shortcuts.
 - Stop releases the player item and cancels the connection timeout.
@@ -109,8 +113,8 @@ Playback continues after a call only with the system's resume option and the sam
 A Stop request during a call prevents subsequent automatic playback.
 Apple describes output changes in [Responding to audio route changes](https://developer.apple.com/documentation/avfaudio/responding-to-audio-route-changes).
 
-AVPlayer handles temporary buffering.
-The app allows 20 seconds for each connection or buffering period.
+AVPlayer handles temporary buffering when the extra buffer is **Off**.
+The app allows 20 seconds plus the extra buffer for each connection or buffering period.
 After an error, the user or a new Shortcut action must request playback again.
 This version does not retry the connection automatically after an error.
 

@@ -53,13 +53,14 @@ The Xcode build includes the named **Play CitizenRadio** and **Stop CitizenRadio
 - The player screen shows an artwork placeholder, the playback status, Play or Stop, and the AirPlay button.
 - The settings sheet saves one HTTP or HTTPS stream URL.
 - An optional chime plays in a loop while the stream connects. The chime is on by default.
+- An extra buffer setting holds playback until that much audio loads, at the start and after a stall. The default is 3 seconds.
 - Play and Stop URL actions are available in each build.
 - Each build supplies the Play and Stop App Intents. The xtool build gets their metadata through the `resources` list in `xtool.yml`.
 - The audio session supports background playback.
 - The player supplies Now Playing information and remote playback controls.
 - An audio device disconnection stops playback.
 - Playback can continue after a call if iOS permits it and the output device is unchanged.
-- A connection or buffering timeout of 20 seconds stops playback with an error.
+- A connection or buffering timeout of 20 seconds plus the extra buffer stops playback with an error.
 
 Icecast supplies the stream transport. Its audio codec must also work with AVPlayer.
 This version targets direct MP3 and AAC streams.
@@ -73,7 +74,7 @@ Run the core tests with:
 swift test
 ```
 
-Twenty-six core tests passed on Linux after the chime change.
+Thirty-four core tests passed on Linux after the buffer change.
 The iOS source syntax check also passed.
 This workspace has no xtool executable or iOS SDK.
 The iOS target has not been compiled or installed here.
@@ -85,5 +86,5 @@ xtool copies that PNG through its `iconPath` configuration.
 
 - [iPhone setup and device checks](docs/runbooks/iphone-setup.md)
 - [Architecture and platform references](docs/architecture/overview.md)
-- [ADR 0002: Player screen and settings](docs/adr/0002-player-screen-and-settings.md)
 - [ADR 0003: Committed App Intents metadata](docs/adr/0003-committed-app-intents-metadata.md)
+- [ADR 0004: Player screen and settings](docs/adr/0004-player-screen-and-settings.md)

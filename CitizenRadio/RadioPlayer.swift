@@ -26,6 +26,9 @@ final class RadioPlayer: ObservableObject {
     private var sessionID = UUID()
     private var itemObservation: NSKeyValueObservation?
     private var playbackObservation: NSKeyValueObservation?
+    private var bufferObservation: NSKeyValueObservation?
+    private var bufferTarget = 0
+    private var waitingForBuffer = false
     private var sessionSubscriptions = Set<AnyCancellable>()
     private var itemSubscriptions = Set<AnyCancellable>()
     private var connectionTimeout: Task<Void, Never>?
@@ -94,7 +97,12 @@ final class RadioPlayer: ObservableObject {
         request.play()
         activeURL = address.url
         state = .connecting
+        bufferTarget = BufferSetting().seconds
+        waitingForBuffer = bufferTarget > 0
         let item = AVPlayerItem(url: address.url)
+        if bufferTarget > 0 {
+            item.preferredForwardBufferDuration = Double(bufferTarget + 10)
+        }
         let newPlayer = AVPlayer(playerItem: item)
         newPlayer.automaticallyWaitsToMinimizeStalling = true
         player = newPlayer
@@ -110,11 +118,32 @@ final class RadioPlayer: ObservableObject {
                 self?.refreshPlayback(expectedID: expectedID)
             }
         }
+        bufferObservation = item.observe(\.loadedTimeRanges, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in
+                self?.startWhenBuffered(expectedID: expectedID)
+            }
+        }
         observeItem(item, expectedID: expectedID)
         updateOutput()
         updateNowPlaying()
         startConnectionTimeout()
-        newPlayer.play()
+        if !waitingForBuffer {
+            newPlayer.play()
+        }
+    }
+
+    private func startWhenBuffered(expectedID: UUID) {
+        guard sessionID == expectedID, request.wantsPlayback, waitingForBuffer,
+              let player, let item = player.currentItem, item.status == .readyToPlay else { return }
+        let ranges = item.loadedTimeRanges.map { value -> ClosedRange<Double> in
+            let range = value.timeRangeValue
+            let start = range.start.seconds
+            return start...(start + range.duration.seconds)
+        }
+        let ahead = BufferSetting.bufferedAhead(currentTime: item.currentTime().seconds, loadedRanges: ranges)
+        guard BufferSetting.isReady(bufferedAhead: ahead, target: bufferTarget) else { return }
+        waitingForBuffer = false
+        player.play()
     }
 
     private func refreshPlayback(expectedID: UUID) {
@@ -123,6 +152,7 @@ final class RadioPlayer: ObservableObject {
             fail("The stream could not play. Check the URL, network connection, and stream format.")
             return
         }
+        startWhenBuffered(expectedID: expectedID)
         if player.timeControlStatus == .playing {
             state = .playing
             connectionTimeout?.cancel()
@@ -137,15 +167,16 @@ final class RadioPlayer: ObservableObject {
     private func startConnectionTimeout() {
         guard connectionTimeout == nil else { return }
         let expectedID = sessionID
+        let seconds = BufferSetting.timeoutSeconds(target: bufferTarget)
         connectionTimeout = Task { @MainActor [weak self] in
             do {
-                try await Task.sleep(nanoseconds: 20_000_000_000)
+                try await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
             } catch {
                 return
             }
             guard let self, self.sessionID == expectedID,
                   self.request.wantsPlayback, self.state != .playing else { return }
-            self.fail("The stream did not respond within 20 seconds. Check your connection, then tap Play.")
+            self.fail("The stream did not respond within \(seconds) seconds. Check your connection, then tap Play.")
         }
     }
 
@@ -166,7 +197,12 @@ final class RadioPlayer: ObservableObject {
                 self.state = .connecting
                 self.updateNowPlaying()
                 self.startConnectionTimeout()
-                self.player?.play()
+                if self.bufferTarget > 0 {
+                    self.waitingForBuffer = true
+                    self.player?.pause()
+                } else {
+                    self.player?.play()
+                }
             }
             .store(in: &itemSubscriptions)
     }
@@ -242,6 +278,9 @@ final class RadioPlayer: ObservableObject {
         itemObservation = nil
         playbackObservation?.invalidate()
         playbackObservation = nil
+        bufferObservation?.invalidate()
+        bufferObservation = nil
+        waitingForBuffer = false
         itemSubscriptions.removeAll()
         player?.pause()
         player?.replaceCurrentItem(with: nil)

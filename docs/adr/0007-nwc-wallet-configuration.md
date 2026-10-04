@@ -1,6 +1,6 @@
 # ADR 0007: NWC wallet configuration
 
-- Status: proposed
+- Status: accepted. The visual acceptance criteria are open.
 - Date: 2026-10-04
 - Class: situational. Supersede this record when the wallet connection method or its storage changes.
 - Related: [ADR 0004](0004-player-screen-and-settings.md) puts all configuration in the settings sheet. [ADR 0006](0006-audio-session-off-main-thread.md) keeps blocking calls off the main thread.
@@ -22,7 +22,7 @@ nostr+walletconnect://<wallet service public key>?relay=wss://<relay>&secret=<cl
 The app stores its other settings in UserDefaults without encryption ([architecture overview](../architecture/overview.md#settings-and-network-access)).
 That storage is not safe for the secret.
 
-This record includes only the configuration: entry, validation, storage, connection test and disconnection.
+This record includes only the configuration: entry, validation, storage, spending limit, connection test and disconnection.
 A different record will include the payments, the value data source and the payment schedule.
 
 ## Decision
@@ -36,12 +36,31 @@ A different record will include the payments, the value data source and the paym
 
 The settings sheet gets a **Wallet** section with these items:
 
-- When no wallet is connected: **Paste Connection** reads the URI from the clipboard one time, when the user taps it.
+- When no wallet is connected:
+  - **Paste Connection** reads the URI from the clipboard one time, when the user taps it.
+  - **Scan QR Code** opens the camera and reads a QR code that contains the URI.
 - When a wallet is connected:
   - The relay host, the first 8 characters of the wallet public key, and the `lud16` address if the URI has one.
   - **Test Connection**.
   - **Disconnect**, which deletes the stored URI.
+- **Daily limit**: the maximum sats that the app pays in one local calendar day. The default is 1000 sats.
 - After the app saves the secret, it does not show the secret again.
+
+### QR code scanning
+
+- The scanner uses VisionKit `DataScannerViewController` for QR codes.
+  The deployment target is iOS 17, and all iPhones with iOS 17 have the A12 chip or a newer chip that VisionKit requires.
+- The app asks for camera access only when the user taps **Scan QR Code**. `NSCameraUsageDescription` gives the reason.
+- If `DataScannerViewController.isSupported` or `isAvailable` is false, the app hides the button and shows the paste method only.
+- The scanner passes the text to the same `NWCConnection` validation as the paste method. It closes after the first valid URI.
+
+### Daily limit
+
+- `SpendingLimit` in `CitizenRadioCore` decides if a payment fits in the remaining amount for the day.
+- The limit and the amount spent today go in UserDefaults. They are not secret.
+- A new local calendar day resets the amount spent.
+- This record stores the limit. The payment record will apply it to each payment.
+- The wallet budget stays in force. The lower of the two limits stops the payments.
 
 ### Validation
 
@@ -79,6 +98,17 @@ The error message does not contain the URI or the secret.
 - The app uses NIP-44 if the wallet's info event lists it. It uses NIP-04 only if the wallet supports nothing else.
 - The cryptography goes in `CitizenRadioCore`, so Linux tests can examine it with the NIP-44 test vectors.
 - The cryptography libraries must be SwiftPM packages that build with xtool and on Linux. A binary framework is not permitted, because Linux tests cannot use it.
+- The libraries are:
+  - `swift-secp256k1` from 21-DOT-DEV, version 0.23.2, product `P256K`: Schnorr signatures and ECDH.
+  - `swift-crypto` from Apple, versions 4.0.0 to 5.x, products `Crypto` and `CryptoExtras`: SHA-256, HKDF, HMAC, ChaCha20 and AES-CBC.
+- A probe build on 2026-10-04 confirmed these libraries:
+  - On Linux, a test signed and verified a Schnorr signature, derived an ECDH x-coordinate, and ran HKDF, ChaCha20 and AES-CBC.
+  - With xtool, the iOS app built and linked these functions. It also linked the iOS system `libc++`. The debug binary grew from 0.8 MB to 4.3 MB.
+  - On Linux, the default SwiftPM build system did not find the C++ headers of GCC 16 for BoringSSL in `swift-crypto`. The native build system (`swift test --build-system native`) worked.
+
+### Test wallet
+
+The tests use Alby Hub. It supports NWC with NIP-44 encryption and `pay_keysend`.
 
 ## Alternatives considered
 
@@ -86,13 +116,16 @@ The error message does not contain the URI or the secret.
 - **`kSecAttrAccessibleWhenUnlocked`.** Payments during locked playback could then not read the secret.
 - **iCloud Keychain synchronization.** It copies a spending key to other devices without a user action.
 - **A text field for the URI.** Paste from a button keeps the secret off the screen and out of the keyboard history.
-- **QR code scanning.** It needs camera permission and more code. Add it later if paste is not sufficient.
+- **QR code scanning with `AVCaptureMetadataOutput`.** It needs more code than VisionKit. Its `startRunning()` blocks, so it also needs a background queue.
+- **No daily limit in the app.** The wallet budget alone can be too high, because a person can set a large budget when they make the connection.
 - **Register the `nostr+walletconnect` URL scheme.** Other wallet apps can register the same scheme, and iOS does not guarantee which app opens it.
 - **A binary Nostr SDK, such as Rust bindings in an XCFramework.** Linux tests cannot load it, and it makes the xtool build larger.
 
 ## Consequences
 
-- The app gets its first external dependencies: a secp256k1 package and probably `swift-crypto` for the Linux tests.
+- The app gets its first external dependencies: `swift-secp256k1` and `swift-crypto`.
+- `scripts/check.sh` must run `swift test --build-system native`, because the default build system fails on this computer. This changes the first step in [ADR 0005](0005-swift-6-and-check-script.md).
+- The app asks for camera access. The Info.plist and `Configuration/xtool-info.plist` get `NSCameraUsageDescription`.
 - The privacy manifest must be examined for the Keychain and network use before release.
 - Keychain access with an xtool free signing account is not tested.
 - The settings sheet gets a third section. ADR 0004 permits this, because it puts all configuration in the settings sheet.
@@ -107,6 +140,8 @@ Each criterion has a test in `Tests/CitizenRadioCoreTests/`.
 - `NWCConnection` rejects a wrong scheme, a short public key, a missing relay, a `ws` relay, a missing secret, and a zero secret.
 - The `NWCConnection` error description does not contain the secret.
 - The NIP-44 encryption agrees with the published NIP-44 test vectors.
+- `SpendingLimit` permits a payment that fits in the remaining daily amount, rejects a payment that does not fit, and resets on a new local day.
+- The default daily limit is 1000 sats.
 - A `get_info` request event has kind 23194, the wallet `p` tag, and a valid Schnorr signature.
 - `scripts/check.sh` passes.
 
@@ -114,14 +149,9 @@ Each criterion has a test in `Tests/CitizenRadioCoreTests/`.
 
 A person must examine these items on an iPhone. Report each item as open until that examination is complete.
 
-- **Paste Connection** saves a URI from Alby or another NWC wallet, and the secret is not shown.
+- **Paste Connection** saves a URI from Alby Hub, and the secret is not shown.
+- **Scan QR Code** reads the connection QR code from Alby Hub on another screen.
+- The camera permission request shows only after a tap on **Scan QR Code**.
 - **Test Connection** shows the wallet methods within 10 seconds.
 - **Disconnect** removes the wallet. After a restart of the app, the wallet stays removed.
 - After a restart of the phone and one unlock, a background test can read the stored connection while the phone is locked.
-
-## Open questions
-
-1. Is paste from the clipboard sufficient for the first version, or is QR code scanning necessary?
-2. Which wallet will you use for the tests? Its `get_info` response and encryption support decide the first test case.
-3. Do you want spending limits in the app, in addition to the wallet budget? If yes, they belong in this record. A proposed default is 1000 sats each day.
-4. Which secp256k1 package: `swift-secp256k1` from 21-DOT-DEV, or another one that builds with xtool? I must test the build before this record is accepted.

@@ -66,7 +66,7 @@ Keychain rules:
 
 Guard test (`KeychainThreadTests`):
 
-- It scans `CitizenRadio/*.swift`. Each line that contains `SecItem` must have `.async {` in the 4 lines before it.
+- It scans `CitizenRadio/*.swift`. Each call of `SecItemCopyMatching`, `SecItemUpdate`, `SecItemAdd` or `SecItemDelete` must have `.async {` in the 4 lines before it. Constants such as `errSecItemNotFound` do not count.
 - The failure message is: "ADR 0007 §Storage: <file>:<line> calls SecItem outside a dispatch queue block. Keychain calls can block the main thread. Call it on the KeychainSecretStore queue."
 - It fails if it finds no `SecItem` call.
 

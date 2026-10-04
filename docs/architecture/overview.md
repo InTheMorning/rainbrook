@@ -57,8 +57,8 @@ Its URL actions and App Intents use that same instance.
 
 `xtool.yml` selects the `CitizenRadio` library product for the app.
 xtool supplies the executable entry point from the app's SwiftUI `@main` declaration.
-The package uses Swift 5 language mode and an iOS 17 deployment target.
-The core tests remain available through `swift test`.
+The package and the Xcode target use Swift 6 language mode and an iOS 17 deployment target.
+`scripts/check.sh` runs the core tests and the iOS build. See [ADR 0005](../adr/0005-swift-6-and-check-script.md).
 
 `Configuration/xtool-info.plist` supplies literal runtime settings.
 It contains no Xcode build variables.

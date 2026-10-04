@@ -2,9 +2,9 @@
 import AppIntents
 
 struct PlayRadioIntent: AudioPlaybackIntent {
-    static var title: LocalizedStringResource = "Play CitizenRadio"
-    static var description = IntentDescription("Play the stream saved in CitizenRadio.")
-    static var openAppWhenRun = false
+    static let title: LocalizedStringResource = "Play CitizenRadio"
+    static let description = IntentDescription("Play the stream saved in CitizenRadio.")
+    static let openAppWhenRun = false
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -14,9 +14,9 @@ struct PlayRadioIntent: AudioPlaybackIntent {
 }
 
 struct StopRadioIntent: AudioPlaybackIntent {
-    static var title: LocalizedStringResource = "Stop CitizenRadio"
-    static var description = IntentDescription("Stop CitizenRadio playback.")
-    static var openAppWhenRun = false
+    static let title: LocalizedStringResource = "Stop CitizenRadio"
+    static let description = IntentDescription("Stop CitizenRadio playback.")
+    static let openAppWhenRun = false
 
     @MainActor
     func perform() async throws -> some IntentResult {

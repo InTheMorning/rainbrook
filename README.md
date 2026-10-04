@@ -68,16 +68,15 @@ It does not parse playlist files or add an Ogg decoder.
 
 ## Checks
 
-Run the core tests with:
+Run all checks before a commit:
 
 ```sh
-swift test
+scripts/check.sh
 ```
 
-Thirty-four core tests passed on Linux after the buffer change.
-The iOS source syntax check also passed.
-This workspace has no xtool executable or iOS SDK.
-The iOS target has not been compiled or installed here.
+The script runs the core tests, builds the iOS app with xtool in Swift 6 language mode, and makes sure that the App Intents are in the binary.
+It needs `xtool` and `llvm-nm` on the PATH.
+See [ADR 0005](docs/adr/0005-swift-6-and-check-script.md).
 Use an iPhone to test audio, Shortcuts, Bluetooth, and locked-screen behavior.
 The app icon uses the PNG in the `AppIcon` asset catalog.
 xtool copies that PNG through its `iconPath` configuration.
@@ -88,3 +87,4 @@ xtool copies that PNG through its `iconPath` configuration.
 - [Architecture and platform references](docs/architecture/overview.md)
 - [ADR 0003: Committed App Intents metadata](docs/adr/0003-committed-app-intents-metadata.md)
 - [ADR 0004: Player screen and settings](docs/adr/0004-player-screen-and-settings.md)
+- [ADR 0005: Swift 6 and the check script](docs/adr/0005-swift-6-and-check-script.md)

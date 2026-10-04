@@ -154,11 +154,13 @@ Simulator checks cannot replace the car and iPhone checks.
 
 ## Commands
 
-Run the core tests from the project root:
+Run all checks from the project root before a commit:
 
 ```sh
-swift test
+scripts/check.sh
 ```
+
+The script runs the core tests, the iOS build in Swift 6 language mode, and the App Intents symbol check.
 
 On a Mac, compile the iOS target without device signing:
 

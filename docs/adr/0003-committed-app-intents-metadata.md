@@ -47,8 +47,7 @@ The binary had no intent types and did not link AppIntents.
 ## Invariants
 
 - The app entry refers to `RadioShortcuts`.
-  `AppIntentsLinkTests.testAppEntryKeepsIntentsInStaticArchive` enforces this rule.
-  Manual check after `xtool dev`: `llvm-nm xtool/CitizenRadio.app/CitizenRadio | grep PlayB6IntentV` shows symbols.
+  `AppIntentsLinkTests.testAppEntryKeepsIntentsInStaticArchive` and the symbol check in `scripts/check.sh` enforce this rule.
 
 - `Configuration/AppIntents/Metadata.appintents` agrees with `CitizenRadio/RadioIntents.swift`.
   Manual check: run `scripts/generate-app-intents-metadata.sh` on a Mac after a change to the intents. No test can run the Xcode tool on Linux.

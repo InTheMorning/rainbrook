@@ -10,6 +10,7 @@ struct SettingsView: View {
     @Binding var savedURL: String
     @State private var draft: StreamSettingsDraft
     @State private var error: String?
+    @StateObject private var wallet = WalletSettingsModel()
     @Environment(\.dismiss) private var dismiss
 
     init(player: RadioPlayer, savedURL: Binding<String>) {
@@ -63,9 +64,14 @@ struct SettingsView: View {
                 } footer: {
                     Text("The chime plays until the stream starts.")
                 }
+
+                WalletSettingsView(model: wallet, dailyLimitSats: $draft.dailyLimitSats)
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .task {
+                await wallet.load()
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

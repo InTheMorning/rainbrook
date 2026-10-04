@@ -16,8 +16,7 @@ let package = Package(
                 "Info.plist",
                 "PrivacyInfo.xcprivacy",
                 "forcdchime.wav"
-            ],
-            swiftSettings: [.define("XTOOL")]
+            ]
         ),
         .target(name: "CitizenRadioCore", path: "CitizenRadio/Core"),
         .testTarget(

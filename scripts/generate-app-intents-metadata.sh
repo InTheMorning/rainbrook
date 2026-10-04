@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Regenerates Configuration/AppIntents/Metadata.appintents with Xcode.
 # xtool cannot produce this metadata (https://github.com/xtool-org/xtool/issues/145),
-# so scripts/xtool-install.sh copies the committed result into the xtool app.
+# so xtool.yml lists the committed result in `resources` and xtool copies it into the app.
 # Run this on a Mac with Xcode after changing RadioIntents.swift, then commit the result.
 set -euo pipefail
 
 if ! command -v xcodebuild >/dev/null; then
-    echo "error: this script needs a Mac with Xcode. To install on a phone, use scripts/xtool-install.sh." >&2
+    echo "error: this script needs a Mac with Xcode. To install on a phone, run xtool dev." >&2
     exit 1
 fi
 

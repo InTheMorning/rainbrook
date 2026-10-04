@@ -6,3 +6,4 @@ iconPath: CitizenRadio/Assets.xcassets/AppIcon.appiconset/icon.png
 resources:
   - CitizenRadio/PrivacyInfo.xcprivacy
   - CitizenRadio/forcdchime.wav
+  - Configuration/AppIntents/Metadata.appintents

@@ -11,12 +11,11 @@ Connect and unlock your iPhone.
 From the project root, use:
 
 ```sh
-scripts/xtool-install.sh
+xtool dev
 ```
 
-The script runs on macOS and Linux and needs `python3` (Arch: `sudo pacman -S python`).
-It builds and signs the app with xtool, adds the App Intents metadata that Xcode would generate, and installs the app.
-Plain `xtool dev` also installs the app, but Shortcuts then has no **Play CitizenRadio** or **Stop CitizenRadio** actions.
+xtool builds the app, signs it one time with your Apple account, and installs it.
+The app includes the committed App Intents metadata, so Shortcuts shows **Play CitizenRadio** and **Stop CitizenRadio**.
 
 The configuration selects the `CitizenRadio` app product and includes the icon, privacy manifest, and background audio settings.
 The generated app is `xtool/CitizenRadio.app`.
@@ -55,7 +54,7 @@ The Xcode build includes the named **Play CitizenRadio** and **Stop CitizenRadio
 - The settings sheet saves one HTTP or HTTPS stream URL.
 - An optional chime plays in a loop while the stream connects. The chime is on by default.
 - Play and Stop URL actions are available in each build.
-- Each build supplies the Play and Stop App Intents. The xtool build gets them through `scripts/xtool-install.sh`.
+- Each build supplies the Play and Stop App Intents. The xtool build gets their metadata through the `resources` list in `xtool.yml`.
 - The audio session supports background playback.
 - The player supplies Now Playing information and remote playback controls.
 - An audio device disconnection stops playback.
@@ -87,3 +86,4 @@ xtool copies that PNG through its `iconPath` configuration.
 - [iPhone setup and device checks](docs/runbooks/iphone-setup.md)
 - [Architecture and platform references](docs/architecture/overview.md)
 - [ADR 0002: Player screen and settings](docs/adr/0002-player-screen-and-settings.md)
+- [ADR 0003: Committed App Intents metadata](docs/adr/0003-committed-app-intents-metadata.md)

@@ -1,3 +1,4 @@
+#if os(iOS)
 import AppIntents
 
 struct PlayRadioIntent: AudioPlaybackIntent {
@@ -40,4 +41,4 @@ struct RadioShortcuts: AppShortcutsProvider {
         )
     }
 }
-
+#endif

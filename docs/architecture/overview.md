@@ -50,7 +50,7 @@ The Swift package exposes the `CitizenRadio` app library and an internal `Citize
 The app target depends on the core target.
 Its four UI and playback files use an iOS compilation condition so host tests do not need Apple frameworks.
 The app has one player instance on the main actor.
-Its URL actions and Xcode App Intents use that same instance.
+Its URL actions and App Intents use that same instance.
 
 ## xtool packaging
 
@@ -66,13 +66,18 @@ The overrides retain background audio, HTTP media access, local network access t
 The icon uses `iconPath`. The privacy manifest and `forcdchime.wav` use the root `resources` list.
 See xtool's [configuration schema](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/PackSchema.swift) and [plist assembly](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/Planner.swift).
 
-The Swift package excludes `RadioIntents.swift` and defines `XTOOL` for its app target.
-The Xcode target retains the intents.
-Current xtool packaging does not extract and include App Intents metadata.
-The upstream [App Intents issue](https://github.com/xtool-org/xtool/issues/145) remains open.
-The [packer source](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/Packer.swift) has no App Intents metadata stage.
+The Swift package defines `XTOOL` for its app target and compiles `RadioIntents.swift` like the Xcode target.
+xtool does not extract App Intents metadata ([issue 145](https://github.com/xtool-org/xtool/issues/145)).
+Its [packer](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/Packer.swift) has no metadata stage.
+`Configuration/AppIntents/Metadata.appintents` holds the metadata that Xcode generates, made by `scripts/generate-app-intents-metadata.sh`.
+It names the intent types by module (`CitizenRadio`) and mangled type name, which match in both builds.
+`scripts/xtool-install.sh` runs `xtool dev build --sign`, copies this directory into the app and installs the app with `xtool install`.
+Signing comes first because xtool rewrites the bundle ID to `XTL-<team>.<bundleID>`, and `root.ssu.yaml` must name the final ID.
+`xtool install` signs again and keeps the same ID.
+Regenerate and commit the metadata after any change to `RadioIntents.swift`.
 
-For xtool builds, Shortcuts can use **Open URLs** with `citizenradio://play` or `citizenradio://stop`.
+Plain `xtool dev` installs an app without the metadata.
+Shortcuts can then use **Open URLs** with `citizenradio://play` or `citizenradio://stop`.
 These actions open the app and can require device unlocking.
 They do not provide the background launch behavior of `AudioPlaybackIntent`.
 The URL handler uses only the saved stream and rejects additional URL parameters.
@@ -135,7 +140,7 @@ They also cover the player screen status, the Play or Stop control, and the Save
 They also cover control URLs and rejection of external stream overrides.
 These tests do not execute AVPlayer, App Intents, or SwiftUI.
 Syntax checks do not prove compatibility with the Apple SDK.
-The xtool changes have not been compiled for iOS in this workspace, which lacks xtool and an iOS SDK.
+The SwiftPM target compiles for iOS with Xcode's SDK. The xtool install script was tested on Arch Linux with a stub `xtool`, not on a device.
 The [device checks](../runbooks/iphone-setup.md#device-checks) must test the complete playback path.
 
 The first version excludes CarPlay screens, station lists, recording, authentication, and custom codec support.

@@ -15,7 +15,6 @@ let package = Package(
                 "Core",
                 "Info.plist",
                 "PrivacyInfo.xcprivacy",
-                "RadioIntents.swift",
                 "forcdchime.wav"
             ],
             swiftSettings: [.define("XTOOL")]

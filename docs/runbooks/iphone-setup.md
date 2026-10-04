@@ -23,11 +23,15 @@ Install CitizenRadio and start its saved stream when the iPhone connects to the 
 6. Use this command:
 
 ```sh
-xtool dev
+scripts/xtool-install.sh
 ```
 
-xtool selects the app product specified in `xtool.yml`.
-It builds, signs, and installs `CitizenRadio`.
+The script runs on macOS and Linux and needs `python3` (Arch: `sudo pacman -S python`).
+It checks that xtool is logged in, then builds and signs `CitizenRadio` with xtool.
+It copies `Configuration/AppIntents/Metadata.appintents` into the app and sets the signed bundle ID in it.
+Then it installs the app with `xtool install`.
+Extra options go to `xtool install`, for example `scripts/xtool-install.sh --udid <device id>`.
+Plain `xtool dev` installs an app without the Shortcuts actions.
 If Developer Mode is disabled, enable it and repeat the command.
 Follow [xtool's device setup instructions](https://xtool.sh/tutorials/xtool/first-app/) if iOS requests developer trust.
 
@@ -74,27 +78,9 @@ For a local stream server, allow local network access when iOS requests it.
 
 ## Configure Shortcuts
 
-### xtool installation
+### Play and Stop actions
 
-The xtool build uses URL actions because current xtool packaging does not supply App Intents metadata.
-See [xtool issue 145](https://github.com/xtool-org/xtool/issues/145).
-
-1. Open Shortcuts on the iPhone.
-2. Make a shortcut with a **URL** action.
-3. Set its value to `citizenradio://play`.
-4. Add an **Open URLs** action after the URL action.
-5. Run the shortcut to test playback.
-6. Add a Bluetooth automation for your car's paired device.
-7. Configure the automation to run this shortcut when the car connects.
-8. Select **Run Immediately** if available.
-
-The URL opens CitizenRadio and starts the saved stream.
-For Stop, use `citizenradio://stop` in a separate shortcut.
-iOS may require unlocking before it opens the app.
-This method does not guarantee playback from a locked phone.
-Use the Xcode build to test the background App Intent path.
-
-### Xcode installation
+The xtool build from `scripts/xtool-install.sh` and the Xcode build both supply these actions.
 
 Apple added the **Run Immediately** control for Bluetooth automations in iOS 17.
 See [Apple's iOS 17 Shortcuts changes](https://support.apple.com/en-gb/111098).
@@ -117,6 +103,18 @@ Use the **Play CitizenRadio** action for playback.
 The **Open App** action only opens the interface.
 You can make a separate shortcut with **Stop CitizenRadio** for manual control.
 
+### URL fallback
+
+Use URL actions if the app was installed with plain `xtool dev`, which leaves out the Play and Stop actions.
+
+1. Make a shortcut with a **URL** action set to `citizenradio://play`.
+2. Add an **Open URLs** action after the URL action.
+3. Use this shortcut in the Bluetooth automation.
+
+For Stop, use `citizenradio://stop` in a separate shortcut.
+The URL opens CitizenRadio in the foreground, so iOS may require unlocking first.
+This method does not guarantee playback from a locked phone.
+
 ## Device checks
 
 Complete these checks before normal use of the automation.
@@ -130,11 +128,12 @@ Complete these checks before normal use of the automation.
 | Tap Stop while the chime plays. | The chime stops. |
 | Tap Play with the chime off. | No chime plays. |
 | Open the app before a URL is saved. | The status shows **Add a stream in Settings** and Play is disabled. |
-| Run a Play action before a URL is saved. | The app reports missing settings. The Xcode App Intent also reports an error to Shortcuts. |
+| Run a Play action before a URL is saved. | The app reports missing settings. The Play CitizenRadio action also reports an error to Shortcuts. |
 | Lock the screen during playback. | Audio continues and Now Playing controls remain available. |
-| Run the Xcode App Intent while locked. | Playback starts without opening the app. |
-| Run the xtool URL shortcut while locked. | iOS can require unlocking before it opens CitizenRadio. |
+| Run Play CitizenRadio while locked. | Playback starts without opening the app. |
+| Run the URL fallback shortcut while locked. | iOS can require unlocking before it opens CitizenRadio. |
 | Open `citizenradio://play` and `citizenradio://stop`. | The saved stream starts and stops. |
+| Search Shortcuts for CitizenRadio after `scripts/xtool-install.sh`. | Play CitizenRadio and Stop CitizenRadio appear. |
 | Open `citizenradio://play?url=https://example.org/other`. | The app does not start playback or change the saved stream. |
 | Run the automation while the app is closed. | iOS starts the action and playback begins. |
 | Connect the paired car device. | The automation starts the saved stream through the selected iOS output. |

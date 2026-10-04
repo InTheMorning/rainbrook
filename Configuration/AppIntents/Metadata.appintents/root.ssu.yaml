@@ -1,0 +1,19 @@
+apiVersion: ssu/v1
+nlu:
+  shortcuts:
+    bundleIdentifier: org.citizenradio.CitizenRadio
+    intents:
+    - metadata:
+        name: PlayRadioIntent_0
+        title: Play CitizenRadio
+      corpuses:
+        training: []
+    - metadata:
+        name: StopRadioIntent_1
+        title: Stop CitizenRadio
+      corpuses:
+        training: []
+    - metadata:
+        name: +negative
+      corpuses:
+        training: []

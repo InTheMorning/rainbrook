@@ -1,0 +1,19 @@
+# Xcode and Swift build output
+.build/
+.swiftpm/
+DerivedData/
+build/
+
+# User settings
+*.xcuserstate
+xcuserdata/
+
+# Archives and test results
+*.ipa
+*.xcarchive/
+*.dSYM/
+*.dSYM.zip
+*.xcresult/
+
+# macOS metadata
+.DS_Store

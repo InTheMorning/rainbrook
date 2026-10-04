@@ -1,0 +1,345 @@
+import AVFoundation
+import Combine
+import MediaPlayer
+
+@MainActor
+final class RadioPlayer: ObservableObject {
+    static let shared = RadioPlayer()
+
+    enum State: Equatable {
+        case stopped
+        case connecting
+        case playing
+        case interrupted
+        case failed(String)
+
+        var title: String {
+            switch self {
+            case .stopped: return "Ready to play"
+            case .connecting: return "Connecting"
+            case .playing: return "Playing live"
+            case .interrupted: return "Playback interrupted"
+            case .failed: return "Cannot play the stream"
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .stopped: return "radio"
+            case .connecting: return "antenna.radiowaves.left.and.right"
+            case .playing: return "waveform"
+            case .interrupted: return "pause.circle"
+            case .failed: return "exclamationmark.triangle"
+            }
+        }
+
+        var canStop: Bool {
+            switch self {
+            case .connecting, .playing, .interrupted: return true
+            case .stopped, .failed: return false
+            }
+        }
+
+        var errorMessage: String? {
+            if case let .failed(message) = self { return message }
+            return nil
+        }
+    }
+
+    struct PlaybackError: LocalizedError {
+        let message: String
+        var errorDescription: String? { message }
+    }
+
+    @Published private(set) var state: State = .stopped
+    @Published private(set) var outputName = "System audio output"
+
+    private let audioSession = AVAudioSession.sharedInstance()
+    private var player: AVPlayer?
+    private var activeURL: URL?
+    private var request = PlaybackRequest()
+    private var sessionID = UUID()
+    private var itemObservation: NSKeyValueObservation?
+    private var playbackObservation: NSKeyValueObservation?
+    private var sessionSubscriptions = Set<AnyCancellable>()
+    private var itemSubscriptions = Set<AnyCancellable>()
+    private var connectionTimeout: Task<Void, Never>?
+    private var currentOutputIDs = Set<String>()
+    private var interruptedOutputIDs = Set<String>()
+    private var remoteTargets: [(MPRemoteCommand, Any)] = []
+
+    private init() {
+        updateOutput()
+        observeAudioSession()
+        installRemoteCommands()
+    }
+
+    func playFromControls() {
+        do {
+            try play()
+        } catch {
+            fail(error.localizedDescription)
+        }
+    }
+
+    func playAndWait() async throws {
+        try Task.checkCancellation()
+        do {
+            try play()
+        } catch {
+            fail(error.localizedDescription)
+            throw error
+        }
+        let expectedID = sessionID
+        while sessionID == expectedID {
+            if state == .playing { return }
+            if let message = state.errorMessage { throw PlaybackError(message: message) }
+            do {
+                try await Task.sleep(nanoseconds: 100_000_000)
+            } catch {
+                if sessionID == expectedID { stop() }
+                throw error
+            }
+        }
+        if let message = state.errorMessage { throw PlaybackError(message: message) }
+        throw PlaybackError(message: "Playback stopped before the stream started.")
+    }
+
+    func stop() {
+        request.stop()
+        interruptedOutputIDs.removeAll()
+        releasePlayer()
+        state = .stopped
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        deactivateSession()
+    }
+
+    private func play() throws {
+        let address = try StreamStore().address()
+        if request.wantsPlayback, activeURL == address.url, player != nil {
+            return
+        }
+
+        releasePlayer()
+        request.stop()
+        try audioSession.setCategory(.playback, mode: .default)
+        try audioSession.setActive(true)
+
+        request.play()
+        activeURL = address.url
+        state = .connecting
+        let item = AVPlayerItem(url: address.url)
+        let newPlayer = AVPlayer(playerItem: item)
+        newPlayer.automaticallyWaitsToMinimizeStalling = true
+        player = newPlayer
+        let expectedID = sessionID
+
+        itemObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in
+                self?.refreshPlayback(expectedID: expectedID)
+            }
+        }
+        playbackObservation = newPlayer.observe(\.timeControlStatus, options: [.initial, .new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in
+                self?.refreshPlayback(expectedID: expectedID)
+            }
+        }
+        observeItem(item, expectedID: expectedID)
+        updateOutput()
+        updateNowPlaying()
+        startConnectionTimeout()
+        newPlayer.play()
+    }
+
+    private func refreshPlayback(expectedID: UUID) {
+        guard sessionID == expectedID, request.wantsPlayback, let player else { return }
+        if player.currentItem?.status == .failed {
+            fail("The stream could not play. Check the URL, network connection, and stream format.")
+            return
+        }
+        if player.timeControlStatus == .playing {
+            state = .playing
+            connectionTimeout?.cancel()
+            connectionTimeout = nil
+        } else {
+            state = .connecting
+            startConnectionTimeout()
+        }
+        updateNowPlaying()
+    }
+
+    private func startConnectionTimeout() {
+        guard connectionTimeout == nil else { return }
+        let expectedID = sessionID
+        connectionTimeout = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: 20_000_000_000)
+            } catch {
+                return
+            }
+            guard let self, self.sessionID == expectedID,
+                  self.request.wantsPlayback, self.state != .playing else { return }
+            self.fail("The stream did not respond within 20 seconds. Check your connection, then tap Play Radio.")
+        }
+    }
+
+    private func observeItem(_ item: AVPlayerItem, expectedID: UUID) {
+        for name in [AVPlayerItem.failedToPlayToEndTimeNotification, AVPlayerItem.didPlayToEndTimeNotification] {
+            NotificationCenter.default.publisher(for: name, object: item)
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in
+                    guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
+                    self.fail("The live stream ended. Tap Play Radio to connect again.")
+                }
+                .store(in: &itemSubscriptions)
+        }
+        NotificationCenter.default.publisher(for: AVPlayerItem.playbackStalledNotification, object: item)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
+                self.state = .connecting
+                self.updateNowPlaying()
+                self.startConnectionTimeout()
+                self.player?.play()
+            }
+            .store(in: &itemSubscriptions)
+    }
+
+    private func observeAudioSession() {
+        NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                guard let self else { return }
+                let reason = (notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? NSNumber)?.uintValue
+                if reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue {
+                    self.stop()
+                }
+                self.updateOutput()
+            }
+            .store(in: &sessionSubscriptions)
+
+        NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                self?.handleInterruption(notification)
+            }
+            .store(in: &sessionSubscriptions)
+
+        NotificationCenter.default.publisher(for: AVAudioSession.mediaServicesWereResetNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                if self.state.canStop {
+                    self.fail("The audio service restarted. Tap Play Radio to connect again.")
+                }
+                self.updateOutput()
+            }
+            .store(in: &sessionSubscriptions)
+    }
+
+    private func handleInterruption(_ notification: Notification) {
+        guard let rawType = (notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? NSNumber)?.uintValue,
+              let type = AVAudioSession.InterruptionType(rawValue: rawType) else { return }
+        switch type {
+        case .began:
+            guard request.wantsPlayback else { return }
+            interruptedOutputIDs = currentOutputIDs
+            request.interruptionBegan()
+            releasePlayer()
+            state = .interrupted
+            updateNowPlaying()
+        case .ended:
+            guard state == .interrupted else { return }
+            let rawOptions = (notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? NSNumber)?.uintValue ?? 0
+            let options = AVAudioSession.InterruptionOptions(rawValue: rawOptions)
+            updateOutput()
+            let sameOutput = !currentOutputIDs.isEmpty && currentOutputIDs == interruptedOutputIDs
+            let resume = request.interruptionEnded(
+                shouldResume: options.contains(.shouldResume),
+                sameOutput: sameOutput
+            )
+            if resume {
+                playFromControls()
+            } else {
+                stop()
+            }
+        @unknown default:
+            stop()
+        }
+    }
+
+    private func releasePlayer() {
+        sessionID = UUID()
+        connectionTimeout?.cancel()
+        connectionTimeout = nil
+        itemObservation?.invalidate()
+        itemObservation = nil
+        playbackObservation?.invalidate()
+        playbackObservation = nil
+        itemSubscriptions.removeAll()
+        player?.pause()
+        player?.replaceCurrentItem(with: nil)
+        player = nil
+        activeURL = nil
+    }
+
+    private func fail(_ message: String) {
+        stop()
+        state = .failed(message)
+    }
+
+    private func deactivateSession() {
+        try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    private func updateOutput() {
+        let outputs = audioSession.currentRoute.outputs
+        currentOutputIDs = Set(outputs.map(\.uid))
+        outputName = outputs.isEmpty ? "System audio output" : outputs.map(\.portName).joined(separator: ", ")
+    }
+
+    private func updateNowPlaying() {
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+            MPMediaItemPropertyTitle: "CitizenRadio",
+            MPMediaItemPropertyArtist: "Live radio",
+            MPNowPlayingInfoPropertyIsLiveStream: true,
+            MPNowPlayingInfoPropertyPlaybackRate: state == .playing ? 1.0 : 0.0
+        ]
+    }
+
+    private func installRemoteCommands() {
+        let center = MPRemoteCommandCenter.shared()
+        center.playCommand.isEnabled = true
+        center.pauseCommand.isEnabled = true
+        center.stopCommand.isEnabled = true
+        center.togglePlayPauseCommand.isEnabled = true
+        center.nextTrackCommand.isEnabled = false
+        center.previousTrackCommand.isEnabled = false
+        center.changePlaybackPositionCommand.isEnabled = false
+
+        let playTarget = center.playCommand.addTarget { [weak self] _ in
+            Task { @MainActor [weak self] in self?.playFromControls() }
+            return .success
+        }
+        remoteTargets.append((center.playCommand, playTarget))
+        for command in [center.pauseCommand, center.stopCommand] {
+            let target = command.addTarget { [weak self] _ in
+                Task { @MainActor [weak self] in self?.stop() }
+                return .success
+            }
+            remoteTargets.append((command, target))
+        }
+        let toggleTarget = center.togglePlayPauseCommand.addTarget { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if self.state.canStop {
+                    self.stop()
+                } else {
+                    self.playFromControls()
+                }
+            }
+            return .success
+        }
+        remoteTargets.append((center.togglePlayPauseCommand, toggleTarget))
+    }
+}

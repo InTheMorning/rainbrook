@@ -40,6 +40,9 @@ final class RadioPlayer: ObservableObject {
     private var interruptedOutputIDs = Set<String>()
     private var remoteTargets: [(MPRemoteCommand, Any)] = []
     private var chime: AVAudioPlayer?
+    // Audio session activation can block, so it never runs on the main thread.
+    private let sessionQueue = DispatchQueue(label: "org.citizenradio.CitizenRadio.audio-session")
+    private var sessionActive = false
 
     private init() {
         updateOutput()
@@ -89,28 +92,60 @@ final class RadioPlayer: ObservableObject {
 
     private func play() throws {
         let address = try StreamStore().address()
-        if request.wantsPlayback, activeURL == address.url, player != nil {
+        if request.wantsPlayback, activeURL == address.url {
             return
         }
 
         releasePlayer()
         request.stop()
-        try audioSession.setCategory(.playback, mode: .default)
-        try audioSession.setActive(true)
-
         request.play()
         activeURL = address.url
-        state = .connecting
         bufferTarget = BufferSetting().seconds
+        sessionActive = false
+        state = .connecting
+        updateNowPlaying()
+        startConnectionTimeout()
+        let expectedID = sessionID
+        let queue = sessionQueue
+        Task { @MainActor [weak self] in
+            do {
+                try await Self.activateSession(on: queue)
+            } catch {
+                guard let self, self.sessionID == expectedID else { return }
+                self.fail(error.localizedDescription)
+                return
+            }
+            guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
+            self.sessionActive = true
+            self.updateChime()
+            self.startPlayer(url: address.url, expectedID: expectedID)
+        }
+    }
+
+    private nonisolated static func activateSession(on queue: DispatchQueue) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            queue.async {
+                do {
+                    let session = AVAudioSession.sharedInstance()
+                    try session.setCategory(.playback, mode: .default)
+                    try session.setActive(true)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    private func startPlayer(url: URL, expectedID: UUID) {
         waitingForBuffer = bufferTarget > 0
-        let item = AVPlayerItem(url: address.url)
+        let item = AVPlayerItem(url: url)
         if bufferTarget > 0 {
             item.preferredForwardBufferDuration = Double(bufferTarget + 10)
         }
         let newPlayer = AVPlayer(playerItem: item)
         newPlayer.automaticallyWaitsToMinimizeStalling = true
         player = newPlayer
-        let expectedID = sessionID
 
         itemObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in
@@ -130,7 +165,6 @@ final class RadioPlayer: ObservableObject {
         observeItem(item, expectedID: expectedID)
         updateOutput()
         updateNowPlaying()
-        startConnectionTimeout()
         if waitingForBuffer {
             startBufferWait(expectedID: expectedID)
         } else {
@@ -328,7 +362,10 @@ final class RadioPlayer: ObservableObject {
     }
 
     private func deactivateSession() {
-        try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+        sessionActive = false
+        sessionQueue.async {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
     }
 
     private func updateOutput() {
@@ -336,7 +373,8 @@ final class RadioPlayer: ObservableObject {
     }
 
     private func updateChime() {
-        guard ChimeSetting.shouldPlay(state: state, enabled: ChimeSetting().isEnabled) else {
+        // AVAudioPlayer activates an inactive session on the calling thread, so wait for activation.
+        guard sessionActive, ChimeSetting.shouldPlay(state: state, enabled: ChimeSetting().isEnabled) else {
             chime?.stop()
             chime = nil
             return

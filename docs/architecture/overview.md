@@ -96,6 +96,7 @@ Apple documents this mode for audio content that continues in the background.
 See [background execution modes](https://developer.apple.com/documentation/xcode/configuring-background-execution-modes).
 
 - A repeated Play request keeps an active connection to the same stream.
+- The player activates and deactivates the audio session on a serial background queue, not on the main thread. See [ADR 0006](../adr/0006-audio-session-off-main-thread.md).
 - If the chime setting is on, `forcdchime.wav` plays in a loop while the state is `connecting`. It stops at all other states.
 - If the extra buffer is not **Off**, the player does not start until that many seconds of audio are loaded after the current position.
 - After a stall, the player pauses and waits for the same buffer again. The state is `connecting` during this wait.

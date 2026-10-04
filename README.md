@@ -88,3 +88,4 @@ xtool copies that PNG through its `iconPath` configuration.
 - [ADR 0003: Committed App Intents metadata](docs/adr/0003-committed-app-intents-metadata.md)
 - [ADR 0004: Player screen and settings](docs/adr/0004-player-screen-and-settings.md)
 - [ADR 0005: Swift 6 and the check script](docs/adr/0005-swift-6-and-check-script.md)
+- [ADR 0006: Audio session activation off the main thread](docs/adr/0006-audio-session-off-main-thread.md)

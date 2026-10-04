@@ -44,6 +44,9 @@ Rules:
 - `connect` makes a `URLSessionWebSocketTask` with `session.webSocketTask(with: url)` and calls `resume()`.
 - `send` uses `task.send(.string(text))` with `async`/`await`.
 - `receive` uses `try await task.receive()`. A `.string` message gives the text. A `.data` message gives the UTF-8 text, or throws if it is not UTF-8.
+- `receive` and `send` must stop when their Swift task is cancelled. `NWCClient` uses task cancellation for its timeout.
+  The async form of an Objective-C completion-handler method does not react to cancellation without help.
+  So wrap each call in `withTaskCancellationHandler`, and call `task.cancel(with: .goingAway, reason: nil)` in `onCancel`.
 - `close` calls `task.cancel(with: .normalClosure, reason: nil)`.
 - Use only the `async` methods. Do not use completion handlers or semaphores, so no call blocks a thread.
 - The class has only `let` properties. If Swift 6 rejects `Sendable` for `URLSessionWebSocketTask`, stop and escalate.
@@ -62,6 +65,7 @@ Mechanical:
 
 - `scripts/check.sh` passes, so the file compiles with the iOS SDK in Swift 6 mode.
 - The file contains no completion handler, `DispatchSemaphore` or `@unchecked Sendable`.
+- `receive` and `send` are wrapped in `withTaskCancellationHandler`.
 
 Visual (on an iPhone, after task 009):
 
@@ -102,6 +106,7 @@ Goal:
 
 Constraints:
 - Use the exact API and rules in the task file. Only async methods: no completion handlers, no semaphores.
+- Wrap receive and send in withTaskCancellationHandler, so the NWCClient timeout can stop them.
 - No @unchecked Sendable. No message text in logs.
 - Prose and comments in ASD-STE100.
 - Do not run git commit. Keep the changes in the working tree.

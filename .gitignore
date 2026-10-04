@@ -3,6 +3,7 @@
 .swiftpm/
 DerivedData/
 build/
+/xtool/
 
 # User settings
 *.xcuserstate
@@ -17,3 +18,4 @@ xcuserdata/
 
 # macOS metadata
 .DS_Store
+.bsp/

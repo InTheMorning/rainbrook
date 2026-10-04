@@ -16,7 +16,7 @@ Car Bluetooth connection
   -> AVPlayer
   -> Current iOS audio output
 
-RadioView -> StreamStore -> UserDefaults
+SettingsView -> StreamStore -> UserDefaults
 PlayRadioIntent -> StreamStore -> Saved stream URL
 ```
 
@@ -30,19 +30,54 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | Component | Responsibility |
 | --- | --- |
 | `CitizenRadioApp` | Creates the SwiftUI scene. |
-| `RadioView` | Edits the URL and shows playback controls, status, and output. |
+| `PlayerView` | Shows the artwork placeholder, status, Play or Stop, and the AirPlay button. |
+| `SettingsView` | Edits and saves the stream URL in a sheet. |
+| `PlaybackState` | Names the playback states and their status titles. |
+| `ChimeSetting` | Stores the chime setting and selects the states that play the chime. |
+| `PlayerScreenModel` | Selects the status text and the Play or Stop control for the player screen. |
+| `StreamSettingsDraft` | Enables Save for a changed, non-empty URL or a changed chime setting. |
 | `StreamAddress` | Validates the URL before storage or playback. |
 | `StreamStore` | Reads and writes the saved URL. |
 | `PlaybackRequest` | Controls if playback can continue after an interruption. |
+| `RadioURLAction` | Accepts the Play and Stop control URLs. |
 | `RadioPlayer` | Owns AVPlayer, the audio session, observers, and remote controls. |
 | `PlayRadioIntent` | Starts the saved stream and waits for playback. |
 | `StopRadioIntent` | Stops playback and cancels pending connection work. |
 | `RadioShortcuts` | Makes the Play and Stop actions discoverable. |
 
-The Xcode target compiles all seven Swift source files into the app.
-The Swift package compiles only the three core files for tests on Linux or macOS.
+The Xcode target compiles all thirteen Swift source files into the app.
+The Swift package exposes the `CitizenRadio` app library and an internal `CitizenRadioCore` target.
+The app target depends on the core target.
+Its four UI and playback files use an iOS compilation condition so host tests do not need Apple frameworks.
 The app has one player instance on the main actor.
-Its intents are in the app target and use that same instance.
+Its URL actions and Xcode App Intents use that same instance.
+
+## xtool packaging
+
+`xtool.yml` selects the `CitizenRadio` library product for the app.
+xtool supplies the executable entry point from the app's SwiftUI `@main` declaration.
+The package uses Swift 5 language mode and an iOS 17 deployment target.
+The core tests remain available through `swift test`.
+
+`Configuration/xtool-info.plist` supplies literal runtime settings.
+It contains no Xcode build variables.
+xtool supplies the bundle identifier, executable name, and minimum OS version from its configuration and the package.
+The overrides retain background audio, HTTP media access, local network access text, and iPhone orientations.
+The icon uses `iconPath`. The privacy manifest and `forcdchime.wav` use the root `resources` list.
+See xtool's [configuration schema](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/PackSchema.swift) and [plist assembly](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/Planner.swift).
+
+The Swift package excludes `RadioIntents.swift` and defines `XTOOL` for its app target.
+The Xcode target retains the intents.
+Current xtool packaging does not extract and include App Intents metadata.
+The upstream [App Intents issue](https://github.com/xtool-org/xtool/issues/145) remains open.
+The [packer source](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/Packer.swift) has no App Intents metadata stage.
+
+For xtool builds, Shortcuts can use **Open URLs** with `citizenradio://play` or `citizenradio://stop`.
+These actions open the app and can require device unlocking.
+They do not provide the background launch behavior of `AudioPlaybackIntent`.
+The URL handler uses only the saved stream and rejects additional URL parameters.
+It cannot change the stream setting from an external URL.
+Each build registers the same scheme and supports these URL actions.
 
 ## Playback rules
 
@@ -56,6 +91,7 @@ Apple documents this mode for audio content that continues in the background.
 See [background execution modes](https://developer.apple.com/documentation/xcode/configuring-background-execution-modes).
 
 - A repeated Play request keeps an active connection to the same stream.
+- If the chime setting is on, `forcdchime.wav` plays in a loop while the state is `connecting`. It stops at all other states.
 - The Play intent returns success after AVPlayer reports playback.
 - Invalid settings and connection failures return an error to Shortcuts.
 - Stop releases the player item and cancels the connection timeout.
@@ -95,10 +131,13 @@ The local network usage description covers stream servers on the user's network.
 ## Validation limits
 
 Core tests cover URL validation, settings preservation, duplicate Play requests, and interruption recovery decisions.
+They also cover the player screen status, the Play or Stop control, and the Save button state.
+They also cover control URLs and rejection of external stream overrides.
 These tests do not execute AVPlayer, App Intents, or SwiftUI.
 Syntax checks do not prove compatibility with the Apple SDK.
+The xtool changes have not been compiled for iOS in this workspace, which lacks xtool and an iOS SDK.
 The [device checks](../runbooks/iphone-setup.md#device-checks) must test the complete playback path.
 
 The first version excludes CarPlay screens, station lists, recording, authentication, and custom codec support.
 The car can use its standard Bluetooth audio controls.
-Store distribution also needs an app icon and release validation.
+Store distribution also needs release validation.

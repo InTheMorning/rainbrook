@@ -1,58 +1,23 @@
+#if os(iOS)
 import AVFoundation
 import Combine
 import MediaPlayer
+#if SWIFT_PACKAGE
+import CitizenRadioCore
+#endif
 
 @MainActor
 final class RadioPlayer: ObservableObject {
     static let shared = RadioPlayer()
-
-    enum State: Equatable {
-        case stopped
-        case connecting
-        case playing
-        case interrupted
-        case failed(String)
-
-        var title: String {
-            switch self {
-            case .stopped: return "Ready to play"
-            case .connecting: return "Connecting"
-            case .playing: return "Playing live"
-            case .interrupted: return "Playback interrupted"
-            case .failed: return "Cannot play the stream"
-            }
-        }
-
-        var symbol: String {
-            switch self {
-            case .stopped: return "radio"
-            case .connecting: return "antenna.radiowaves.left.and.right"
-            case .playing: return "waveform"
-            case .interrupted: return "pause.circle"
-            case .failed: return "exclamationmark.triangle"
-            }
-        }
-
-        var canStop: Bool {
-            switch self {
-            case .connecting, .playing, .interrupted: return true
-            case .stopped, .failed: return false
-            }
-        }
-
-        var errorMessage: String? {
-            if case let .failed(message) = self { return message }
-            return nil
-        }
-    }
 
     struct PlaybackError: LocalizedError {
         let message: String
         var errorDescription: String? { message }
     }
 
-    @Published private(set) var state: State = .stopped
-    @Published private(set) var outputName = "System audio output"
+    @Published private(set) var state: PlaybackState = .stopped {
+        didSet { updateChime() }
+    }
 
     private let audioSession = AVAudioSession.sharedInstance()
     private var player: AVPlayer?
@@ -67,6 +32,7 @@ final class RadioPlayer: ObservableObject {
     private var currentOutputIDs = Set<String>()
     private var interruptedOutputIDs = Set<String>()
     private var remoteTargets: [(MPRemoteCommand, Any)] = []
+    private var chime: AVAudioPlayer?
 
     private init() {
         updateOutput()
@@ -179,7 +145,7 @@ final class RadioPlayer: ObservableObject {
             }
             guard let self, self.sessionID == expectedID,
                   self.request.wantsPlayback, self.state != .playing else { return }
-            self.fail("The stream did not respond within 20 seconds. Check your connection, then tap Play Radio.")
+            self.fail("The stream did not respond within 20 seconds. Check your connection, then tap Play.")
         }
     }
 
@@ -189,7 +155,7 @@ final class RadioPlayer: ObservableObject {
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] _ in
                     guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
-                    self.fail("The live stream ended. Tap Play Radio to connect again.")
+                    self.fail("The live stream ended. Tap Play to connect again.")
                 }
                 .store(in: &itemSubscriptions)
         }
@@ -230,7 +196,7 @@ final class RadioPlayer: ObservableObject {
             .sink { [weak self] _ in
                 guard let self else { return }
                 if self.state.canStop {
-                    self.fail("The audio service restarted. Tap Play Radio to connect again.")
+                    self.fail("The audio service restarted. Tap Play to connect again.")
                 }
                 self.updateOutput()
             }
@@ -293,9 +259,21 @@ final class RadioPlayer: ObservableObject {
     }
 
     private func updateOutput() {
-        let outputs = audioSession.currentRoute.outputs
-        currentOutputIDs = Set(outputs.map(\.uid))
-        outputName = outputs.isEmpty ? "System audio output" : outputs.map(\.portName).joined(separator: ", ")
+        currentOutputIDs = Set(audioSession.currentRoute.outputs.map(\.uid))
+    }
+
+    private func updateChime() {
+        guard ChimeSetting.shouldPlay(state: state, enabled: ChimeSetting().isEnabled) else {
+            chime?.stop()
+            chime = nil
+            return
+        }
+        guard chime == nil,
+              let url = Bundle.main.url(forResource: "forcdchime", withExtension: "wav"),
+              let player = try? AVAudioPlayer(contentsOf: url) else { return }
+        player.numberOfLoops = -1
+        player.play()
+        chime = player
     }
 
     private func updateNowPlaying() {
@@ -343,3 +321,4 @@ final class RadioPlayer: ObservableObject {
         remoteTargets.append((center.togglePlayPauseCommand, toggleTarget))
     }
 }
+#endif

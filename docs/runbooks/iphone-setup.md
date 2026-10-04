@@ -6,14 +6,46 @@ Install CitizenRadio and start its saved stream when the iPhone connects to the 
 
 ## Prerequisites
 
-- A Mac with Xcode and support for the iPhone's installed iOS version.
+- A computer with xtool and its iOS SDK, or a Mac with Xcode.
 - An iPhone with iOS 17 or a subsequent version.
-- An Apple account configured for development signing in Xcode.
+- An Apple account configured for development signing in xtool or Xcode.
 - A car Bluetooth device paired with the iPhone.
 - A direct Icecast MP3 or AAC stream URL.
 - Network access to the stream from the iPhone.
 
-## Install and configure
+## Install with xtool
+
+1. Complete xtool setup on your development computer.
+2. Connect the iPhone through USB.
+3. Unlock the iPhone.
+4. Accept the device trust request if it appears.
+5. Open a terminal in the CitizenRadio project root.
+6. Use this command:
+
+```sh
+xtool dev
+```
+
+xtool selects the app product specified in `xtool.yml`.
+It builds, signs, and installs `CitizenRadio`.
+If Developer Mode is disabled, enable it and repeat the command.
+Follow [xtool's device setup instructions](https://xtool.sh/tutorials/xtool/first-app/) if iOS requests developer trust.
+
+The expected generated bundle is `xtool/CitizenRadio.app`.
+The build directory is excluded from Git.
+If Apple reports an identifier conflict, change `bundleID` in `xtool.yml` to an identifier for your account.
+The Xcode identifier is separate from this setting.
+
+To build without installation, use:
+
+```sh
+xtool dev build
+```
+
+The initial build can require time to compile the SDK modules.
+The current package declares an iOS 17 deployment target.
+
+## Install with Xcode
 
 1. Open `CitizenRadio.xcodeproj` on the Mac.
 2. Select the **CitizenRadio** scheme.
@@ -24,16 +56,45 @@ Install CitizenRadio and start its saved stream when the iPhone connects to the 
 7. Select the iPhone as the run destination.
 8. Enable Developer Mode if iOS requests it.
 9. Build and run CitizenRadio.
-10. Enter the stream URL in **Stream URL**.
-11. Tap **Save Stream**.
-12. Tap **Play Radio**.
 
+## Configure playback
+
+1. Open CitizenRadio on the iPhone.
+2. Tap **Settings**.
+3. Enter the stream URL in **Stream URL**.
+4. Set **Chime while connecting** on or off.
+5. Tap **Save**.
+6. Tap **Play**.
+
+If the chime is on, it plays in a loop until the stream starts.
 The expected status is **Playing live**.
-The audio output row shows the current output device.
+Tap the AirPlay button to select the output device.
 The iPhone must play the stream before you configure the automation.
 For a local stream server, allow local network access when iOS requests it.
 
 ## Configure Shortcuts
+
+### xtool installation
+
+The xtool build uses URL actions because current xtool packaging does not supply App Intents metadata.
+See [xtool issue 145](https://github.com/xtool-org/xtool/issues/145).
+
+1. Open Shortcuts on the iPhone.
+2. Make a shortcut with a **URL** action.
+3. Set its value to `citizenradio://play`.
+4. Add an **Open URLs** action after the URL action.
+5. Run the shortcut to test playback.
+6. Add a Bluetooth automation for your car's paired device.
+7. Configure the automation to run this shortcut when the car connects.
+8. Select **Run Immediately** if available.
+
+The URL opens CitizenRadio and starts the saved stream.
+For Stop, use `citizenradio://stop` in a separate shortcut.
+iOS may require unlocking before it opens the app.
+This method does not guarantee playback from a locked phone.
+Use the Xcode build to test the background App Intent path.
+
+### Xcode installation
 
 Apple added the **Run Immediately** control for Bluetooth automations in iOS 17.
 See [Apple's iOS 17 Shortcuts changes](https://support.apple.com/en-gb/111098).
@@ -62,12 +123,19 @@ Complete these checks before normal use of the automation.
 
 | Check | Expected result |
 | --- | --- |
-| Save an invalid URL after a valid URL. | The app shows an error and preserves the saved URL. |
+| Save an invalid URL after a valid URL. | The settings sheet shows an error, stays open, and preserves the saved URL. |
 | Close and reopen the app. | The saved URL remains available. |
 | Run Play two times. | One stream continues without a restart. |
-| Run Play before a URL is saved. | Shortcuts reports that a stream URL is required. |
+| Tap Play with the chime on. | The chime plays in a loop and stops when the stream starts. |
+| Tap Stop while the chime plays. | The chime stops. |
+| Tap Play with the chime off. | No chime plays. |
+| Open the app before a URL is saved. | The status shows **Add a stream in Settings** and Play is disabled. |
+| Run a Play action before a URL is saved. | The app reports missing settings. The Xcode App Intent also reports an error to Shortcuts. |
 | Lock the screen during playback. | Audio continues and Now Playing controls remain available. |
-| Run the automation while locked. | Playback starts without opening the app. |
+| Run the Xcode App Intent while locked. | Playback starts without opening the app. |
+| Run the xtool URL shortcut while locked. | iOS can require unlocking before it opens CitizenRadio. |
+| Open `citizenradio://play` and `citizenradio://stop`. | The saved stream starts and stops. |
+| Open `citizenradio://play?url=https://example.org/other`. | The app does not start playback or change the saved stream. |
 | Run the automation while the app is closed. | iOS starts the action and playback begins. |
 | Connect the paired car device. | The automation starts the saved stream through the selected iOS output. |
 | Disconnect the audio device during playback. | Playback stops. |
@@ -113,6 +181,11 @@ The core tests run through the Swift package.
 
 | Symptom | Action |
 | --- | --- |
+| `xtool` is not found. | Install xtool and add it to the terminal's PATH. |
+| xtool reports no iOS SDK. | Complete `xtool setup` on the development computer. |
+| xtool reports an identifier conflict. | Set a unique `bundleID` in `xtool.yml`. |
+| An xtool installation has no named Play action. | Use the URL shortcut described above. |
+| The URL shortcut requires unlocking. | Unlock the phone, or test the App Intent through an Xcode build. |
 | Xcode reports a signing error. | Select your development team and a unique bundle identifier. |
 | Shortcuts cannot find CitizenRadio. | Open the installed app, then search for its actions again. |
 | The app opens but audio does not start. | Use the Play CitizenRadio action in the automation. |

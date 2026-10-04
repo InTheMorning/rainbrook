@@ -1,0 +1,8 @@
+version: 1
+bundleID: org.citizenradio.CitizenRadio
+product: CitizenRadio
+infoPath: Configuration/xtool-info.plist
+iconPath: CitizenRadio/Assets.xcassets/AppIcon.appiconset/icon.png
+resources:
+  - CitizenRadio/PrivacyInfo.xcprivacy
+  - CitizenRadio/forcdchime.wav

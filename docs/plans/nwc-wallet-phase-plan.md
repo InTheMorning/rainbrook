@@ -1,6 +1,6 @@
 # NWC wallet configuration: phase plan
 
-- Status: active, 2026-10-04.
+- Status: implemented, 2026-10-04. The visual checks are open.
 - Decision: [ADR 0007](../adr/0007-nwc-wallet-configuration.md). This plan does not make rules. ADR 0007 owns them.
 - Review: [review checklist](../reviews/nwc-wallet-review-checklist.md).
 

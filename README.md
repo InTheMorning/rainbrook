@@ -21,7 +21,7 @@ The configuration selects the `CitizenRadio` app product and includes the icon, 
 The generated app is `xtool/CitizenRadio.app`.
 Change `bundleID` in `xtool.yml` if Apple reports an identifier conflict.
 The deployment target is iOS 17.
-The project has no external dependencies.
+The project depends on swift-secp256k1 and swift-crypto for the wallet connection.
 
 Open the installed app and tap **Settings**.
 Enter your direct MP3 or AAC stream URL, then tap **Save**.
@@ -61,6 +61,7 @@ The Xcode build includes the named **Play CitizenRadio** and **Stop CitizenRadio
 - An audio device disconnection stops playback.
 - Playback can continue after a call if iOS permits it and the output device is unchanged.
 - A connection or buffering timeout of 20 seconds plus the extra buffer stops playback with an error.
+- The settings sheet has a Wallet section to connect, test and disconnect a Nostr Wallet Connect wallet, with a daily sats limit.
 
 Icecast supplies the stream transport. Its audio codec must also work with AVPlayer.
 This version targets direct MP3 and AAC streams.

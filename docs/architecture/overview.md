@@ -18,6 +18,9 @@ Car Bluetooth connection
 
 SettingsView -> StreamStore -> UserDefaults
 PlayRadioIntent -> StreamStore -> Saved stream URL
+
+SettingsView -> WalletSettingsModel -> WalletStore -> KeychainSecretStore
+WalletSettingsModel -> NWCClient -> URLSessionRelayConnection -> relay
 ```
 
 Shortcuts owns the Bluetooth trigger.
@@ -45,8 +48,25 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `PlayRadioIntent` | Starts the saved stream and waits for playback. |
 | `StopRadioIntent` | Stops playback and cancels pending connection work. |
 | `RadioShortcuts` | Makes the Play and Stop actions discoverable. |
+| `NWCConnection` | Parses and validates a Nostr Wallet Connect connection URI. |
+| `WalletSummary` | Holds the wallet facts that the settings sheet shows for a connected wallet. |
+| `SpendingLimit` | Holds the daily sats limit and the quantity spent today. |
+| `NostrKeys` | Makes and checks Schnorr signatures for Nostr events. |
+| `NostrEvent` | Builds and signs a Nostr event. |
+| `NIP44` | Encrypts and decrypts wallet messages with NIP-44 version 2. |
+| `NIP04` | Encrypts and decrypts wallet messages for an older wallet with NIP-04. |
+| `RelayMessage` | Names the relay filter and the client and relay messages of NIP-01. |
+| `RelayConnection` | Sends and receives relay text messages for NWCClient. |
+| `NWCClient` | Sends a wallet info request to the relay and reads the reply. |
+| `SecretStore` | Reads, writes and deletes the stored wallet connection URI. |
+| `WalletStatusText` | Selects the status text for the Wallet section of Settings. |
+| `KeychainSecretStore` | Stores the wallet connection URI in the Keychain. |
+| `URLSessionRelayConnection` | Opens a relay connection with a WebSocket task. |
+| `WalletSettingsModel` | Selects the state and controls for the Wallet section of Settings. |
+| `WalletSettingsView` | Shows the paste, scan, test and disconnect controls for the wallet. |
+| `QRScannerView` | Scans a QR code and returns the wallet connection text. |
 
-The Xcode target compiles all fourteen Swift source files into the app.
+The Xcode target compiles all thirty-one Swift source files into the app.
 The Swift package exposes the `CitizenRadio` app library and an internal `CitizenRadioCore` target.
 The app target depends on the core target.
 Its four UI and playback files use an iOS compilation condition so host tests do not need Apple frameworks.

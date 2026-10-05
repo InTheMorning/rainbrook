@@ -182,6 +182,220 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "000000000000000000000077";
 		};
+		"000000000000000000000100" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NWCConnection.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000111" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000100";
+		};
+		"000000000000000000000101" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/WalletSummary.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000112" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000101";
+		};
+		"000000000000000000000102" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/SpendingLimit.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000113" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000102";
+		};
+		"000000000000000000000103" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NostrKeys.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000114" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000103";
+		};
+		"000000000000000000000104" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NostrEvent.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000115" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000104";
+		};
+		"000000000000000000000105" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NIP44.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000116" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000105";
+		};
+		"000000000000000000000106" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NIP04.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000117" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000106";
+		};
+		"000000000000000000000107" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/RelayMessage.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000118" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000107";
+		};
+		"000000000000000000000108" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/RelayConnection.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000119" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000108";
+		};
+		"000000000000000000000109" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NWCClient.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011A" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000109";
+		};
+		"00000000000000000000010A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/SecretStore.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010A";
+		};
+		"00000000000000000000010B" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/WalletStatusText.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011C" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010B";
+		};
+		"00000000000000000000010C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "KeychainSecretStore.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010C";
+		};
+		"00000000000000000000010D" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "URLSessionRelayConnection.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010D";
+		};
+		"00000000000000000000010E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "WalletSettingsModel.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010E";
+		};
+		"00000000000000000000010F" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "WalletSettingsView.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000120" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010F";
+		};
+		"000000000000000000000110" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "QRScannerView.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000121" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000110";
+		};
+		"000000000000000000000122" = {
+			"isa" = "XCRemoteSwiftPackageReference";
+			"repositoryURL" = "https://github.com/21-DOT-DEV/swift-secp256k1";
+			"requirement" = {
+				"kind" = "exactVersion";
+				"version" = "0.23.2";
+			};
+		};
+		"000000000000000000000123" = {
+			"isa" = "XCRemoteSwiftPackageReference";
+			"repositoryURL" = "https://github.com/apple/swift-crypto";
+			"requirement" = {
+				"kind" = "versionRange";
+				"minimumVersion" = "4.0.0";
+				"maximumVersion" = "6.0.0";
+			};
+		};
+		"000000000000000000000124" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "000000000000000000000122";
+			"productName" = "P256K";
+		};
+		"000000000000000000000125" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "000000000000000000000123";
+			"productName" = "Crypto";
+		};
+		"000000000000000000000126" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "000000000000000000000123";
+			"productName" = "CryptoExtras";
+		};
+		"000000000000000000000127" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "000000000000000000000124";
+		};
+		"000000000000000000000128" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "000000000000000000000125";
+		};
+		"000000000000000000000129" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "000000000000000000000126";
+		};
 		"000000000000000000000078" = {
 			"isa" = "PBXFileReference";
 			"explicitFileType" = "wrapper.application";
@@ -210,6 +424,23 @@
 				"00000000000000000000006F",
 				"000000000000000000000070",
 				"000000000000000000000075",
+				"000000000000000000000100",
+				"000000000000000000000101",
+				"000000000000000000000102",
+				"000000000000000000000103",
+				"000000000000000000000104",
+				"000000000000000000000105",
+				"000000000000000000000106",
+				"000000000000000000000107",
+				"000000000000000000000108",
+				"000000000000000000000109",
+				"00000000000000000000010A",
+				"00000000000000000000010B",
+				"00000000000000000000010C",
+				"00000000000000000000010D",
+				"00000000000000000000010E",
+				"00000000000000000000010F",
+				"000000000000000000000110",
 			);
 			"path" = "CitizenRadio";
 			"sourceTree" = "<group>";
@@ -248,6 +479,23 @@
 				"0000000000000000000000D8",
 				"0000000000000000000000DA",
 				"0000000000000000000000DB",
+				"000000000000000000000111",
+				"000000000000000000000112",
+				"000000000000000000000113",
+				"000000000000000000000114",
+				"000000000000000000000115",
+				"000000000000000000000116",
+				"000000000000000000000117",
+				"000000000000000000000118",
+				"000000000000000000000119",
+				"00000000000000000000011A",
+				"00000000000000000000011B",
+				"00000000000000000000011C",
+				"00000000000000000000011D",
+				"00000000000000000000011E",
+				"00000000000000000000011F",
+				"000000000000000000000120",
+				"000000000000000000000121",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
@@ -255,6 +503,9 @@
 			"isa" = "PBXFrameworksBuildPhase";
 			"buildActionMask" = 2147483647;
 			"files" = (
+				"000000000000000000000127",
+				"000000000000000000000128",
+				"000000000000000000000129",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
@@ -381,6 +632,11 @@
 			"dependencies" = (
 			);
 			"name" = "CitizenRadio";
+			"packageProductDependencies" = (
+				"000000000000000000000124",
+				"000000000000000000000125",
+				"000000000000000000000126",
+			);
 			"productName" = "CitizenRadio";
 			"productReference" = "000000000000000000000078";
 			"productType" = "com.apple.product-type.application";
@@ -410,6 +666,10 @@
 				"Base",
 			);
 			"mainGroup" = "000000000000000000000016";
+			"packageReferences" = (
+				"000000000000000000000122",
+				"000000000000000000000123",
+			);
 			"productRefGroup" = "000000000000000000000015";
 			"projectDirPath" = "";
 			"projectRoot" = "";

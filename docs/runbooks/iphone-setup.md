@@ -73,6 +73,62 @@ Tap the AirPlay button to select the output device.
 The iPhone must play the stream before you configure the automation.
 For a local stream server, allow local network access when iOS requests it.
 
+## Connect a wallet
+
+Connect an Alby Hub wallet through Nostr Wallet Connect (NWC) for future payments.
+The first version stores and tests the connection. It sends no payment.
+
+### Paste the connection
+
+1. In Alby Hub, make a new app connection for CitizenRadio.
+2. Copy the connection URI to the clipboard.
+3. Open CitizenRadio on the iPhone.
+4. Tap **Settings**.
+5. In the **Wallet** section, tap **Paste**. This is the system paste button.
+
+The app reads the clipboard one time and saves a correct connection at once.
+The relay host and the wallet key prefix appear. The Lightning address appears if the connection has one.
+
+### Scan the QR code
+
+1. In Alby Hub, make a new app connection for CitizenRadio.
+2. Show the connection QR code on a separate screen.
+3. Open CitizenRadio on the iPhone.
+4. Tap **Settings**.
+5. In the **Wallet** section, tap **Scan QR Code**.
+6. Allow camera access. This request shows only after this tap.
+7. Point the iPhone camera at the QR code.
+
+The scanner closes and saves the connection after it reads a correct code.
+If the device cannot run the scanner, the Wallet section shows only **Paste**.
+
+### Test the connection
+
+1. In the **Wallet** section, tap **Test Connection**.
+2. Wait for the result. It shows within 10 seconds.
+
+The result shows the wallet alias and the supported methods.
+A warning appears if the wallet does not support keysend payments.
+
+### Set the daily limit
+
+1. In the **Wallet** section, select a **Daily limit** value. The default is 1000 sats.
+2. Tap **Save**.
+
+The app applies the limit after you tap Save.
+This is the maximum number of sats that the app pays in one day.
+This version sends no payment. A subsequent version applies the limit to each payment.
+
+### Disconnect the wallet
+
+1. In the **Wallet** section, tap **Disconnect**.
+2. Tap **Disconnect** again in the confirmation dialog.
+
+The app removes the stored connection at once.
+After a restart of the app, the wallet stays removed.
+The app does not show the secret again after it saves a connection.
+Without a wallet connection, the app plays as before.
+
 ## Configure Shortcuts
 
 ### Play and Stop actions
@@ -147,6 +203,12 @@ Complete these checks before normal use of the automation.
 | Change and save the stream URL. | Current playback stops. The next Play uses the new URL. |
 | Use the car's pause and play controls. | Pause stops the stream. Play reconnects to live audio. |
 | Enable VoiceOver and large text. | Labels remain clear and all controls remain accessible. |
+| Use **Paste** with a URI from Alby Hub. | The app saves the connection, and the secret does not show. |
+| Use Scan QR Code with the connection QR code from Alby Hub on another screen. | The scanner reads the code and saves the connection. |
+| Tap Scan QR Code. | The camera permission request shows only after this tap. |
+| Tap Test Connection. | The wallet methods show within 10 seconds. |
+| Tap Disconnect, then restart the app. | The wallet stays removed after the restart. |
+| Restart the phone and unlock it one time. | A background test can read the stored connection while the phone is locked. |
 
 Also test the locked automation after you restart and unlock the iPhone.
 Record the actual behavior after force-quitting the app, because iOS can prevent background launches.

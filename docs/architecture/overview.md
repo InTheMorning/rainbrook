@@ -21,6 +21,9 @@ PlayRadioIntent -> StreamStore -> Saved stream URL
 
 SettingsView -> WalletSettingsModel -> WalletStore -> KeychainSecretStore
 WalletSettingsModel -> NWCClient -> URLSessionRelayConnection -> relay
+
+relay /display/events -> EventStreamClient -> TrackInfoModel -> PlayerView and Now Playing
+AVPlayer ICY metadata -> IcyMetadataReader -> RadioPlayer.icyTrack -> TrackInfoModel
 ```
 
 Shortcuts owns the Bluetooth trigger.
@@ -65,8 +68,25 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `WalletSettingsModel` | Selects the state and controls for the Wallet section of Settings. |
 | `WalletSettingsView` | Shows the paste, scan, test and disconnect controls for the wallet. |
 | `QRScannerView` | Scans a QR code and returns the wallet connection text. |
+| `RelayEvent` | Parses and validates the relay event address for the Track info setting. |
+| `EventStreamParser` | Parses server-sent event lines into named events. |
+| `EventStreamClient` | Reads the relay snapshot, opens the event stream, and applies the reconnect and backoff rules. |
+| `TrackDisplay` | Decodes the relay display state into a track with an artist, a title and artwork. |
+| `IcyTitle` | Parses the Icecast StreamTitle text into an artist and a title. |
+| `DisplayTiming` | Computes the wait before the app applies a streamed display state. |
+| `TrackLines` | Selects the title, the artist and the artwork to display, with the relay track as the priority. |
+| `ArtworkPolicy` | Accepts or rejects artwork data, and gives its cache key. |
+| `LRUCache` | Holds a fixed number of entries, and removes the oldest entry first. |
+| `RelayEventStore` | Reads and writes the relay event address in UserDefaults. |
+| `RelayStatusText` | Selects the relay status text for the Track info section of Settings. |
+| `NetworkPathSummary` | Holds one network path update, and tells if a reconnect is necessary. |
+| `URLSessionEventStream` | Opens the relay event stream and reads the relay snapshot with URLSession. |
+| `NetworkPathMonitor` | Watches the network path with NWPathMonitor. |
+| `ArtworkLoader` | Downloads and decodes track artwork off the main thread, with a memory cache. |
+| `IcyMetadataReader` | Reads the Icecast stream title from the playing item, off the main thread. |
+| `TrackInfoModel` | Runs the relay client while playback is connecting or playing, and selects the track and the artwork for the player screen and Now Playing. |
 
-The Xcode target compiles all thirty-one Swift source files into the app.
+The Xcode target compiles all forty-eight Swift source files into the app.
 The Swift package exposes the `CitizenRadio` app library and an internal `CitizenRadioCore` target.
 The app target depends on the core target.
 Its four UI and playback files use an iOS compilation condition so host tests do not need Apple frameworks.

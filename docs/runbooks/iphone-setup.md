@@ -73,6 +73,22 @@ Tap the AirPlay button to select the output device.
 The iPhone must play the stream before you configure the automation.
 For a local stream server, allow local network access when iOS requests it.
 
+## Configure track info
+
+1. Open CitizenRadio on the iPhone.
+2. Tap **Settings**.
+3. Paste the station relay address into **Track info**.
+4. Tap **Save**.
+5. Tap **Play**.
+
+With a relay address, the player screen and Now Playing show the relay track, its artist and its artwork.
+Without a relay address, or without a relay track, they show the stream title.
+The Track info section of Settings shows a status message in these cases:
+
+- The relay does not know the event.
+- The event is not reserved.
+- The relay client waits to connect again.
+
 ## Connect a wallet
 
 Connect an Alby Hub wallet through Nostr Wallet Connect (NWC) for future payments.
@@ -183,6 +199,11 @@ Complete these checks before normal use of the automation.
 | Tap Play with an extra buffer of 10 seconds. | Playback starts about 10 seconds later than with **Off**. |
 | Drive through weak coverage with an extra buffer of 15 seconds. | Fewer stalls occur than with **Off**. |
 | Set the extra buffer to **Off** and tap Play. | Playback starts as soon as AVPlayer is ready. |
+| Configure a relay event in **Track info** and play. | The artwork, the title and the artist change when the listener hears the new track. |
+| Lock the screen or connect the car with a relay event configured. | The lock screen and the car show the track title, the artist and the artwork. |
+| Drive through a dead zone with a relay event configured. | The display is correct within 40 seconds after the audio returns. |
+| Play with an empty **Track info** field. | The title and the artist come from the stream title, and the artwork area shows the placeholder. |
+| Tap **Stop**, then **Play**, with a relay event configured. | The display is correct again. |
 | Open the app before a URL is saved. | The status shows **Add a stream in Settings** and Play is disabled. |
 | Run a Play action before a URL is saved. | The app reports missing settings. The Play CitizenRadio action also reports an error to Shortcuts. |
 | Lock the screen during playback. | Audio continues and Now Playing controls remain available. |

@@ -164,4 +164,4 @@ A person must examine these items on an iPhone. Report each item as open until t
 ADR 0004 describes the present player screen until the code changes. So these changes go in the commit of the first task that changes the player screen:
 
 - Done: ADR 0004 is in the archive. [ADR 0009](0009-player-screen-with-track-info.md) restates ADR 0004 with the new artwork, title and artist items, and the **Track info** setting.
-- The architecture overview, the README and the runbook get the relay setup and the device checks.
+- Done: the architecture overview, the README and the runbook have the relay setup and the device checks.

@@ -1,7 +1,7 @@
 # Relay display task 007: Track info setting
 
 - Plan: [relay display phase plan](../plans/relay-display-phase-plan.md), wave 2. Model: Sonnet.
-- Decision: [ADR 0008](../adr/0008-relay-display-metadata.md) §Configuration. [ADR 0004](../adr/0004-player-screen-and-settings.md) puts all configuration in the settings sheet.
+- Decision: [ADR 0008](../adr/0008-relay-display-metadata.md) §Configuration. [ADR 0004](../archive/adr/0004-player-screen-and-settings.md) puts all configuration in the settings sheet.
 - Depends on: task 001.
 
 ## Goal

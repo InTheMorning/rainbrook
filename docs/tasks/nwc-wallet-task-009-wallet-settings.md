@@ -1,7 +1,7 @@
 # NWC wallet task 009: Wallet section in Settings
 
 - Plan: [NWC wallet phase plan](../plans/nwc-wallet-phase-plan.md), phase 3.
-- Decision: [ADR 0007](../adr/0007-nwc-wallet-configuration.md) §Settings, §Connection test, §Daily limit. [ADR 0004](../adr/0004-player-screen-and-settings.md) for the settings sheet.
+- Decision: [ADR 0007](../adr/0007-nwc-wallet-configuration.md) §Settings, §Connection test, §Daily limit. [ADR 0004](../archive/adr/0004-player-screen-and-settings.md) for the settings sheet.
 - Depends on: tasks 003, 007 and 008.
 
 ## Goal

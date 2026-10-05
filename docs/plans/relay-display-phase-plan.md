@@ -1,6 +1,6 @@
 # Relay display: phase plan
 
-- Status: active, 2026-10-05.
+- Status: implemented, 2026-10-04. The visual checks are open.
 - Decision: [ADR 0008](../adr/0008-relay-display-metadata.md). This plan does not make rules. ADR 0008 owns them.
 - Research: [musicindex relay metadata](../research/musicindex-relay-metadata.md).
 - Review: [review checklist](../reviews/relay-display-review-checklist.md).

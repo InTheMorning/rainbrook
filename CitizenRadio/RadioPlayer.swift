@@ -179,6 +179,9 @@ final class RadioPlayer: ObservableObject {
         let reader = IcyMetadataReader { [weak self] track in
             Task { @MainActor [weak self] in
                 guard let self, self.sessionID == expectedID else { return }
+                let playTime = self.player?.currentItem?.currentTime().seconds ?? .nan
+                let ahead = self.bufferedAheadSeconds()
+                IcyMetadataReader.timingLog.notice("ICY applied: play position \(playTime, format: .fixed(precision: 1)) s, buffered ahead \(ahead, format: .fixed(precision: 1)) s")
                 self.icyTrack = track
             }
         }

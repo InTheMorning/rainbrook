@@ -1,5 +1,6 @@
 #if os(iOS)
 import AVFoundation
+import os
 #if SWIFT_PACKAGE
 import CitizenRadioCore
 #endif
@@ -12,6 +13,10 @@ import CitizenRadioCore
 /// that value then goes.
 final class IcyMetadataReader: NSObject, AVPlayerItemMetadataOutputPushDelegate, Sendable {
     private let onTrack: @Sendable (IcyTrack?) -> Void
+
+    /// The ICY sync plan §First step uses this log for the device timing check.
+    /// It records no title text. Remove it after that check.
+    static let timingLog = Logger(subsystem: "org.citizenradio.CitizenRadio", category: "icy-timing")
 
     /// Creates a reader. The reader calls `onTrack` once for each parsed title.
     init(onTrack: @escaping @Sendable (IcyTrack?) -> Void) {
@@ -35,14 +40,18 @@ final class IcyMetadataReader: NSObject, AVPlayerItemMetadataOutputPushDelegate,
         // AVMetadataItem is not Sendable. AVFoundation sends the groups to this method,
         // so the task can take them. The task reads the title only inside the task.
         Task { [onTrack] in
+            let groupStart = groups.first?.timeRange.start.seconds ?? .nan
             let candidates = groups.flatMap(\.items)
             let item = candidates.first { $0.identifier == .icyMetadataStreamTitle }
                 ?? candidates.first { $0.commonKey == .commonKeyTitle }
             guard let item else {
+                Self.timingLog.notice("ICY group: no title, group start \(groupStart, format: .fixed(precision: 1)) s")
                 onTrack(nil)
                 return
             }
             let text = (try? await item.load(.stringValue)) ?? nil
+            let length = text?.count ?? 0
+            Self.timingLog.notice("ICY group: title of \(length) characters, group start \(groupStart, format: .fixed(precision: 1)) s")
             onTrack(text.flatMap(IcyTitle.parse))
         }
     }

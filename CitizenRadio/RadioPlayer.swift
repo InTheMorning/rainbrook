@@ -19,6 +19,7 @@ final class RadioPlayer: ObservableObject {
     @Published private(set) var state: PlaybackState = .stopped {
         didSet { updateChime() }
     }
+    @Published private(set) var icyTrack: IcyTrack?
 
     private let audioSession = AVAudioSession.sharedInstance()
     private var player: AVPlayer?
@@ -40,6 +41,7 @@ final class RadioPlayer: ObservableObject {
     private var interruptedOutputIDs = Set<String>()
     private var remoteTargets: [(MPRemoteCommand, Any)] = []
     private var chime: AVAudioPlayer?
+    private var icyReader: IcyMetadataReader?
     // Audio session activation can block, so it never runs on the main thread.
     private let sessionQueue = DispatchQueue(label: "org.citizenradio.CitizenRadio.audio-session")
     private var sessionActive = false
@@ -146,6 +148,15 @@ final class RadioPlayer: ObservableObject {
         let newPlayer = AVPlayer(playerItem: item)
         newPlayer.automaticallyWaitsToMinimizeStalling = true
         player = newPlayer
+
+        let reader = IcyMetadataReader { [weak self] track in
+            Task { @MainActor [weak self] in
+                guard let self, self.sessionID == expectedID else { return }
+                self.icyTrack = track
+            }
+        }
+        reader.attach(to: item)
+        icyReader = reader
 
         itemObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in
@@ -354,6 +365,8 @@ final class RadioPlayer: ObservableObject {
         player?.replaceCurrentItem(with: nil)
         player = nil
         activeURL = nil
+        icyReader = nil
+        icyTrack = nil
     }
 
     private func fail(_ message: String) {

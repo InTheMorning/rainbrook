@@ -22,7 +22,6 @@ struct SettingsView: View {
         _draft = State(initialValue: StreamSettingsDraft(
             savedURL: savedURL.wrappedValue,
             chimeEnabled: ChimeSetting().isEnabled,
-            bufferSeconds: BufferSetting().seconds,
             dailyLimitSats: SpendingLimitStore().limit.dailySats,
             relayText: RelayEventStore().savedText
         ))
@@ -73,17 +72,6 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Picker("Extra buffer", selection: $draft.bufferSeconds) {
-                        ForEach(BufferSetting.choices, id: \.self) { seconds in
-                            Text(seconds == 0 ? "Off" : "\(seconds) seconds").tag(seconds)
-                        }
-                    }
-                    .accessibilityIdentifier("bufferPicker")
-                } footer: {
-                    Text("Playback starts after this much audio loads. A larger buffer helps in weak coverage, but playback starts later. The change applies at the next connection.")
-                }
-
-                Section {
                     Toggle("Chime while connecting", isOn: $draft.chimeEnabled)
                         .accessibilityIdentifier("chimeToggle")
                 } footer: {
@@ -130,7 +118,6 @@ struct SettingsView: View {
                 savedURL = address.url.absoluteString
             }
             ChimeSetting().isEnabled = draft.chimeEnabled
-            BufferSetting().seconds = draft.bufferSeconds
             SpendingLimitStore().setDailySats(draft.dailyLimitSats)
             try RelayEventStore().save(draft.relayText)
             dismiss()

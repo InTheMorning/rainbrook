@@ -53,14 +53,13 @@ The Xcode build includes the named **Play CitizenRadio** and **Stop CitizenRadio
 - The player screen shows an artwork placeholder, the playback status, Play or Stop, and the AirPlay button.
 - The settings sheet saves one HTTP or HTTPS stream URL.
 - An optional chime plays in a loop while the stream connects. The chime is on by default.
-- An extra buffer setting holds playback until that much audio loads, at the start and after a stall. The default is 3 seconds.
 - Play and Stop URL actions are available in each build.
 - Each build supplies the Play and Stop App Intents. The xtool build gets their metadata through the `resources` list in `xtool.yml`.
 - The audio session supports background playback.
 - The player supplies Now Playing information and remote playback controls.
 - An audio device disconnection stops playback.
 - Playback can continue after a call if iOS permits it and the output device is unchanged.
-- A connection or buffering timeout of 20 seconds plus the extra buffer stops playback with an error.
+- A connection or buffering timeout of 20 seconds stops playback with an error.
 - The settings sheet has a Wallet section to connect, test and disconnect a Nostr Wallet Connect wallet, with a daily sats limit.
 - The settings sheet has a Track info field for the relay event address. The player screen and Now Playing show the relay track and its artwork, or the stream title when there is no relay track.
 
@@ -92,7 +91,7 @@ xtool copies that PNG through its `iconPath` configuration.
 - [ADR 0006: Audio session activation off the main thread](docs/adr/0006-audio-session-off-main-thread.md)
 - [ADR 0007: NWC wallet configuration](docs/adr/0007-nwc-wallet-configuration.md)
 - [ADR 0008: Track metadata and artwork from the relay](docs/adr/0008-relay-display-metadata.md)
-- [ADR 0009: Player screen with track info](docs/adr/0009-player-screen-with-track-info.md)
+- [ADR 0010: Player screen without the extra buffer](docs/adr/0010-player-screen-without-extra-buffer.md)
 - [Research: musicindex relay metadata](docs/research/musicindex-relay-metadata.md)
 - [Relay display phase plan](docs/plans/relay-display-phase-plan.md)
 - [ICY sync plan](docs/plans/icy-sync-plan.md) (proposed)

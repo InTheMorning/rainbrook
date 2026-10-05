@@ -1,10 +1,12 @@
+> Archived: superseded by [ADR 0010](../../adr/0010-player-screen-without-extra-buffer.md) on 2026-10-05.
+
 # ADR 0009: Player screen with track info
 
-- Status: accepted. The visual acceptance criteria are open.
+- Status: superseded by [ADR 0010](../../adr/0010-player-screen-without-extra-buffer.md)
 - Date: 2026-10-04
 - Class: situational. Supersede this record when the primary screen changes, or when a setting moves out of the settings sheet.
-- Supersedes: [ADR 0004](../archive/adr/0004-player-screen-and-settings.md)
-- Related: [ADR 0008](0008-relay-display-metadata.md) owns the rules for the track data, the artwork and the relay connection.
+- Supersedes: [ADR 0004](0004-player-screen-and-settings.md)
+- Related: [ADR 0008](../../adr/0008-relay-display-metadata.md) owns the rules for the track data, the artwork and the relay connection.
 
 ## Context
 
@@ -32,7 +34,7 @@ The settings sheet contains:
 - **Track info**: the relay event address. The section also shows the relay status text, if there is one.
 - **Extra buffer**: Off, 2, 3, 5, 10, 15 or 30 seconds. The default is 3 seconds.
 - **Chime while connecting**. The default is on.
-- The Wallet section. [ADR 0007](0007-nwc-wallet-configuration.md) owns its content.
+- The Wallet section. [ADR 0007](../../adr/0007-nwc-wallet-configuration.md) owns its content.
 
 When the extra buffer is not Off, the player does not start until that many seconds of audio are loaded after the current position.
 After a stall, the player pauses and waits for the same buffer again.

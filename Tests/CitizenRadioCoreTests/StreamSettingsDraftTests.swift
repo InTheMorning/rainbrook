@@ -8,14 +8,14 @@ final class StreamSettingsDraftTests: XCTestCase {
     func testUnchangedDraftCannotSave() {
         XCTAssertFalse(
             StreamSettingsDraft(
-                savedURL: saved, chimeEnabled: true, bufferSeconds: 3, dailyLimitSats: 1000, relayText: ""
+                savedURL: saved, chimeEnabled: true, dailyLimitSats: 1000, relayText: ""
             ).canSave
         )
     }
 
     func testEmptyDraftCannotSave() {
         var draft = StreamSettingsDraft(
-            savedURL: saved, chimeEnabled: true, bufferSeconds: 3, dailyLimitSats: 1000, relayText: ""
+            savedURL: saved, chimeEnabled: true, dailyLimitSats: 1000, relayText: ""
         )
         draft.text = "  "
         draft.chimeEnabled = false
@@ -24,7 +24,7 @@ final class StreamSettingsDraftTests: XCTestCase {
 
     func testChangedDraftCanSave() {
         var draft = StreamSettingsDraft(
-            savedURL: "", chimeEnabled: true, bufferSeconds: 3, dailyLimitSats: 1000, relayText: ""
+            savedURL: "", chimeEnabled: true, dailyLimitSats: 1000, relayText: ""
         )
         draft.text = saved
         XCTAssertTrue(draft.canSave)
@@ -32,7 +32,7 @@ final class StreamSettingsDraftTests: XCTestCase {
 
     func testChimeChangeAloneCanSave() {
         var draft = StreamSettingsDraft(
-            savedURL: saved, chimeEnabled: true, bufferSeconds: 3, dailyLimitSats: 1000, relayText: ""
+            savedURL: saved, chimeEnabled: true, dailyLimitSats: 1000, relayText: ""
         )
         draft.chimeEnabled = false
         XCTAssertFalse(draft.urlChanged)
@@ -41,23 +41,16 @@ final class StreamSettingsDraftTests: XCTestCase {
 
     func testChimeChangeWithoutSavedURLCanSave() {
         var draft = StreamSettingsDraft(
-            savedURL: "", chimeEnabled: false, bufferSeconds: 3, dailyLimitSats: 1000, relayText: ""
+            savedURL: "", chimeEnabled: false, dailyLimitSats: 1000, relayText: ""
         )
         draft.chimeEnabled = true
         XCTAssertTrue(draft.canSave)
     }
 
-    func testBufferChangeAloneCanSave() {
-        var draft = StreamSettingsDraft(
-            savedURL: saved, chimeEnabled: true, bufferSeconds: 3, dailyLimitSats: 1000, relayText: ""
-        )
-        draft.bufferSeconds = 10
-        XCTAssertTrue(draft.canSave)
-    }
 
     func testDailyLimitChangeAloneCanSave() {
         var draft = StreamSettingsDraft(
-            savedURL: saved, chimeEnabled: true, bufferSeconds: 3, dailyLimitSats: 1000, relayText: ""
+            savedURL: saved, chimeEnabled: true, dailyLimitSats: 1000, relayText: ""
         )
         draft.dailyLimitSats = 2500
         XCTAssertFalse(draft.urlChanged)
@@ -66,7 +59,7 @@ final class StreamSettingsDraftTests: XCTestCase {
 
     func testRelayTextChangeAloneCanSave() {
         var draft = StreamSettingsDraft(
-            savedURL: saved, chimeEnabled: true, bufferSeconds: 3, dailyLimitSats: 1000, relayText: ""
+            savedURL: saved, chimeEnabled: true, dailyLimitSats: 1000, relayText: ""
         )
         draft.relayText = savedRelay
         XCTAssertFalse(draft.urlChanged)
@@ -75,7 +68,7 @@ final class StreamSettingsDraftTests: XCTestCase {
 
     func testRelayTextChangeToEmptyCanSave() {
         var draft = StreamSettingsDraft(
-            savedURL: saved, chimeEnabled: true, bufferSeconds: 3, dailyLimitSats: 1000, relayText: savedRelay
+            savedURL: saved, chimeEnabled: true, dailyLimitSats: 1000, relayText: savedRelay
         )
         draft.relayText = ""
         XCTAssertFalse(draft.urlChanged)

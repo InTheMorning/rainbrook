@@ -175,7 +175,7 @@
 		"000000000000000000000077" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
-			"path" = "Core/BufferSetting.swift";
+			"path" = "Core/LoadedAudio.swift";
 			"sourceTree" = "<group>";
 		};
 		"0000000000000000000000DB" = {

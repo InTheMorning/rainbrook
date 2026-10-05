@@ -62,10 +62,9 @@ The current package declares an iOS 17 deployment target.
 1. Open CitizenRadio on the iPhone.
 2. Tap **Settings**.
 3. Enter the stream URL in **Stream URL**.
-4. Select an **Extra buffer** value. The default is 3 seconds.
-5. Set **Chime while connecting** on or off.
-6. Tap **Save**.
-7. Tap **Play**.
+4. Set **Chime while connecting** on or off.
+5. Tap **Save**.
+6. Tap **Play**.
 
 If the chime is on, it plays in a loop until the stream starts.
 The expected status is **Playing live**.
@@ -196,9 +195,7 @@ Complete these checks before normal use of the automation.
 | Tap Play with the chime on. | The chime plays in a loop and stops when the stream starts. |
 | Tap Stop while the chime plays. | The chime stops. |
 | Tap Play with the chime off. | No chime plays. |
-| Tap Play with an extra buffer of 10 seconds. | Playback starts about 10 seconds later than with **Off**. |
-| Drive through weak coverage with an extra buffer of 15 seconds. | Fewer stalls occur than with **Off**. |
-| Set the extra buffer to **Off** and tap Play. | Playback starts as soon as AVPlayer is ready. |
+| Tap Play. | Playback starts as soon as AVPlayer is ready, with no added wait. |
 | Configure a relay event in **Track info** and play. | The artwork, the title and the artist change when the listener hears the new track. |
 | Lock the screen or connect the car with a relay event configured. | The lock screen and the car show the track title, the artist and the artwork. |
 | Drive through a dead zone with a relay event configured. | The display is correct within 40 seconds after the audio returns. |

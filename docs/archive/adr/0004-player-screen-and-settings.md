@@ -1,8 +1,8 @@
-> Archived: superseded by [ADR 0009](../../adr/0009-player-screen-with-track-info.md) on 2026-10-04.
+> Archived: superseded by [ADR 0009](0009-player-screen-with-track-info.md) on 2026-10-04.
 
 # ADR 0004: Player screen and settings
 
-- Status: superseded by [ADR 0009](../../adr/0009-player-screen-with-track-info.md)
+- Status: superseded by [ADR 0009](0009-player-screen-with-track-info.md)
 - Date: 2026-10-04
 - Class: situational. Supersede this record when the primary screen changes, or when a setting moves out of the settings sheet.
 - Supersedes: [ADR 0002](0002-player-screen-and-settings.md)

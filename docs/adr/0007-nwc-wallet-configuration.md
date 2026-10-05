@@ -3,7 +3,7 @@
 - Status: accepted. The visual acceptance criteria are open.
 - Date: 2026-10-04
 - Class: situational. Supersede this record when the wallet connection method or its storage changes.
-- Related: [ADR 0009](0009-player-screen-with-track-info.md) puts all configuration in the settings sheet. [ADR 0006](0006-audio-session-off-main-thread.md) keeps blocking calls off the main thread.
+- Related: [ADR 0010](0010-player-screen-without-extra-buffer.md) puts all configuration in the settings sheet. [ADR 0006](0006-audio-session-off-main-thread.md) keeps blocking calls off the main thread.
 
 ## Context
 
@@ -148,7 +148,7 @@ The tests use Alby Hub. It supports NWC with NIP-44 encryption and `pay_keysend`
 - The app asks for camera access. The Info.plist and `Configuration/xtool-info.plist` get `NSCameraUsageDescription`.
 - The privacy manifest must be examined for the Keychain and network use before release.
 - Keychain access with an xtool free signing account is not tested.
-- The settings sheet gets a third section. ADR 0009 permits this, because it puts all configuration in the settings sheet.
+- The settings sheet gets a third section. ADR 0010 permits this, because it puts all configuration in the settings sheet.
 
 ## Invariants
 

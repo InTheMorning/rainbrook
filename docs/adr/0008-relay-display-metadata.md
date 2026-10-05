@@ -53,9 +53,8 @@ The research note compares the two transports for a phone in a moving car.
 
 - `TrackDisplay` in `CitizenRadioCore` decodes the display state: no track, or artist, title and artwork.
   Artwork is a relay image (`sha256` and `mime`), an external `http` or `https` URL, or none.
-- Display delay: the publisher delay agrees with the audio when the extra buffer is Off.
-  So the app applies each streamed display state when the audio has played the buffered time.
-  That time is the buffered audio ahead of the play position when the state arrives (`BufferSetting.bufferedAhead`).
+- Display delay: the app applies each streamed display state when the audio has played the buffered time.
+  That time is the audio that AVPlayer holds ahead of the play position when the state arrives (`LoadedAudio.bufferedAhead`).
   A snapshot read after a connect applies at once.
 - `{"track": null}` gives the default display: the placeholder, the title "CitizenRadio" and the status line.
 
@@ -108,7 +107,7 @@ The research note compares the two transports for a phone in a moving car.
 - **Polling `GET /display`.** It is simple and it recovers from a dead zone at the next poll. But a 5-second poll adds a maximum of 5 seconds of delay, and it sends a request each 5 seconds for the full drive. Polling stays possible as a fallback if SSE fails on a device.
 - **The ICY title as the only source.** It gives no artwork and no separate artist field. It is the fallback.
 - **A disk cache for images.** Relay images are small and change with each track. A memory cache is sufficient for one drive.
-- **No display delay.** With the default buffer of 3 seconds, the artwork would change 3 seconds before the listener hears the track.
+- **No display delay.** The artwork would then change before the listener hears the track, by the time of the audio that AVPlayer holds.
 
 ## Consequences
 
@@ -163,5 +162,5 @@ A person must examine these items on an iPhone. Report each item as open until t
 
 ADR 0004 describes the present player screen until the code changes. So these changes go in the commit of the first task that changes the player screen:
 
-- Done: ADR 0004 is in the archive. [ADR 0009](0009-player-screen-with-track-info.md) restates ADR 0004 with the new artwork, title and artist items, and the **Track info** setting.
+- Done: ADR 0004 is in the archive. [ADR 0009](../archive/adr/0009-player-screen-with-track-info.md) restated ADR 0004 with the new artwork, title and artist items, and the **Track info** setting.
 - Done: the architecture overview, the README and the runbook have the relay setup and the device checks.

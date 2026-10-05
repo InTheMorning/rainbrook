@@ -1,158 +1,91 @@
-# ICY sync: plan
+# ICY sync: phase plan
 
-- Status: proposed, 2026-10-05. This plan does not make rules. It proposes a change to [ADR 0008](../adr/0008-relay-display-metadata.md) §Display data and §Fallback. A new ADR must accept it before work starts.
+- Status: active, 2026-10-05. This plan does not make rules. [ADR 0011](../adr/0011-icy-sync-of-the-relay-display.md) owns them.
 - Source: the broadcast chain repositories `musicindex-live-publisher` and `musicindex-live-relay`. The facts about them are from their source on 2026-10-04.
+- Review: [ICY sync review checklist](../reviews/icy-sync-review-checklist.md).
 
 ## Goal
 
-The relay track shows when the listener hears that track, also with an extra buffer, a slow network or a long Icecast queue.
+The relay track shows when the listener hears that track, with each delay in the chain.
 The ICY title in the audio stream gives the time. The relay display state gives the data: artist, title and artwork.
 
-## The present rule and its problem
+## Non-goals
 
-ADR 0008 applies a streamed display state after `BufferSetting.bufferedAhead`, the loaded audio ahead of the play position when the state arrives (`DisplayTiming.delay`).
-A snapshot applies at once.
-The ICY title shows only when there is no relay track.
+- No change to the relay or to the publisher.
+- No payments. The payment record owns them.
+- No new setting. ICY sync is always on when the stream has ICY.
 
-`bufferedAhead` measures only the audio that AVPlayer holds. These delays are not in it:
+## Assumptions
 
-- the encoder buffer of `butt`,
-- the Icecast queue and its burst on connect,
-- the network path to the phone.
+- `butt` sends `artist + " - " + title` as the ICY `StreamTitle`, and an empty `StreamTitle` when nothing plays. The operator confirmed this on 2026-10-04 with `butt` 1.46.0.
+- AVPlayer gives each `StreamTitle` at its play position. A regular ICY player showed the title in time on 2026-10-04. The visual criteria of ADR 0011 examine this app.
 
-The publisher target of the station has `stream_delay_secs = 0`. So each display state reaches the phone before its audio, by a time that the app cannot measure.
-The artwork can change some seconds before the listener hears the new track. The error changes with each connection.
+## Affected modules
 
-## The fact that solves it
+| Module | Change |
+|---|---|
+| `CitizenRadioCore` | New `IcySync` with tests. |
+| `IcyMetadataReader` | Gives the raw ICY text. Ignores a group with no `StreamTitle`. The ICY timing log goes. |
+| `RadioPlayer` | Publishes the raw ICY text. |
+| `TrackInfoModel` | Uses `IcySync` when the session has ICY. Keeps the timed rule without ICY. |
+| Documents | ADR 0008, the architecture overview and the runbook. |
 
-AVPlayer gives the ICY `StreamTitle` through `AVPlayerItemMetadataOutput` at its play position.
-That time includes every delay in the chain, and the extra buffer of the app.
-It is the only signal that agrees with what this listener hears.
+## Sequence
 
-The relay is adjacent to Icecast. It cannot know the buffer of each listener. So the sync is done in the app, and the relay does not change for it.
+| Task | Wave | Model | Depends on |
+|---|---|---|---|
+| [001: `IcySync`](../tasks/icy-sync-task-001-icy-sync-core.md) | 1 | Sonnet | none |
+| [002: ICY text from the reader](../tasks/icy-sync-task-002-icy-text.md) | 1 | Sonnet | none |
+| [003: Integration and documents](../tasks/icy-sync-task-003-integration.md) | 2 | Opus | 001, 002 |
 
-## The join key
+Tasks 001 and 002 change different files, so they can run at the same time.
 
-One producer, `mixxx-now-playing`, writes both texts for each track:
+## API implications
 
-- The song file for `butt`. Its first line is `artist + " - " + title` (`render_metadata_text` in `mixxx-now-playing/src/render.rs`). `butt` sends that line as the ICY `StreamTitle`.
-- The display state. It holds the same `artist` and `title` strings.
+- `IcySync` is a new public type in `CitizenRadioCore`.
+- `RadioPlayer` publishes `icyText: String?`. Nil means no ICY in this session. Task 003 removes `RadioPlayer.icyTrack`, and `TrackInfoModel` parses the text.
+- `IcyMetadataReader` calls `onText(String)` only for a group with a `StreamTitle` item.
+- No change to the relay client, the artwork loader or the settings.
 
-So the key of a display state is `"\(artist) - \(title)"`. It is equal to the ICY text of its track.
+## Risks
 
-When nothing plays, the song file is empty. `butt` then sends an empty `StreamTitle`. This agrees with `{"track": null}`.
-The operator confirmed both on 2026-10-04 with `butt` 1.46.0.
+| Case | Behavior |
+|---|---|
+| The same track two times in sequence | The key does not change, so the display does not change. |
+| ICY text with a different encoding | NFC and the case rule correct most differences. Else the ICY title shows with no artwork. |
+| A title cut by a server or a player | The prefix rule. |
+| The relay is down | The matched state stays. Without a match, the ICY title shows. |
+| No ICY in the stream | The ADR 0008 timed rule. |
+| A track with no relay state | The ICY title shows with no artwork. |
+| A connection near a track change | The ICY title shows with no artwork until that track ends. |
+| A metadata group with no title | Nothing changes. |
+| `butt` sends no empty title on a pause | The last track stays until the next ICY text. |
 
-## The proposed rule
+## Test strategy
 
-Display states are early, and the ICY title releases them.
+- Task 001: Linux tests of `IcySync` for each rule in ADR 0011. No time and no I/O in the type.
+- Task 002: `scripts/check.sh` builds the reader in Swift 6. The reader logic is too small for a separate core type.
+- Task 003: `scripts/check.sh`, then the ADR 0011 visual criteria on an iPhone.
 
-1. Keep a short list of display states, newest first, with a maximum of 4. Each state from the snapshot or the stream goes into it.
-2. When the ICY text changes to an empty text, show the default display. Do this also when the newest relay state is a track.
-3. When the ICY text changes to a text, find the newest state in the list whose key matches it. Show that state.
-4. If no state matches, show the ICY title with no artwork, as the fallback does now. Keep waiting.
-5. When a new state arrives, add it to the list. Show it at once only if its key matches the ICY text that shows now.
-6. A relay `{"track": null}` does not clear a track while the ICY text still has that track. The listener still hears it. The empty ICY text clears it.
-7. Without ICY in this session, use the present rule of ADR 0008. "ICY in this session" means that the metadata output gave a minimum of one `StreamTitle`, also an empty one, since the item started.
-8. When the first ICY text of the session arrives, cancel the pending timed applies of rule 7. Then select from the list with rule 2 or rule 3.
-9. A metadata group with no `StreamTitle` item is not an ICY text. It changes nothing. Only a `StreamTitle` item with an empty value is an empty ICY text.
-10. Backoff keeps the list and the state that shows. During a relay outage the ICY text continues to name the track, so the matched state stays correct. This changes ADR 0008 §Fallback. At this time, §Fallback gives no relay track during backoff.
-11. The list clears on these events: a `404` or `409` stop, a change of the **Track info** event, and Stop. A new connection after Stop starts with an empty list.
+## Rollback
 
-The extra buffer of the app needs no rule. AVPlayer reports the ICY title after the extra buffer, so the display follows it.
-
-### Matching
-
-- Compare the full ICY text with the key. Do not compare the parsed `IcyTrack`. `IcyTitle.parse` splits at the first " - ", so an artist with " - " in its name does not round-trip.
-- Before the compare, trim both texts, collapse runs of white space to one space, use Unicode NFC, and ignore case.
-- If no key is equal, accept the newest key that starts with the ICY text. Do this only when the ICY text agrees with these two conditions:
-  - It has a minimum of 8 characters.
-  - It has a minimum of one title character after the `" - "` separator. Some players and servers cut a title at an apostrophe or at a length limit. "Pharaoh's Dance" is a station track with an apostrophe: `"Miles Davis - Pharaoh"` matches its key.
-- An ICY text that stops at the separator or before it, for example `"HeyCitizen - "`, does not match by prefix. Such a prefix names only the artist, and it can select the newest track of that artist.
-- Two keys that are equal are one track. The newest state wins.
-
-### What changes in the code
-
-- `IcyMetadataReader` gives the raw text and the parsed `IcyTrack`. `IcyTitle.parse` stays for the fallback lines.
-- `IcyMetadataReader` ignores a group with no `StreamTitle` item (rule 9). At this time, the reader calls `onTrack(nil)` for such a group, and also for an empty title. ICY sync needs the two cases to be different.
-- A new pure type in `CitizenRadioCore`, for example `IcySync`, holds the list and the rules. It takes three inputs: a display state, an ICY text, and "no ICY". It gives the lines to show. Linux tests examine it.
-- `TrackInfoModel` sends the display states and the ICY text to `IcySync`. It schedules no timer while ICY is available.
-- `DisplayTiming` stays, for rule 7.
+Revert the commit of task 003. Then `TrackInfoModel` uses the ADR 0008 timed rule again. Tasks 001 and 002 can stay, because nothing else uses them.
 
 ## Relay facts for the client
 
-- Since 2026-10-04, `/display/events` with no `Last-Event-ID` sends the present state as its first event (relay ADR 0003, amended). With rule 1 this is harmless: the state goes into the list.
-- Keep the snapshot read before each stream. A relay restart sets the display `seq` back to 1. A reconnect with an older, higher `Last-Event-ID` then gets no replay. The snapshot gives the present state.
-- A relay fix found on 2026-10-04 makes sure that such a reconnect still gets each new state. It is in the relay branch `display-seq` and waits for a deploy.
-- A relay restart clears the display state. The publisher sends it again after its next keepalive, within about one keepalive interval.
+- Since 2026-10-04, `/display/events` with no `Last-Event-ID` sends the present state as its first event (relay ADR 0003, amended). The state goes into the list, so this is harmless.
+- Keep the snapshot read before each stream. A relay restart sets the display `seq` back to 1, so a reconnect with an older, higher `Last-Event-ID` gets no replay. The snapshot gives the present state.
+- A relay restart clears the display state. The publisher sends it again after its next keepalive.
 
 ## Payments
 
-Payments are not in this plan. The payment ADR owns them. The same idea applies:
+Payments are not in this plan. The same idea can apply:
 
 - Each live value payload has a `title`. For a V4V track it is the track title. Without a payable track it is "No V4V track playing".
-- The app can keep the payloads in the same way and pay the payload whose track the ICY text names. During a mismatch, the app pays nobody, or it holds the payment.
-- Podcast apps do not do this. They apply each payload when it arrives, and the broadcaster sets one delay for all listeners. The Split Kit has the same model (`broadcastDelay`).
-
-## Risks and edge cases
-
-| Case | Behavior with this plan |
-|---|---|
-| The same track twice in a row | The key does not change, so the display does not change. |
-| ICY text with a different encoding | NFC and the case rule handle most cases. A text that still does not match shows the fallback lines. |
-| A title cut by a server or a player | The prefix rule. |
-| The relay is down | The ICY title shows, as now. |
-| No ICY in the stream | Rule 7, the present timer rule. |
-| A track with no relay state, for example after a relay restart | The ICY title shows until the publisher sends the state again. |
-| A new state arrives before its audio | It waits in the list until ICY names it. |
-| The relay sends `null` before the listener hears the end of the track | Rule 6 keeps the track until the ICY text is empty. |
-| A connection near a track change | The snapshot can hold the next track while the listener hears the track before it. The relay does not send the older state again. So the fallback lines show until that track ends. |
-| A relay outage during a track | Rule 10 keeps the matched state. The next track shows the fallback lines if its state does not arrive. |
-| A metadata group with no title | Rule 9: nothing changes. |
-
-## Acceptance criteria
-
-### Mechanical
-
-Each criterion is a test of `IcySync` in `Tests/CitizenRadioCoreTests/`.
-
-- An ICY text that matches a waiting state shows that state.
-- A state that arrives before its ICY text does not show until the ICY text names it.
-- A state that arrives after its ICY text shows at once.
-- An empty ICY text shows the default display, also with a waiting track state.
-- A relay `null` does not clear a track while the ICY text names that track.
-- The prefix rule matches a cut title of 8 characters or more, and does not match a shorter one.
-- The prefix rule does not match an ICY text that stops at the `" - "` separator or before it.
-- A metadata group with no `StreamTitle` changes nothing. An empty `StreamTitle` shows the default display.
-- The first ICY text cancels the pending timed applies and selects from the list.
-- Backoff keeps the list and the state that shows. A `404` or `409` stop, a change of the event, and Stop clear the list.
-- Case, white space and NFC differences match.
-- The list keeps 4 states at most, and the newest wins.
-- Without ICY, the present timer rule applies.
-
-### Visual
-
-A person must examine these items on an iPhone. Report each item as open until that examination is complete.
-
-- With the extra buffer at 0, 10 and 30 seconds, the artwork changes when the listener hears the new track.
-- A pause in Mixxx clears the display when the listener hears the end of the track, not before.
-- "Pharaoh's Dance" shows its artwork.
-
-## First step: the device timing check
-
-The plan depends on one claim: AVPlayer gives each `StreamTitle` when the listener hears that position, not when the data downloads.
-No test on the device examined this claim. So this check comes before the ADR:
-
-1. Record the time of each ICY text that `IcyMetadataReader` receives, with no title text in the log.
-2. Set the extra buffer to 30 seconds, and play the station.
-3. Write down the time when you hear each track change.
-4. Compare the two times for a minimum of three track changes.
-
-If the ICY time agrees with the time that you hear, with a difference of 2 seconds or less, the ADR can accept this plan.
-If the ICY time agrees with the download time, the ICY text is early by the buffer, and this plan does not work.
+- The app can keep the payloads in a list and pay the payload whose track the ICY text names.
+- Podcast apps apply each payload when it arrives, so they pay early by the delay of each listener. CitizenRadio cannot correct that.
 
 ## Open questions
 
-- Does the station stream on the device give the ICY text with each change, and an empty text on a pause? The relay display plan marks the ICY read as not tested on the device.
-- Is a list of 4 states enough when the extra buffer is 30 seconds and tracks are short?
-- Should the publisher add the exact song line to the display state, as `stream_title`? It would remove the key rule. It needs a change to publisher ADR 0008 and relay ADR 0003. Do it only if the key fails in practice.
+- Does the station stream on the device give an empty ICY text on a pause?
+- Should the publisher add the exact song line to the display state, as `stream_title`? Do this only if the key fails in practice.

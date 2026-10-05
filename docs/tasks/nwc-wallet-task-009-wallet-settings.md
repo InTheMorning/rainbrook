@@ -55,6 +55,7 @@ Texts, exactly:
 | `.invalidResponse` | "CitizenRadio cannot read the response of the wallet." |
 | `.timeout` | "The wallet did not answer in 10 seconds." |
 | any other error | "CitizenRadio cannot connect to the relay." |
+| `storageFailure` (a Keychain error on read, save or remove) | "CitizenRadio cannot access the wallet connection in the Keychain." |
 
 App model (`WalletSettingsModel.swift`):
 

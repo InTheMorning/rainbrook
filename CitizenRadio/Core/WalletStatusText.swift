@@ -20,6 +20,9 @@ public enum WalletStatusText {
         return "This wallet does not support keysend. Streaming payments need keysend."
     }
 
+    /// The text for a Keychain error when the app reads, saves or removes the connection.
+    public static let storageFailure = "CitizenRadio cannot access the wallet connection in the Keychain."
+
     /// The text for an error during paste or during the connection test.
     public static func failure(_ error: any Error) -> String {
         if let parseError = error as? NWCConnection.ParseError {

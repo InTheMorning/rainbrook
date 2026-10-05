@@ -43,9 +43,6 @@ struct WalletSettingsView: View {
         } footer: {
             Text("The wallet connection is saved at once. Save applies the daily limit.")
         }
-        .sheet(isPresented: $isShowingScanner) {
-            scannerSheet
-        }
     }
 
     @ViewBuilder
@@ -59,6 +56,11 @@ struct WalletSettingsView: View {
                 Task { await startScan() }
             }
             .accessibilityIdentifier("walletScan")
+            // A modifier on a Form Section applies to each row. Attach the sheet to this
+            // one row, or each row presents a sheet and SwiftUI closes them at once.
+            .sheet(isPresented: $isShowingScanner) {
+                scannerSheet
+            }
         }
         if let message {
             Text(message)

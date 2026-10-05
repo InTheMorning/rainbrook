@@ -33,6 +33,7 @@ Use this checklist for the diff of each task. Give one result: pass, or fail wit
 - [ ] `NWCClient` depends only on `SecretStore`, `RelayConnection`, `RelayConnecting` and core types.
 - [ ] New iOS files start with `#if os(iOS)` and import `CitizenRadioCore` inside `#if SWIFT_PACKAGE`.
 - [ ] Only task 011 changes `CitizenRadio.xcodeproj/project.pbxproj`.
+- [ ] No `.sheet`, `.alert`, `.confirmationDialog` or `.fullScreenCover` is attached to a `Section` in a `Form` or `List`. SwiftUI applies a `Section` modifier to each row, so the presentation closes at once. Attach it to one row or to a view outside the form. This defect closed the QR scanner on 2026-10-04.
 
 ## 5. Protocol correctness
 

@@ -91,6 +91,13 @@ final class WalletStatusTextTests: XCTestCase {
 
     // MARK: - failure, any other error
 
+    func testStorageFailureNamesTheKeychain() {
+        XCTAssertEqual(
+            WalletStatusText.storageFailure,
+            "CitizenRadio cannot access the wallet connection in the Keychain."
+        )
+    }
+
     func testFailureWithAnyOtherErrorShowsAGenericRelayMessage() {
         XCTAssertEqual(WalletStatusText.failure(OtherError()), "CitizenRadio cannot connect to the relay.")
     }

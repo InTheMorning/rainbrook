@@ -40,7 +40,7 @@ final class WalletSettingsModel: ObservableObject {
             }
             state = .connected(WalletSummary(connection), status: nil, warning: nil, isTesting: false)
         } catch {
-            state = .notConnected(message: WalletStatusText.failure(error))
+            state = .notConnected(message: WalletStatusText.storageFailure)
         }
     }
 
@@ -48,12 +48,18 @@ final class WalletSettingsModel: ObservableObject {
     /// A missing or empty text leaves the state as it is.
     func connect(text: String?) async {
         guard let text, !text.isEmpty else { return }
+        let connection: NWCConnection
         do {
-            let connection = try NWCConnection(uri: text)
+            connection = try NWCConnection(uri: text)
+        } catch {
+            state = .notConnected(message: WalletStatusText.failure(error))
+            return
+        }
+        do {
             try await store.save(connection)
             state = .connected(WalletSummary(connection), status: nil, warning: nil, isTesting: false)
         } catch {
-            state = .notConnected(message: WalletStatusText.failure(error))
+            state = .notConnected(message: WalletStatusText.storageFailure)
         }
     }
 
@@ -85,7 +91,7 @@ final class WalletSettingsModel: ObservableObject {
             state = .notConnected(message: nil)
         } catch {
             if case .connected(let summary, _, let warning, _) = state {
-                state = .connected(summary, status: WalletStatusText.failure(error), warning: warning, isTesting: false)
+                state = .connected(summary, status: WalletStatusText.storageFailure, warning: warning, isTesting: false)
             }
         }
     }

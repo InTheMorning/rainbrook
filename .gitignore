@@ -19,3 +19,4 @@ xcuserdata/
 # macOS metadata
 .DS_Store
 .bsp/
+.idea

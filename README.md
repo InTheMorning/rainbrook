@@ -94,4 +94,5 @@ xtool copies that PNG through its `iconPath` configuration.
 - [ADR 0009: Player screen with track info](docs/adr/0009-player-screen-with-track-info.md)
 - [Research: musicindex relay metadata](docs/research/musicindex-relay-metadata.md)
 - [Relay display phase plan](docs/plans/relay-display-phase-plan.md)
+- [ICY sync plan](docs/plans/icy-sync-plan.md) (proposed)
 - [NWC wallet phase plan](docs/plans/nwc-wallet-phase-plan.md)

@@ -1,0 +1,216 @@
+import Foundation
+import XCTest
+@testable import CitizenRadioCore
+
+final class TrackDisplayTests: XCTestCase {
+    func testDecodesLiveRelayExample() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Miles Davis",
+                "title": "Pharaoh's Dance",
+                "artwork": {
+                    "sha256": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+                    "mime": "image/jpeg"
+                }
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNotNil(track)
+        XCTAssertEqual(track?.artist, "Miles Davis")
+        XCTAssertEqual(track?.title, "Pharaoh's Dance")
+
+        if case .relay(let sha256, let mime) = track?.artwork {
+            XCTAssertEqual(sha256, "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2")
+            XCTAssertEqual(mime, "image/jpeg")
+        } else {
+            XCTFail("Expected relay artwork")
+        }
+    }
+
+    func testDecodesURLArtwork() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "artwork": {
+                    "url": "https://example.com/artwork.jpg"
+                }
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNotNil(track)
+        if case .url(let url) = track?.artwork {
+            XCTAssertEqual(url, URL(string: "https://example.com/artwork.jpg")!)
+        } else {
+            XCTFail("Expected URL artwork")
+        }
+    }
+
+    func testDecodesNullArtwork() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "artwork": null
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNotNil(track)
+        XCTAssertNil(track?.artwork)
+    }
+
+    func testDecodesTrackNull() throws {
+        let json = """
+        {
+            "track": null
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+        XCTAssertNil(track)
+    }
+
+    func testThrowsForDataURL() {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "artwork": {
+                    "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                }
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        XCTAssertThrowsError(try TrackDisplay.decode(data)) { error in
+            XCTAssertEqual(error as? TrackDisplay.DecodeError, .invalid)
+        }
+    }
+
+    func testThrowsForUppercaseSha256() {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "artwork": {
+                    "sha256": "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6",
+                    "mime": "image/jpeg"
+                }
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        XCTAssertThrowsError(try TrackDisplay.decode(data)) { error in
+            XCTAssertEqual(error as? TrackDisplay.DecodeError, .invalid)
+        }
+    }
+
+    func testThrowsForShortSha256() {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "artwork": {
+                    "sha256": "a1b2c3d4",
+                    "mime": "image/jpeg"
+                }
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        XCTAssertThrowsError(try TrackDisplay.decode(data)) { error in
+            XCTAssertEqual(error as? TrackDisplay.DecodeError, .invalid)
+        }
+    }
+
+    func testThrowsForInvalidMime() {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "artwork": {
+                    "sha256": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6",
+                    "mime": "image/gif"
+                }
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        XCTAssertThrowsError(try TrackDisplay.decode(data)) { error in
+            XCTAssertEqual(error as? TrackDisplay.DecodeError, .invalid)
+        }
+    }
+
+    func testThrowsForInvalidJSON() {
+        let json = "[]"
+        let data = json.data(using: .utf8)!
+        XCTAssertThrowsError(try TrackDisplay.decode(data)) { error in
+            XCTAssertEqual(error as? TrackDisplay.DecodeError, .invalid)
+        }
+    }
+
+    func testMissingArtistDefaultsToEmpty() throws {
+        let json = """
+        {
+            "track": {
+                "title": "Title"
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertEqual(track?.artist, "")
+    }
+
+    func testMissingTitleDefaultsToEmpty() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist"
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertEqual(track?.title, "")
+    }
+
+    func testMissingArtworkDefaultsToNil() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title"
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNil(track?.artwork)
+    }
+
+    func testMalformedJSONThrowsInvalid() {
+        XCTAssertThrowsError(try TrackDisplay.decode(Data("{not json".utf8))) { error in
+            XCTAssertEqual(error as? TrackDisplay.DecodeError, .invalid)
+        }
+    }
+}

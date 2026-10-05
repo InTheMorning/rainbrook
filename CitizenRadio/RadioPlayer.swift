@@ -2,7 +2,6 @@
 import AVFoundation
 import Combine
 import MediaPlayer
-import os
 import UIKit
 #if SWIFT_PACKAGE
 import CitizenRadioCore
@@ -21,6 +20,8 @@ final class RadioPlayer: ObservableObject {
         didSet { updateChime() }
     }
     @Published private(set) var icyTrack: IcyTrack?
+    /// The raw ICY text from the stream. Nil means no ICY text in this session.
+    @Published private(set) var icyText: String?
 
     private let audioSession = AVAudioSession.sharedInstance()
     private var player: AVPlayer?
@@ -167,13 +168,11 @@ final class RadioPlayer: ObservableObject {
         newPlayer.automaticallyWaitsToMinimizeStalling = true
         player = newPlayer
 
-        let reader = IcyMetadataReader { [weak self] track in
+        let reader = IcyMetadataReader { [weak self] text in
             Task { @MainActor [weak self] in
                 guard let self, self.sessionID == expectedID else { return }
-                let playTime = self.player?.currentItem?.currentTime().seconds ?? .nan
-                let ahead = self.bufferedAheadSeconds()
-                IcyMetadataReader.timingLog.notice("ICY applied: play position \(playTime, format: .fixed(precision: 1)) s, buffered ahead \(ahead, format: .fixed(precision: 1)) s")
-                self.icyTrack = track
+                self.icyText = text
+                self.icyTrack = IcyTitle.parse(text)
             }
         }
         reader.attach(to: item)
@@ -328,6 +327,7 @@ final class RadioPlayer: ObservableObject {
         activeURL = nil
         icyReader = nil
         icyTrack = nil
+        icyText = nil
     }
 
     private func fail(_ message: String) {

@@ -85,7 +85,13 @@ The deciding facts:
 
 In a dead zone, the audio also stops when its buffer is empty. After a reconnect, a snapshot read gives the correct track at once, with each transport.
 
-## Open points outside CitizenRadio
+## Live check on 2026-10-05
 
-- A relay deployment with a reserved event for the station.
-- A publisher with the display path enabled for that event.
+The stream producer reserved an event: `https://api.musicindex.org/v1/liveitems/DFnUwDM1mzcljaF4pI9Q6w`.
+
+- `GET …/display` gave `200` with artist "Miles Davis", title "Pharaoh's Dance" and a relay image (`sha256` and `image/jpeg`).
+- `GET …/display/events` sent that state as `event: display`, `id: 1`.
+- `GET …/artwork/<sha256>` gave a JPEG of 64,331 bytes, 500 by 422 pixels. Its SHA-256 agreed with the path. The headers had `Cache-Control: public, max-age=31536000, immutable` and `nosniff`.
+- The server is nginx 1.30.4 with HTTP/1.1 only. Two SSE streams need two connections.
+- `GET https://api.musicindex.org/event?event_id=…` gave `404`. That URI is a Socket.IO address, not an HTTP route.
+- Between V4V tracks, `remoteValue` held a placeholder block: title "No V4V track playing", one destination of type `lnaddress` with the address `no-v4v-track@example.invalid`. A payment client must not pay this block.

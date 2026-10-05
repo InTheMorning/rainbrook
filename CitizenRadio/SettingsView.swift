@@ -10,6 +10,7 @@ struct SettingsView: View {
     @Binding var savedURL: String
     @State private var draft: StreamSettingsDraft
     @State private var error: String?
+    @State private var relayError: String?
     @StateObject private var wallet = WalletSettingsModel()
     @Environment(\.dismiss) private var dismiss
 
@@ -20,7 +21,8 @@ struct SettingsView: View {
             savedURL: savedURL.wrappedValue,
             chimeEnabled: ChimeSetting().isEnabled,
             bufferSeconds: BufferSetting().seconds,
-            dailyLimitSats: SpendingLimitStore().limit.dailySats
+            dailyLimitSats: SpendingLimitStore().limit.dailySats,
+            relayText: RelayEventStore().savedText
         ))
     }
 
@@ -45,6 +47,22 @@ struct SettingsView: View {
                     Text("Stream URL")
                 } footer: {
                     Text("Enter a direct MP3 or AAC stream URL. Use HTTPS when available.")
+                }
+
+                Section {
+                    TextField("https://api.musicindex.org/v1/liveitems/…", text: $draft.relayText)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier("trackInfoURL")
+                    if let relayError {
+                        Text(relayError)
+                            .foregroundStyle(.red)
+                    }
+                } header: {
+                    Text("Track info")
+                } footer: {
+                    Text("Paste the relay event address from the stream producer. Leave it empty to use the stream title only.")
                 }
 
                 Section {
@@ -86,6 +104,16 @@ struct SettingsView: View {
     }
 
     private func save() {
+        let trimmedRelayText = draft.relayText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedRelayText.isEmpty {
+            do {
+                _ = try RelayEvent(uri: trimmedRelayText)
+            } catch {
+                relayError = error.localizedDescription
+                return
+            }
+        }
+        relayError = nil
         do {
             if draft.urlChanged {
                 let address = try StreamStore().save(draft.text)
@@ -97,6 +125,7 @@ struct SettingsView: View {
             ChimeSetting().isEnabled = draft.chimeEnabled
             BufferSetting().seconds = draft.bufferSeconds
             SpendingLimitStore().setDailySats(draft.dailyLimitSats)
+            try RelayEventStore().save(draft.relayText)
             dismiss()
         } catch {
             self.error = error.localizedDescription

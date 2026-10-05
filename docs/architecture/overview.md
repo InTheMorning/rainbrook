@@ -23,7 +23,7 @@ SettingsView -> WalletSettingsModel -> WalletStore -> KeychainSecretStore
 WalletSettingsModel -> NWCClient -> URLSessionRelayConnection -> relay
 
 relay /display/events -> EventStreamClient -> TrackInfoModel -> PlayerView and Now Playing
-AVPlayer ICY metadata -> IcyMetadataReader -> RadioPlayer.icyTrack -> TrackInfoModel
+AVPlayer ICY metadata -> IcyMetadataReader -> RadioPlayer.icyText -> IcySync in TrackInfoModel
 ```
 
 Shortcuts owns the Bluetooth trigger.
@@ -75,6 +75,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `IcyTitle` | Parses the Icecast StreamTitle text into an artist and a title. |
 | `DisplayTiming` | Computes the wait before the app applies a streamed display state. |
 | `TrackLines` | Selects the title, the artist and the artwork to display, with the relay track as the priority. |
+| `IcySync` | Keeps the last display states, and selects the relay track that the ICY text names (ADR 0011). |
 | `ArtworkPolicy` | Accepts or rejects artwork data, and gives its cache key. |
 | `LRUCache` | Holds a fixed number of entries, and removes the oldest entry first. |
 | `RelayEventStore` | Reads and writes the relay event address in UserDefaults. |
@@ -86,7 +87,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `IcyMetadataReader` | Reads the Icecast stream title from the playing item, off the main thread. |
 | `TrackInfoModel` | Runs the relay client while playback is connecting or playing, and selects the track and the artwork for the player screen and Now Playing. |
 
-The Xcode target compiles all forty-eight Swift source files into the app.
+The Xcode target compiles all forty-nine Swift source files into the app.
 The Swift package exposes the `CitizenRadio` app library and an internal `CitizenRadioCore` target.
 The app target depends on the core target.
 Its four UI and playback files use an iOS compilation condition so host tests do not need Apple frameworks.

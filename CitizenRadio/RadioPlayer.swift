@@ -19,7 +19,6 @@ final class RadioPlayer: ObservableObject {
     @Published private(set) var state: PlaybackState = .stopped {
         didSet { updateChime() }
     }
-    @Published private(set) var icyTrack: IcyTrack?
     /// The raw ICY text from the stream. Nil means no ICY text in this session.
     @Published private(set) var icyText: String?
 
@@ -172,7 +171,6 @@ final class RadioPlayer: ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self, self.sessionID == expectedID else { return }
                 self.icyText = text
-                self.icyTrack = IcyTitle.parse(text)
             }
         }
         reader.attach(to: item)
@@ -326,7 +324,6 @@ final class RadioPlayer: ObservableObject {
         player = nil
         activeURL = nil
         icyReader = nil
-        icyTrack = nil
         icyText = nil
     }
 

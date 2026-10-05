@@ -197,6 +197,9 @@ Complete these checks before normal use of the automation.
 | Tap Play with the chime off. | No chime plays. |
 | Tap Play. | Playback starts as soon as AVPlayer is ready, with no added wait. |
 | Configure a relay event in **Track info** and play. | The artwork, the title and the artist change when the listener hears the new track. |
+| Pause Mixxx during playback with a relay event configured. | The display clears when the listener hears the end of the track, not before. |
+| Play "Pharaoh's Dance" with a relay event configured. | The player screen shows its artwork. |
+| Play with an empty **Track info** field, and change the track in Mixxx. | The stream title changes when the listener hears the new track. |
 | Lock the screen or connect the car with a relay event configured. | The lock screen and the car show the track title, the artist and the artwork. |
 | Drive through a dead zone with a relay event configured. | The display is correct within 40 seconds after the audio returns. |
 | Play with an empty **Track info** field. | The title and the artist come from the stream title, and the artwork area shows the placeholder. |

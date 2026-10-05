@@ -1,6 +1,6 @@
 # ICY sync: phase plan
 
-- Status: active, 2026-10-05. This plan does not make rules. [ADR 0011](../adr/0011-icy-sync-of-the-relay-display.md) owns them.
+- Status: implemented, 2026-10-05. The visual checks are open. This plan does not make rules. [ADR 0011](../adr/0011-icy-sync-of-the-relay-display.md) owns them.
 - Source: the broadcast chain repositories `musicindex-live-publisher` and `musicindex-live-relay`. The facts about them are from their source on 2026-10-04.
 - Review: [ICY sync review checklist](../reviews/icy-sync-review-checklist.md).
 

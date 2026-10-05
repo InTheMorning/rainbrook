@@ -61,7 +61,7 @@ The Xcode build includes the named **Play CitizenRadio** and **Stop CitizenRadio
 - Playback can continue after a call if iOS permits it and the output device is unchanged.
 - A connection or buffering timeout of 20 seconds stops playback with an error.
 - The settings sheet has a Wallet section to connect, test and disconnect a Nostr Wallet Connect wallet, with a daily sats limit.
-- The settings sheet has a Track info field for the relay event address. The player screen and Now Playing show the relay track and its artwork, or the stream title when there is no relay track.
+- The settings sheet has a Track info field for the relay event address. The player screen and Now Playing show the relay track and its artwork when the stream title names that track. Else they show the stream title.
 
 Icecast supplies the stream transport. Its audio codec must also work with AVPlayer.
 This version targets direct MP3 and AAC streams.

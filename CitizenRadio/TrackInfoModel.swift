@@ -8,9 +8,9 @@ import CitizenRadioCore
 
 /// Connects the relay display, the ICY title and the artwork to the player screen and Now Playing.
 ///
-/// ADR 0008 owns the data rules. This model runs on the main actor and does no
-/// blocking work. `EventStreamClient`, `ArtworkLoader` and the URLSession types
-/// do the network, stream and image work.
+/// ADR 0008 owns the data rules. ADR 0011 owns the rules for a session with ICY.
+/// This model runs on the main actor and does no blocking work. `EventStreamClient`,
+/// `ArtworkLoader` and the URLSession types do the network, stream and image work.
 @MainActor
 final class TrackInfoModel: ObservableObject {
     @Published private(set) var lines = TrackLines.select(relay: nil, icy: nil)
@@ -33,7 +33,8 @@ final class TrackInfoModel: ObservableObject {
     private var event: RelayEvent?
     private var playbackActive = false
     private var relayTrack: TrackDisplay?
-    private var icyTrack: IcyTrack?
+    /// ADR 0011: the display states and the ICY text of this playback session.
+    private var sync = IcySync()
     private var client: EventStreamClient?
     private var updatesTask: Task<Void, Never>?
     private var pathTask: Task<Void, Never>?
@@ -63,9 +64,9 @@ final class TrackInfoModel: ObservableObject {
                 self?.playbackChanged(state)
             }
             .store(in: &subscriptions)
-        player.$icyTrack
-            .sink { [weak self] track in
-                self?.icyChanged(track)
+        player.$icyText
+            .sink { [weak self] text in
+                self?.icyTextChanged(text)
             }
             .store(in: &subscriptions)
     }
@@ -89,6 +90,7 @@ final class TrackInfoModel: ObservableObject {
         event = newEvent
         stopRelay()
         relayStatus = nil
+        sync.clearStates()
         setRelayTrack(nil)
         if playbackActive {
             startRelay()
@@ -103,6 +105,8 @@ final class TrackInfoModel: ObservableObject {
             startRelay()
         } else {
             stopRelay()
+            // ADR 0011 §The session: Stop starts a new session with no ICY.
+            sync = IcySync()
             setRelayTrack(nil)
         }
     }
@@ -167,8 +171,14 @@ final class TrackInfoModel: ObservableObject {
             } catch {
                 return
             }
-            cancelPendingApplies()
-            setRelayTrack(track)
+            sync.receive(track)
+            if sync.hasIcy {
+                // ADR 0011: the ICY text releases the state. No timed apply.
+                updateLines()
+            } else {
+                cancelPendingApplies()
+                setRelayTrack(track)
+            }
         case .event(let streamed):
             let track: TrackDisplay?
             do {
@@ -176,8 +186,14 @@ final class TrackInfoModel: ObservableObject {
             } catch {
                 return
             }
-            let delay = DisplayTiming.delay(bufferedAhead: player.bufferedAheadSeconds())
-            schedule(track, after: delay)
+            sync.receive(track)
+            if sync.hasIcy {
+                // ADR 0011: the ICY text releases the state. No timed apply.
+                updateLines()
+            } else {
+                let delay = DisplayTiming.delay(bufferedAhead: player.bufferedAheadSeconds())
+                schedule(track, after: delay)
+            }
         case .status(let status):
             relayStatus = status
             switch status {
@@ -185,9 +201,12 @@ final class TrackInfoModel: ObservableObject {
                 pathTask?.cancel()
                 pathTask = nil
                 cancelPendingApplies()
+                sync.clearStates()
                 setRelayTrack(nil)
             case .waiting:
-                // ADR 0008 §Fallback: backoff gives no relay track, so the ICY title shows.
+                // ADR 0011 §The session: with ICY, backoff keeps the list and the selection.
+                guard !sync.hasIcy else { break }
+                // ADR 0008 §Fallback: without ICY, backoff gives no relay track.
                 // The next snapshot gives the relay track again.
                 cancelPendingApplies()
                 setRelayTrack(nil)
@@ -239,13 +258,20 @@ final class TrackInfoModel: ObservableObject {
         updateLines()
     }
 
-    private func icyChanged(_ track: IcyTrack?) {
-        icyTrack = track
+    /// Gives an ICY text to the sync. A nil text changes nothing, because Stop makes a new sync.
+    private func icyTextChanged(_ text: String?) {
+        guard let text else { return }
+        let firstIcyText = !sync.hasIcy
+        sync.receiveIcyText(text)
+        if firstIcyText {
+            // ADR 0011 §The session: the first ICY text cancels the pending timed applies.
+            cancelPendingApplies()
+        }
         updateLines()
     }
 
     private func updateLines() {
-        let newLines = TrackLines.select(relay: relayTrack, icy: icyTrack)
+        let newLines = sync.hasIcy ? sync.lines : TrackLines.select(relay: relayTrack, icy: nil)
         guard newLines != lines else { return }
         let artworkChanged = newLines.artwork != lines.artwork
         lines = newLines

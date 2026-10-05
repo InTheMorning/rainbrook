@@ -56,6 +56,7 @@ The research note compares the two transports for a phone in a moving car.
 - Display delay: the app applies each streamed display state when the audio has played the buffered time.
   That time is the audio that AVPlayer holds ahead of the play position when the state arrives (`LoadedAudio.bufferedAhead`).
   A snapshot read after a connect applies at once.
+  With ICY in the session, [ADR 0011](0011-icy-sync-of-the-relay-display.md) replaces this rule.
 - `{"track": null}` gives the default display: the placeholder, the title "CitizenRadio" and the status line.
 
 ### Artwork
@@ -86,6 +87,7 @@ The research note compares the two transports for a phone in a moving car.
   - The **Track info** field is empty.
   - The relay display is `{"track": null}`.
   - The relay client is in backoff or stopped.
+    With ICY in the session, backoff keeps the relay track (ADR 0011).
 - A relay track always has priority, because it has artwork.
 
 ### Module boundaries

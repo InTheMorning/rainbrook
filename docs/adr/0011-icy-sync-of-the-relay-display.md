@@ -93,8 +93,8 @@ These rules apply while this decision is current.
 
 These changes go in the commit of the task that connects `IcySync` to `TrackInfoModel`:
 
-- ADR 0008 §Display data and §Fallback name this record for a session with ICY.
-- The architecture overview and the runbook describe the ICY sync.
+- Done: ADR 0008 §Display data and §Fallback name this record for a session with ICY.
+- Done: the architecture overview and the runbook describe the ICY sync.
 
 ## Acceptance criteria
 

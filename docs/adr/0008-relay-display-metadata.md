@@ -5,7 +5,7 @@
 - Class: situational. Supersede this record when the relay display path changes, or when the app gets track data from a different source.
 - Research: [musicindex relay metadata](../research/musicindex-relay-metadata.md)
 - Related:
-  - [ADR 0004](0004-player-screen-and-settings.md): this record changes its player screen items. See §Changes at acceptance.
+  - [ADR 0004](../archive/adr/0004-player-screen-and-settings.md): this record changes its player screen items. See §Changes at implementation.
   - [ADR 0006](0006-audio-session-off-main-thread.md): blocking calls stay off the main thread.
   - [ADR 0007](0007-nwc-wallet-configuration.md): the payments that use the live value come after this record.
 
@@ -163,5 +163,5 @@ A person must examine these items on an iPhone. Report each item as open until t
 
 ADR 0004 describes the present player screen until the code changes. So these changes go in the commit of the first task that changes the player screen:
 
-- ADR 0004 moves to the archive. A new player screen record restates ADR 0004 with the new artwork, title and artist items, and the **Track info** setting.
+- Done: ADR 0004 is in the archive. [ADR 0009](0009-player-screen-with-track-info.md) restates ADR 0004 with the new artwork, title and artist items, and the **Track info** setting.
 - The architecture overview, the README and the runbook get the relay setup and the device checks.

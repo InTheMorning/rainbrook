@@ -8,15 +8,17 @@ import CitizenRadioCore
 struct SettingsView: View {
     @ObservedObject var player: RadioPlayer
     @Binding var savedURL: String
+    let relayStatus: EventStreamStatus?
     @State private var draft: StreamSettingsDraft
     @State private var error: String?
     @State private var relayError: String?
     @StateObject private var wallet = WalletSettingsModel()
     @Environment(\.dismiss) private var dismiss
 
-    init(player: RadioPlayer, savedURL: Binding<String>) {
+    init(player: RadioPlayer, savedURL: Binding<String>, relayStatus: EventStreamStatus?) {
         self.player = player
         _savedURL = savedURL
+        self.relayStatus = relayStatus
         _draft = State(initialValue: StreamSettingsDraft(
             savedURL: savedURL.wrappedValue,
             chimeEnabled: ChimeSetting().isEnabled,
@@ -58,6 +60,11 @@ struct SettingsView: View {
                     if let relayError {
                         Text(relayError)
                             .foregroundStyle(.red)
+                    }
+                    if let relayMessage = RelayStatusText.message(for: relayStatus) {
+                        Text(relayMessage)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("trackInfoStatus")
                     }
                 } header: {
                     Text("Track info")

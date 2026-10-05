@@ -3,6 +3,7 @@ import AVFoundation
 import Combine
 import MediaPlayer
 import os
+import UIKit
 #if SWIFT_PACKAGE
 import CitizenRadioCore
 #endif
@@ -45,6 +46,9 @@ final class RadioPlayer: ObservableObject {
     // Audio session activation can block, so it never runs on the main thread.
     private let sessionQueue = DispatchQueue(label: "org.citizenradio.CitizenRadio.audio-session")
     private var sessionActive = false
+    private var nowPlayingTitle = TrackLines.defaultTitle
+    private var nowPlayingArtist = TrackLines.defaultNowPlayingArtist
+    private var nowPlayingImage: UIImage?
 
     private init() {
         updateOutput()
@@ -90,6 +94,29 @@ final class RadioPlayer: ObservableObject {
         state = .stopped
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         deactivateSession()
+    }
+
+    /// Gives the seconds of loaded audio after the play position, or 0 without an item.
+    func bufferedAheadSeconds() -> Double {
+        guard let item = player?.currentItem else { return 0 }
+        let ranges = item.loadedTimeRanges.map { value -> ClosedRange<Double> in
+            let range = value.timeRangeValue
+            let start = range.start.seconds
+            return start...(start + range.duration.seconds)
+        }
+        return BufferSetting.bufferedAhead(currentTime: item.currentTime().seconds, loadedRanges: ranges)
+    }
+
+    /// Stores the track for Now Playing. ADR 0008 §Player screen and Now Playing.
+    ///
+    /// Now Playing changes only while playback is active. `stop()` clears Now Playing,
+    /// and a track change after that must not show it again.
+    func setNowPlayingTrack(title: String, artist: String, image: UIImage?) {
+        nowPlayingTitle = title
+        nowPlayingArtist = artist
+        nowPlayingImage = image
+        guard state.canStop else { return }
+        updateNowPlaying()
     }
 
     private func play() throws {
@@ -401,12 +428,26 @@ final class RadioPlayer: ObservableObject {
     }
 
     private func updateNowPlaying() {
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = [
-            MPMediaItemPropertyTitle: "CitizenRadio",
-            MPMediaItemPropertyArtist: "Live radio",
+        var info: [String: Any] = [
+            MPMediaItemPropertyTitle: nowPlayingTitle,
+            MPMediaItemPropertyArtist: nowPlayingArtist,
             MPNowPlayingInfoPropertyIsLiveStream: true,
             MPNowPlayingInfoPropertyPlaybackRate: state == .playing ? 1.0 : 0.0
         ]
+        if let nowPlayingImage {
+            info[MPMediaItemPropertyArtwork] = Self.makeArtwork(nowPlayingImage)
+        }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
+    /// Makes the Now Playing artwork.
+    ///
+    /// MediaPlayer calls the request handler on a thread that is not the main thread.
+    /// A closure that is made in a `@MainActor` context is main-actor isolated in Swift 6,
+    /// and that call then stops the app with a runtime check. So this function is
+    /// `nonisolated`, and the handler gives only the image that it captured.
+    private nonisolated static func makeArtwork(_ image: UIImage) -> MPMediaItemArtwork {
+        MPMediaItemArtwork(boundsSize: image.size) { _ in image }
     }
 
     private func installRemoteCommands() {

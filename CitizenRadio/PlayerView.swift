@@ -8,9 +8,15 @@ import CitizenRadioCore
 @MainActor
 struct PlayerView: View {
     @ObservedObject var player: RadioPlayer
+    @StateObject private var trackInfo: TrackInfoModel
     @State private var savedURL = StreamStore().savedURL
     @State private var showingSettings = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    init(player: RadioPlayer) {
+        self.player = player
+        _trackInfo = StateObject(wrappedValue: TrackInfoModel(player: player))
+    }
 
     private var model: PlayerScreenModel {
         PlayerScreenModel(state: player.state, hasSavedStream: !savedURL.isEmpty)
@@ -21,12 +27,12 @@ struct PlayerView: View {
             Group {
                 if verticalSizeClass == .compact {
                     HStack(spacing: 32) {
-                        Artwork()
+                        Artwork(image: trackInfo.image)
                         controls
                     }
                 } else {
                     VStack(spacing: 32) {
-                        Artwork()
+                        Artwork(image: trackInfo.image)
                         controls
                     }
                 }
@@ -45,8 +51,8 @@ struct PlayerView: View {
                     .accessibilityIdentifier("settingsButton")
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView(player: player, savedURL: $savedURL)
+            .sheet(isPresented: $showingSettings, onDismiss: { trackInfo.reloadSettings() }) {
+                SettingsView(player: player, savedURL: $savedURL, relayStatus: trackInfo.relayStatus)
             }
         }
     }
@@ -54,8 +60,15 @@ struct PlayerView: View {
     private var controls: some View {
         VStack(spacing: 24) {
             VStack(spacing: 6) {
-                Text("CitizenRadio")
+                Text(trackInfo.lines.title)
                     .font(.title2.bold())
+                    .multilineTextAlignment(.center)
+                if let artist = trackInfo.lines.artist {
+                    Text(artist)
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
                 Text(model.status)
                     .font(.body)
                     .foregroundStyle(player.state.errorMessage == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
@@ -87,16 +100,25 @@ struct PlayerView: View {
 }
 
 private struct Artwork: View {
+    let image: UIImage?
+
     var body: some View {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
             .fill(Color(uiColor: .secondarySystemFill))
             .aspectRatio(1, contentMode: .fit)
             .frame(maxWidth: 360, maxHeight: 360)
             .overlay {
-                Image(systemName: "radio")
-                    .font(.system(size: 72, weight: .regular))
-                    .foregroundStyle(.tertiary)
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Image(systemName: "radio")
+                        .font(.system(size: 72, weight: .regular))
+                        .foregroundStyle(.tertiary)
+                }
             }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .accessibilityHidden(true)
     }
 }

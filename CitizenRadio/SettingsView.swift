@@ -9,21 +9,26 @@ struct SettingsView: View {
     @ObservedObject var player: RadioPlayer
     @Binding var savedURL: String
     let relayStatus: EventStreamStatus?
+    let boostStatus: String?
     @State private var draft: StreamSettingsDraft
     @State private var error: String?
     @State private var relayError: String?
     @StateObject private var wallet = WalletSettingsModel()
     @Environment(\.dismiss) private var dismiss
 
-    init(player: RadioPlayer, savedURL: Binding<String>, relayStatus: EventStreamStatus?) {
+    init(player: RadioPlayer, savedURL: Binding<String>, relayStatus: EventStreamStatus?, boostStatus: String?) {
         self.player = player
         _savedURL = savedURL
         self.relayStatus = relayStatus
+        self.boostStatus = boostStatus
+        let boostSettings = BoostSettings()
         _draft = State(initialValue: StreamSettingsDraft(
             savedURL: savedURL.wrappedValue,
             chimeEnabled: ChimeSetting().isEnabled,
             dailyLimitSats: SpendingLimitStore().limit.dailySats,
-            relayText: RelayEventStore().savedText
+            relayText: RelayEventStore().savedText,
+            boostEnabled: boostSettings.isEnabled,
+            boostAmountSats: boostSettings.amountSats
         ))
     }
 
@@ -78,7 +83,13 @@ struct SettingsView: View {
                     Text("The chime plays until the stream starts.")
                 }
 
-                WalletSettingsView(model: wallet, dailyLimitSats: $draft.dailyLimitSats)
+                WalletSettingsView(
+                    model: wallet,
+                    dailyLimitSats: $draft.dailyLimitSats,
+                    boostEnabled: $draft.boostEnabled,
+                    boostAmountSats: $draft.boostAmountSats,
+                    boostStatus: boostStatus
+                )
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -119,6 +130,9 @@ struct SettingsView: View {
             }
             ChimeSetting().isEnabled = draft.chimeEnabled
             SpendingLimitStore().setDailySats(draft.dailyLimitSats)
+            let boostSettings = BoostSettings()
+            boostSettings.isEnabled = draft.boostEnabled
+            boostSettings.amountSats = draft.boostAmountSats
             try RelayEventStore().save(draft.relayText)
             dismiss()
         } catch {

@@ -11,11 +11,14 @@ import CitizenRadioCore
 /// ADR 0008 owns the data rules. ADR 0011 owns the rules for a session with ICY.
 /// This model runs on the main actor and does no blocking work. `EventStreamClient`,
 /// `ArtworkLoader` and the URLSession types do the network, stream and image work.
+/// ADR 0012 owns the rules for the live value client and the inputs of `boost`.
 @MainActor
 final class TrackInfoModel: ObservableObject {
     @Published private(set) var lines = TrackLines.select(relay: nil, icy: nil)
     @Published private(set) var image: UIImage?
     @Published private(set) var relayStatus: EventStreamStatus?
+    /// Decides and pays the boosts of the session.
+    let boost: BoostModel
 
     /// One streamed display state that waits for the buffered audio.
     private struct PendingApply {
@@ -36,7 +39,12 @@ final class TrackInfoModel: ObservableObject {
     /// ADR 0011: the display states and the ICY text of this playback session.
     private var sync = IcySync()
     private var client: EventStreamClient?
+    /// The value is yes when the display client stopped on a 404 or a 409. The client stays until playback stops or the event changes.
+    private var relayStopped = false
     private var updatesTask: Task<Void, Never>?
+    /// ADR 0012: the live value client. It runs only while the display client runs and Auto-boost is on.
+    private var valueClient: EventStreamClient?
+    private var valueUpdatesTask: Task<Void, Never>?
     private var pathTask: Task<Void, Never>?
     private var artworkTask: Task<Void, Never>?
     private var pending: [PendingApply] = []
@@ -50,6 +58,7 @@ final class TrackInfoModel: ObservableObject {
         opener: any LineStreamOpening = URLSessionLineStreamOpener(),
         fetcher: any SnapshotFetching = URLSessionSnapshotFetcher()
     ) {
+        self.boost = BoostModel()
         self.player = player
         self.loader = loader
         self.monitor = monitor
@@ -57,6 +66,12 @@ final class TrackInfoModel: ObservableObject {
         self.fetcher = fetcher
         self.event = RelayEventStore().event
 
+        // The settings sheet shows the boost result. Send a change of this model when the result changes.
+        boost.$status
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &subscriptions)
         // RadioPlayer is on the main actor, so these values arrive on the main thread.
         // A @Published publisher sends the new value before the property changes, so use the value.
         player.$state
@@ -73,6 +88,7 @@ final class TrackInfoModel: ObservableObject {
 
     deinit {
         updatesTask?.cancel()
+        valueUpdatesTask?.cancel()
         pathTask?.cancel()
         artworkTask?.cancel()
         for apply in pending {
@@ -81,17 +97,26 @@ final class TrackInfoModel: ObservableObject {
         if let client {
             Task { await client.stop() }
         }
+        if let valueClient {
+            Task { await valueClient.stop() }
+        }
     }
 
-    /// Reads the Track info setting again. If the event changed, the relay client starts again.
+    /// Reads the Track info and Auto-boost settings again. If the event changed, the relay client starts again.
+    /// If only the Auto-boost setting changed, the live value client starts or stops.
     func reloadSettings() {
         let newEvent = RelayEventStore().event
-        guard newEvent != event else { return }
+        guard newEvent != event else {
+            updateValueClient()
+            return
+        }
         event = newEvent
         stopRelay()
         relayStatus = nil
         sync.clearStates()
         setRelayTrack(nil)
+        // ADR 0012 §The trigger: a change of the Track info event ends the session.
+        boost.sessionEnded()
         if playbackActive {
             startRelay()
         }
@@ -108,6 +133,8 @@ final class TrackInfoModel: ObservableObject {
             // ADR 0011 §The session: Stop starts a new session with no ICY.
             sync = IcySync()
             setRelayTrack(nil)
+            // ADR 0012 §The trigger: Stop and a playback error end the session.
+            boost.sessionEnded()
         }
     }
 
@@ -125,6 +152,7 @@ final class TrackInfoModel: ObservableObject {
             fetcher: fetcher
         )
         self.client = client
+        relayStopped = false
 
         updatesTask = Task { [weak self] in
             let updates = await client.start()
@@ -135,15 +163,20 @@ final class TrackInfoModel: ObservableObject {
         }
 
         let monitor = self.monitor
-        pathTask = Task {
+        pathTask = Task { [weak self] in
             var previous: NetworkPathSummary?
             for await summary in monitor.summaries() {
                 if NetworkPathSummary.shouldReconnect(from: previous, to: summary) {
                     await client.networkChanged()
+                    if let valueClient = self?.valueClient {
+                        await valueClient.networkChanged()
+                    }
                 }
                 previous = summary
             }
         }
+
+        updateValueClient()
     }
 
     private func stopRelay() {
@@ -156,6 +189,8 @@ final class TrackInfoModel: ObservableObject {
             Task { await client.stop() }
         }
         client = nil
+        relayStopped = false
+        stopValueClient()
         // Keep a relay error for Settings. Other statuses are not true after a stop.
         if case .stopped = relayStatus {} else {
             relayStatus = nil
@@ -200,9 +235,13 @@ final class TrackInfoModel: ObservableObject {
             case .stopped(.notFound), .stopped(.notReserved):
                 pathTask?.cancel()
                 pathTask = nil
+                relayStopped = true
+                stopValueClient()
                 cancelPendingApplies()
                 sync.clearStates()
                 setRelayTrack(nil)
+                // ADR 0012: no relay tracks are available, so the boost session ends.
+                boost.sessionEnded()
             case .waiting:
                 // ADR 0011 §The session: with ICY, backoff keeps the list and the selection.
                 guard !sync.hasIcy else { break }
@@ -214,6 +253,63 @@ final class TrackInfoModel: ObservableObject {
                 break
             }
         }
+    }
+
+    // MARK: - Live value client
+
+    /// Starts or stops the live value client. It runs while the display client runs and Auto-boost is on.
+    private func updateValueClient() {
+        let shouldRun = client != nil && !relayStopped && BoostSettings().isEnabled
+        if shouldRun {
+            startValueClient()
+        } else {
+            stopValueClient()
+        }
+    }
+
+    /// Starts one live value client for the configured event. It does nothing when a client exists.
+    private func startValueClient() {
+        guard valueClient == nil, let event else { return }
+        let valueClient = EventStreamClient(
+            snapshotURL: event.remoteValueURL,
+            streamURL: event.valueEventsURL,
+            eventName: "remoteValue",
+            opener: opener,
+            fetcher: fetcher
+        )
+        self.valueClient = valueClient
+
+        valueUpdatesTask = Task { [weak self] in
+            let updates = await valueClient.start()
+            for await update in updates {
+                guard let self, self.valueClient === valueClient else { return }
+                self.handleValue(update)
+            }
+        }
+    }
+
+    private func stopValueClient() {
+        valueUpdatesTask?.cancel()
+        valueUpdatesTask = nil
+        if let valueClient {
+            Task { await valueClient.stop() }
+        }
+        valueClient = nil
+    }
+
+    /// Gives each live value payload to the boost model. An empty or invalid payload is ignored.
+    private func handleValue(_ update: EventStreamUpdate) {
+        let data: Data
+        switch update {
+        case .snapshot(let snapshot):
+            data = snapshot
+        case .event(let streamed):
+            data = Data(streamed.data.utf8)
+        case .status:
+            return
+        }
+        guard let payload = try? LiveValuePayload.decode(data) else { return }
+        boost.payload(payload)
     }
 
     // MARK: - Delayed applies
@@ -263,6 +359,8 @@ final class TrackInfoModel: ObservableObject {
         guard let text else { return }
         let firstIcyText = !sync.hasIcy
         sync.receiveIcyText(text)
+        boost.icyText(text)
+        boost.selectedTrack(sync.relayTrack)
         if firstIcyText {
             // ADR 0011 §The session: the first ICY text cancels the pending timed applies.
             cancelPendingApplies()
@@ -271,6 +369,8 @@ final class TrackInfoModel: ObservableObject {
     }
 
     private func updateLines() {
+        // ADR 0012 §The trigger: give each change of the ICY sync selection to the boost model.
+        boost.selectedTrack(sync.relayTrack)
         let newLines = sync.hasIcy ? sync.lines : TrackLines.select(relay: relayTrack, icy: nil)
         guard newLines != lines else { return }
         let artworkChanged = newLines.artwork != lines.artwork

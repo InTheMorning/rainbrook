@@ -11,6 +11,10 @@ import CitizenRadioCore
 struct WalletSettingsView: View {
     @ObservedObject var model: WalletSettingsModel
     @Binding var dailyLimitSats: Int
+    @Binding var boostEnabled: Bool
+    @Binding var boostAmountSats: Int
+    /// The result of the last boost, or nil.
+    let boostStatus: String?
     @State private var showingDisconnectConfirmation = false
     @State private var isShowingScanner = false
     @State private var cameraAccessMessage: String?
@@ -20,6 +24,13 @@ struct WalletSettingsView: View {
     /// `isAvailable` can also depend on camera access, so `startScan()` examines it after the permission step.
     private var scannerIsSupported: Bool {
         DataScannerViewController.isSupported
+    }
+
+    private var isConnected: Bool {
+        if case .connected = model.state {
+            return true
+        }
+        return false
     }
 
     var body: some View {
@@ -41,7 +52,12 @@ struct WalletSettingsView: View {
         } header: {
             Text("Wallet")
         } footer: {
-            Text("The wallet connection is saved at once. Save applies the daily limit.")
+            VStack(alignment: .leading, spacing: 4) {
+                Text("The wallet connection is saved at once. Save applies the daily limit.")
+                if isConnected {
+                    Text("When you hear a V4V track from its start to its end, the app pays this amount to its artists. The daily limit applies.")
+                }
+            }
         }
     }
 
@@ -95,6 +111,21 @@ struct WalletSettingsView: View {
         }
         if let warning {
             Text(warning)
+        }
+        // ADR 0012 §Settings: these items show only when a wallet is connected.
+        Toggle("Auto-boost", isOn: $boostEnabled)
+            .accessibilityIdentifier("autoBoostToggle")
+        Picker("Boost amount", selection: $boostAmountSats) {
+            ForEach(BoostSettings.amountChoices, id: \.self) { sats in
+                Text("\(sats) sats").tag(sats)
+            }
+        }
+        .disabled(!boostEnabled)
+        .accessibilityIdentifier("boostAmountPicker")
+        if let boostStatus {
+            Text(boostStatus)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("boostStatus")
         }
         Button("Disconnect", role: .destructive) {
             showingDisconnectConfirmation = true

@@ -52,7 +52,12 @@ struct PlayerView: View {
                 }
             }
             .sheet(isPresented: $showingSettings, onDismiss: { trackInfo.reloadSettings() }) {
-                SettingsView(player: player, savedURL: $savedURL, relayStatus: trackInfo.relayStatus)
+                SettingsView(
+                    player: player,
+                    savedURL: $savedURL,
+                    relayStatus: trackInfo.relayStatus,
+                    boostStatus: trackInfo.boost.status
+                )
             }
         }
     }

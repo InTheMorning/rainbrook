@@ -44,7 +44,7 @@ public struct BoostTrigger: Equatable, Sendable {
     public mutating func endSession()
 }
 
-public struct BoostSettings: Sendable {
+public struct BoostSettings {          // like ChimeSetting: not Sendable, made where it is used
     public static let amountChoices = [21, 50, 100, 250, 500, 1000]
     public static let defaultAmountSats = 100
     public init(defaults: UserDefaults = .standard)

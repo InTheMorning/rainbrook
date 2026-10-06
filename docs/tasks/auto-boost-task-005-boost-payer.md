@@ -76,7 +76,7 @@ Status texts (ASD-STE100, short):
 |---|---|
 | all parts paid | "Boosted \(paidSats) sats." |
 | some parts paid | "Boosted \(paidSats) sats. \(failed) of \(totalParts) payments failed." |
-| any part with an unknown result | the text above, then " The result of \(unknownParts) payments is not known." |
+| any part with an unknown result | the text above, then " The result of \(unknownParts) payments is not known." With no paid part, leave out "Boosted 0 sats." |
 | no part paid | "The boost failed. No payment was sent." |
 | `.overDailyLimit(remainingSats:)` | "No boost. Only \(remainingSats) sats of the daily limit remain." |
 | `.nothingToPay` | "No boost. The track has no payment destination." |

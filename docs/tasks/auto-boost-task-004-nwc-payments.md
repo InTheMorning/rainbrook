@@ -51,8 +51,9 @@ public enum NWCPaymentOutcome: Equatable, Sendable {
     case paid
     case unsupported                     // the wallet does not list the method
     case walletError(code: String, message: String)
-    case timeout
+    case timeout                         // also a connection error after the request: the result is not known
     case invalidResponse
+    case notSent                         // the connection failed before this payment
 }
 
 extension NWCClient {
@@ -71,7 +72,8 @@ Sequence:
    - Sign, encrypt, subscribe and send as in `requestGetInfo`. Use a new subscription for each request, and close it after the response.
    - The response must be a valid event from the wallet key that refers to the request. A `result` object gives `.paid`. An `error` object gives `.walletError`. Bad content gives `.invalidResponse`. No response within `requestTimeout` gives `.timeout`, and the next payment continues.
    - A relay `OK` with `false` for the request gives `.walletError(code: "RELAY_REJECTED", message: <message>)`.
-3. Close the connection on all paths.
+3. A connection error after the info event does not throw. The payment in flight gets `.timeout`, and each payment after it gets `.notSent`.
+4. Close the connection on all paths.
 
 Other rules:
 

@@ -95,7 +95,7 @@ The app pays each part in sequence over one NWC connection:
 ### The limits
 
 - Before the first part, the app checks the full boost amount against `SpendingLimit` (ADR 0007). If it does not fit, there is no boost, and the result says so.
-- After each paid part, the app records the paid sats in `SpendingLimit`.
+- After the payment, the app records in `SpendingLimit` the sats of each paid part, and of each part with an unknown result. A part has an unknown result when the wallet did not answer in the time limit, or the connection failed after the request. The wallet can have paid such a part, so it counts against the limit.
 - The app pays each `blockGuid` a maximum of one time in a session.
 
 ### Threading and secrets

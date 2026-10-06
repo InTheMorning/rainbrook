@@ -11,7 +11,7 @@ Use this checklist for the diff of each task. Give one result: pass, or fail wit
 - [ ] The placeholder block can never be paid: its title, its `.invalid` host, and each other reserved host.
 - [ ] Only a payable destination gets a part. A node key has exactly 66 hex characters.
 - [ ] The sum of the parts is never more than the boost amount.
-- [ ] The daily limit check comes before the first part. The paid sats are recorded after the payment.
+- [ ] The daily limit check comes before the first part. The paid sats and the sats with an unknown result are recorded after the payment.
 - [ ] A block is added to the paid set before its payment starts. One block is paid a maximum of one time in a session.
 - [ ] An invoice is paid only when its BOLT11 amount equals the requested amount.
 - [ ] LNURL uses `https` only.

@@ -160,6 +160,193 @@ final class NWCClientTests: XCTestCase {
         XCTAssertEqual(closeCount, 1)
     }
 
+    // MARK: - Payments
+
+    /// A node key for the keysend tests: 66 hexadecimal characters.
+    private let nodePubkey = "02" + String(repeating: "ab", count: 32)
+
+    func testPayTwoKeysendPaymentsGivesTwoPaidAndSendsTheExactContent() async throws {
+        let wallet = try FakeWallet(
+            walletSecretKey: walletSecretKey,
+            info: .valid(methods: ["get_info", "pay_keysend"], encryptionTag: "nip44_v2"),
+            response: .noResponse,
+            paymentResponses: [.paid, .paid]
+        )
+        let client = NWCClient(
+            connection: try makeConnection(walletPublicKey: wallet.walletPublicKey), connector: wallet
+        )
+        let first = KeysendPayment(
+            amountMsat: 21000, pubkey: nodePubkey,
+            tlvRecords: [TLVRecord(type: 7629169, value: "7b7d"), TLVRecord(type: 696969, value: "6162")]
+        )
+        let second = KeysendPayment(amountMsat: 1000, pubkey: nodePubkey, tlvRecords: [])
+
+        let outcomes = try await client.pay([.keysend(first), .keysend(second)], requestTimeout: .milliseconds(500))
+
+        XCTAssertEqual(outcomes, [.paid, .paid])
+        let contents = await wallet.receivedRequestContents
+        XCTAssertEqual(contents, [
+            "{\"method\":\"pay_keysend\",\"params\":{\"amount\":21000,\"pubkey\":\"\(nodePubkey)\","
+                + "\"tlv_records\":[{\"type\":7629169,\"value\":\"7b7d\"},{\"type\":696969,\"value\":\"6162\"}]}}",
+            "{\"method\":\"pay_keysend\",\"params\":{\"amount\":1000,\"pubkey\":\"\(nodePubkey)\"}}"
+        ])
+        let closeCount = await wallet.closeCount
+        XCTAssertEqual(closeCount, 1)
+    }
+
+    func testPayInvoiceContentHasTheInvoice() async throws {
+        let wallet = try FakeWallet(
+            walletSecretKey: walletSecretKey,
+            info: .valid(methods: ["pay_invoice"], encryptionTag: nil),
+            response: .noResponse,
+            paymentResponses: [.paid]
+        )
+        let client = NWCClient(
+            connection: try makeConnection(walletPublicKey: wallet.walletPublicKey), connector: wallet
+        )
+
+        let outcomes = try await client.pay([.invoice("lnbc210n1ptestinvoice")], requestTimeout: .milliseconds(500))
+
+        XCTAssertEqual(outcomes, [.paid])
+        let contents = await wallet.receivedRequestContents
+        XCTAssertEqual(contents, ["{\"method\":\"pay_invoice\",\"params\":{\"invoice\":\"lnbc210n1ptestinvoice\"}}"])
+    }
+
+    func testWalletWithoutPayKeysendGivesUnsupportedAndReceivesNoKeysendRequest() async throws {
+        let wallet = try FakeWallet(
+            walletSecretKey: walletSecretKey,
+            info: .valid(methods: ["get_info", "pay_invoice"], encryptionTag: "nip44_v2"),
+            response: .noResponse,
+            paymentResponses: [.paid]
+        )
+        let client = NWCClient(
+            connection: try makeConnection(walletPublicKey: wallet.walletPublicKey), connector: wallet
+        )
+        let keysend = KeysendPayment(amountMsat: 1000, pubkey: nodePubkey, tlvRecords: [])
+
+        let outcomes = try await client.pay(
+            [.keysend(keysend), .invoice("lnbc10n1ptest")], requestTimeout: .milliseconds(500)
+        )
+
+        XCTAssertEqual(outcomes, [.unsupported, .paid])
+        let contents = await wallet.receivedRequestContents
+        XCTAssertEqual(contents, ["{\"method\":\"pay_invoice\",\"params\":{\"invoice\":\"lnbc10n1ptest\"}}"])
+    }
+
+    func testWalletErrorGivesWalletErrorAndTheNextPaymentIsSent() async throws {
+        let wallet = try FakeWallet(
+            walletSecretKey: walletSecretKey,
+            info: .valid(methods: ["pay_invoice"], encryptionTag: "nip44_v2"),
+            response: .noResponse,
+            paymentResponses: [.walletError(code: "INSUFFICIENT_BALANCE", message: "not enough sats"), .paid]
+        )
+        let client = NWCClient(
+            connection: try makeConnection(walletPublicKey: wallet.walletPublicKey), connector: wallet
+        )
+
+        let outcomes = try await client.pay([.invoice("lnbc1a"), .invoice("lnbc1b")], requestTimeout: .milliseconds(500))
+
+        XCTAssertEqual(outcomes, [.walletError(code: "INSUFFICIENT_BALANCE", message: "not enough sats"), .paid])
+        let contents = await wallet.receivedRequestContents
+        XCTAssertEqual(contents, [
+            "{\"method\":\"pay_invoice\",\"params\":{\"invoice\":\"lnbc1a\"}}",
+            "{\"method\":\"pay_invoice\",\"params\":{\"invoice\":\"lnbc1b\"}}"
+        ])
+    }
+
+    func testRelayRejectionGivesRelayRejectedWalletErrorAndTheNextPaymentIsSent() async throws {
+        let wallet = try FakeWallet(
+            walletSecretKey: walletSecretKey,
+            info: .valid(methods: ["pay_invoice"], encryptionTag: "nip44_v2"),
+            response: .noResponse,
+            paymentResponses: [.rejected(message: "blocked: rate limit"), .paid]
+        )
+        let client = NWCClient(
+            connection: try makeConnection(walletPublicKey: wallet.walletPublicKey), connector: wallet
+        )
+
+        let outcomes = try await client.pay([.invoice("lnbc1a"), .invoice("lnbc1b")], requestTimeout: .milliseconds(500))
+
+        XCTAssertEqual(outcomes, [.walletError(code: "RELAY_REJECTED", message: "blocked: rate limit"), .paid])
+    }
+
+    func testRequestWithNoResponseTimesOutAndTheNextPaymentIsSent() async throws {
+        let wallet = try FakeWallet(
+            walletSecretKey: walletSecretKey,
+            info: .valid(methods: ["pay_invoice"], encryptionTag: "nip44_v2"),
+            response: .noResponse,
+            paymentResponses: [.noResponse, .paid]
+        )
+        let client = NWCClient(
+            connection: try makeConnection(walletPublicKey: wallet.walletPublicKey), connector: wallet
+        )
+
+        let clock = ContinuousClock()
+        let start = clock.now
+        let outcomes = try await client.pay([.invoice("lnbc1a"), .invoice("lnbc1b")], requestTimeout: .milliseconds(200))
+        let elapsed = clock.now - start
+
+        XCTAssertEqual(outcomes, [.timeout, .paid])
+        XCTAssertGreaterThanOrEqual(elapsed, .milliseconds(200), "The timeout must wait for the request time limit.")
+        XCTAssertLessThan(elapsed, .seconds(1), "The timeout must not wait much longer than the request time limit.")
+        let contents = await wallet.receivedRequestContents
+        XCTAssertEqual(contents.count, 2, "The payment after the timeout must still be sent.")
+        let closeCount = await wallet.closeCount
+        XCTAssertEqual(closeCount, 1)
+    }
+
+    func testForgedResponseFromADifferentKeyIsIgnored() async throws {
+        let wallet = try FakeWallet(
+            walletSecretKey: walletSecretKey,
+            info: .valid(methods: ["pay_invoice"], encryptionTag: "nip44_v2"),
+            response: .noResponse,
+            paymentResponses: [.forgedDifferentPubkeyThenPaid(secretKey: otherSecretKey)]
+        )
+        let client = NWCClient(
+            connection: try makeConnection(walletPublicKey: wallet.walletPublicKey), connector: wallet
+        )
+
+        let outcomes = try await client.pay([.invoice("lnbc1a")], requestTimeout: .milliseconds(500))
+
+        XCTAssertEqual(outcomes, [.paid], "The forged error response must have no effect.")
+    }
+
+    func testConnectionErrorGivesTimeoutForTheRequestInFlightAndNotSentForTheRest() async throws {
+        let wallet = try FakeWallet(
+            walletSecretKey: walletSecretKey,
+            info: .valid(methods: ["pay_invoice"], encryptionTag: "nip44_v2"),
+            response: .noResponse,
+            paymentResponses: [.connectionFailure]
+        )
+        let client = NWCClient(
+            connection: try makeConnection(walletPublicKey: wallet.walletPublicKey), connector: wallet
+        )
+
+        let outcomes = try await client.pay([.invoice("lnbc1a"), .invoice("lnbc1b")], requestTimeout: .milliseconds(500))
+
+        XCTAssertEqual(outcomes, [.timeout, .notSent], "The first request was sent, so its result is not known.")
+        let closeCount = await wallet.closeCount
+        XCTAssertEqual(closeCount, 1)
+    }
+
+    func testPayWithNoInfoEventThrowsNoInfoEventAndClosesTheConnection() async throws {
+        let wallet = try FakeWallet(walletSecretKey: walletSecretKey, info: .missing, response: .noResponse)
+        let client = NWCClient(
+            connection: try makeConnection(walletPublicKey: wallet.walletPublicKey), connector: wallet
+        )
+
+        do {
+            _ = try await client.pay([.invoice("lnbc1a")], requestTimeout: .milliseconds(500))
+            XCTFail("Expected pay(_:requestTimeout:) to throw.")
+        } catch {
+            XCTAssertEqual(error as? NWCClient.Error, .noInfoEvent)
+        }
+        let contents = await wallet.receivedRequestContents
+        XCTAssertEqual(contents, [])
+        let closeCount = await wallet.closeCount
+        XCTAssertEqual(closeCount, 1)
+    }
+
     // MARK: - Helpers
 
     private func assertThrows(
@@ -202,13 +389,19 @@ private actor FakeWallet: RelayConnecting, RelayConnection {
         case missing
     }
 
-    /// How the wallet answers the signed `get_info` request event.
+    /// How the wallet answers a signed request event.
     enum ResponseBehavior {
         case success(alias: String?, methods: [String]?)
+        /// A payment result with a preimage.
+        case paid
         case walletError(code: String, message: String)
         case rejected(message: String)
         case forgedWrongSignature
         case forgedDifferentPubkey(secretKey: String)
+        /// A forged error response from an incorrect key, then a correct payment result.
+        case forgedDifferentPubkeyThenPaid(secretKey: String)
+        /// The connection fails, and each subsequent receive throws.
+        case connectionFailure
         case noResponse
     }
 
@@ -216,17 +409,26 @@ private actor FakeWallet: RelayConnecting, RelayConnection {
     let walletPublicKey: String
     private let info: InfoBehavior
     private let response: ResponseBehavior
+    /// The behavior for each request in sequence. When this list is empty, `response` applies.
+    private var paymentResponses: [ResponseBehavior]
 
     private var outgoing: [String] = []
     private var responseSubscriptionID: String?
+    private var connectionFailed = false
     private(set) var closeCount = 0
     private(set) var receivedRequestEvent: NostrEvent?
+    /// The decrypted content of each request event, in sequence.
+    private(set) var receivedRequestContents: [String] = []
 
-    init(walletSecretKey: String, info: InfoBehavior, response: ResponseBehavior) throws {
+    init(
+        walletSecretKey: String, info: InfoBehavior, response: ResponseBehavior,
+        paymentResponses: [ResponseBehavior] = []
+    ) throws {
         self.walletSecretKey = walletSecretKey
         self.walletPublicKey = try NostrKeys.publicKey(forSecret: walletSecretKey)
         self.info = info
         self.response = response
+        self.paymentResponses = paymentResponses
     }
 
     // MARK: - RelayConnecting
@@ -241,9 +443,12 @@ private actor FakeWallet: RelayConnecting, RelayConnection {
         try handle(text)
     }
 
+    /// Waits for the next message. The payment read task waits here before the client
+    /// sends a request, so this method looks for a new message at a short interval.
     func receive() async throws -> String {
         while outgoing.isEmpty {
-            try await Task.sleep(for: .seconds(60))
+            if connectionFailed { throw FakeWalletConnectionError() }
+            try await Task.sleep(for: .milliseconds(5))
         }
         return outgoing.removeFirst()
     }
@@ -289,7 +494,21 @@ private actor FakeWallet: RelayConnecting, RelayConnection {
         let data = try JSONSerialization.data(withJSONObject: eventObject)
         let event = try JSONDecoder().decode(NostrEvent.self, from: data)
         receivedRequestEvent = event
-        try respond(to: event)
+        receivedRequestContents.append(try decryptedContent(of: event))
+        let behavior = paymentResponses.isEmpty ? response : paymentResponses.removeFirst()
+        try respond(to: event, behavior: behavior)
+    }
+
+    private func decryptedContent(of requestEvent: NostrEvent) throws -> String {
+        if usesNIP44(requestEvent) {
+            let key = try NIP44.conversationKey(secretKey: walletSecretKey, publicKey: requestEvent.pubkey)
+            return try NIP44.decrypt(requestEvent.content, conversationKey: key)
+        }
+        return try NIP04.decrypt(requestEvent.content, secretKey: walletSecretKey, publicKey: requestEvent.pubkey)
+    }
+
+    private func usesNIP44(_ requestEvent: NostrEvent) -> Bool {
+        requestEvent.tags.contains { $0.first == "encryption" && $0.dropFirst().first == "nip44_v2" }
     }
 
     // MARK: - Sending the info event
@@ -310,22 +529,34 @@ private actor FakeWallet: RelayConnecting, RelayConnection {
 
     // MARK: - Sending the response
 
-    private func respond(to requestEvent: NostrEvent) throws {
-        switch response {
+    private func respond(to requestEvent: NostrEvent, behavior: ResponseBehavior) throws {
+        switch behavior {
         case .rejected(let message):
             outgoing.append(okText(eventID: requestEvent.id, accepted: false, message: message))
             return
         case .noResponse:
             return
-        case .success, .walletError, .forgedWrongSignature, .forgedDifferentPubkey:
+        case .connectionFailure:
+            connectionFailed = true
+            return
+        case .success, .paid, .walletError, .forgedWrongSignature, .forgedDifferentPubkey, .forgedDifferentPubkeyThenPaid:
             outgoing.append(okText(eventID: requestEvent.id, accepted: true, message: ""))
         }
 
+        if case .forgedDifferentPubkeyThenPaid(let secretKey) = behavior {
+            // The forged event has an error content. A client that accepts it gives a wallet error.
+            let forgedPlaintext = responsePlaintext(.walletError(code: "FORGED", message: "forged"))
+            try sendResponse(to: requestEvent, plaintext: forgedPlaintext, signedAs: .forgedDifferentPubkey(secretKey: secretKey))
+            try sendResponse(to: requestEvent, plaintext: responsePlaintext(.paid), signedAs: .paid)
+        } else {
+            try sendResponse(to: requestEvent, plaintext: responsePlaintext(behavior), signedAs: behavior)
+        }
+    }
+
+    private func sendResponse(to requestEvent: NostrEvent, plaintext: String, signedAs behavior: ResponseBehavior) throws {
         guard let responseSubscriptionID else { return }
-        let plaintext = responsePlaintext()
-        let usesNIP44 = requestEvent.tags.contains { $0.first == "encryption" && $0.dropFirst().first == "nip44_v2" }
         let content: String
-        if usesNIP44 {
+        if usesNIP44(requestEvent) {
             let key = try NIP44.conversationKey(secretKey: walletSecretKey, publicKey: requestEvent.pubkey)
             content = try NIP44.encrypt(plaintext, conversationKey: key)
         } else {
@@ -333,23 +564,25 @@ private actor FakeWallet: RelayConnecting, RelayConnection {
         }
 
         let tags = [["e", requestEvent.id], ["p", requestEvent.pubkey]]
-        let responseEvent = try signedResponseEvent(content: content, tags: tags)
+        let responseEvent = try signedResponseEvent(content: content, tags: tags, behavior: behavior)
         outgoing.append(relayEventText(subscriptionID: responseSubscriptionID, event: responseEvent))
     }
 
-    private func responsePlaintext() -> String {
+    private func responsePlaintext(_ behavior: ResponseBehavior) -> String {
         let object: [String: Any]
-        switch response {
+        switch behavior {
         case .success(let alias, let methods):
             var result: [String: Any] = [:]
             if let alias { result["alias"] = alias }
             if let methods { result["methods"] = methods }
             object = ["result": result]
+        case .paid:
+            object = ["result_type": "pay", "result": ["preimage": String(repeating: "0", count: 64)]]
         case .walletError(let code, let message):
             object = ["error": ["code": code, "message": message]]
         case .forgedWrongSignature, .forgedDifferentPubkey:
             object = ["result": ["alias": "forged", "methods": ["get_info"]]]
-        case .rejected, .noResponse:
+        case .rejected, .noResponse, .connectionFailure, .forgedDifferentPubkeyThenPaid:
             object = [:]
         }
         guard let data = try? JSONSerialization.data(withJSONObject: object) else { return "{}" }
@@ -358,9 +591,9 @@ private actor FakeWallet: RelayConnecting, RelayConnection {
 
     /// Signs the response event. A forged scenario signs with the wrong key
     /// or replaces a correct signature with one that does not match.
-    private func signedResponseEvent(content: String, tags: [[String]]) throws -> NostrEvent {
+    private func signedResponseEvent(content: String, tags: [[String]], behavior: ResponseBehavior) throws -> NostrEvent {
         let createdAt = Int(Date().timeIntervalSince1970)
-        switch response {
+        switch behavior {
         case .forgedDifferentPubkey(let secretKey):
             return try NostrEvent.signed(kind: 23195, tags: tags, content: content, createdAt: createdAt, secretKey: secretKey)
         case .forgedWrongSignature:
@@ -371,7 +604,7 @@ private actor FakeWallet: RelayConnecting, RelayConnection {
                 id: event.id, pubkey: event.pubkey, created_at: event.created_at, kind: event.kind,
                 tags: event.tags, content: event.content, sig: String(repeating: "0", count: 128)
             )
-        case .success, .walletError, .rejected, .noResponse:
+        case .success, .paid, .walletError, .rejected, .noResponse, .connectionFailure, .forgedDifferentPubkeyThenPaid:
             return try NostrEvent.signed(
                 kind: 23195, tags: tags, content: content, createdAt: createdAt, secretKey: walletSecretKey
             )
@@ -393,3 +626,6 @@ private actor FakeWallet: RelayConnecting, RelayConnection {
         return "[\"EVENT\",\"\(subscriptionID)\"," + eventText + "]"
     }
 }
+
+/// The fake wallet throws this error after the connection fails.
+private struct FakeWalletConnectionError: Error {}

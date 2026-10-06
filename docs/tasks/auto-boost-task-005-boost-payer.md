@@ -36,8 +36,10 @@ public protocol WalletPaying: Sendable {
 // NWCClient conforms. Its pay uses the default requestTimeout.
 
 public struct BoostResult: Equatable, Sendable {
-    public let paidSats: Int
+    public let paidSats: Int        // parts with outcome .paid
+    public let unknownSats: Int     // parts with outcome .timeout: the wallet can have paid them
     public let paidParts: Int
+    public let unknownParts: Int
     public let totalParts: Int
 }
 
@@ -64,9 +66,9 @@ Payer sequence:
    - Node part: `.keysend(KeysendPayment(amountMsat: sats * 1000, pubkey:, tlvRecords: BoostRecord.tlvRecords(part:payload:totalSats: amountSats)))`.
    - Lightning address part: `.invoice(pr)`.
 3. If no payment is left, give the result with 0 paid. Else call `wallet.pay` one time with all payments. If it throws, no part is paid.
-4. `paidSats` is the sum of the parts with outcome `.paid`. `totalParts` is the count of all parts.
+4. `paidSats` is the sum of the parts with outcome `.paid`. `unknownSats` is the sum of the parts with outcome `.timeout`. `totalParts` is the count of all parts. Each other outcome, also `.notSent`, is a failed part.
 
-The payer does not record the spending. The caller records `paidSats` in `SpendingLimitStore`.
+The payer does not record the spending. The caller records `paidSats + unknownSats` in `SpendingLimitStore` (ADR 0012 §The limits).
 
 Status texts (ASD-STE100, short):
 
@@ -74,6 +76,7 @@ Status texts (ASD-STE100, short):
 |---|---|
 | all parts paid | "Boosted \(paidSats) sats." |
 | some parts paid | "Boosted \(paidSats) sats. \(failed) of \(totalParts) payments failed." |
+| any part with an unknown result | the text above, then " The result of \(unknownParts) payments is not known." |
 | no part paid | "The boost failed. No payment was sent." |
 | `.overDailyLimit(remainingSats:)` | "No boost. Only \(remainingSats) sats of the daily limit remain." |
 | `.nothingToPay` | "No boost. The track has no payment destination." |
@@ -89,6 +92,7 @@ Mechanical. Each item is a test with a fake wallet and a fake fetcher:
 - An invoice for a different amount is not paid. The other parts are paid.
 - A well-known fetch with status 404 fails only that part.
 - Outcomes `.paid`, `.walletError` and `.paid` give `paidParts` 2 and the sum of the two paid parts.
+- Outcomes `.paid`, `.timeout` and `.notSent` give `paidParts` 1, `unknownParts` 1, and the sats of the second part in `unknownSats`.
 - A throw from `wallet.pay` gives 0 paid.
 - No payment left gives no `wallet.pay` call.
 - Each status text row is a test.

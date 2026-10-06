@@ -45,7 +45,7 @@ Connect the boost parts to the app. The app reads the live value stream, gives t
   2. `.skip(reason)`: set `status` to `BoostStatusText.text(for: reason)` if it is not nil. Stop.
   3. `.pay(payload, parts)`: add `payload.blockGuid` to the paid block set before the payment starts, so a second completion cannot pay it again.
   4. In a `Task`: `try await walletStore.connection()`. No connection: `status = BoostStatusText.noWallet`. Else make `NWCClient(connection:connector:timeout: .seconds(30))` and `BoostPayer(wallet:fetcher:)`, and `await payer.pay(parts:payload:amountSats:)`.
-  5. Record `result.paidSats` with `SpendingLimitStore().record(_:on:)` when it is more than 0. Set `status = BoostStatusText.text(for: result)` on the main actor.
+  5. Record `result.paidSats + result.unknownSats` with `SpendingLimitStore().record(_:on:)` when it is more than 0. Set `status = BoostStatusText.text(for: result)` on the main actor.
 - One boost at a time is not required. Two boosts can overlap. Each one has its own payer.
 - The Keychain read, the NWC payment and the LNURL requests run in the payer, the wallet store and `NWCClient`, never on the main actor.
 - The `boost` log category (`Logger(subsystem: "org.citizenradio.CitizenRadio", category: "boost")`, level `.notice`) records the decision kind, the amount, the count of parts and the paid count. No title, no key, no invoice.

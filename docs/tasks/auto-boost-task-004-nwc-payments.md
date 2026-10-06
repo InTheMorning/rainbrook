@@ -1,7 +1,7 @@
 # Auto-boost task 004: NWC payments
 
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md), wave 1. Model: Opus.
-- Decision: [ADR 0012](../adr/0012-auto-boost.md) §The payment. [ADR 0007](../adr/0007-nwc-wallet-configuration.md) §Connection test for the request sequence.
+- Decision: [ADR 0012](../archive/adr/0012-auto-boost.md) §The payment. [ADR 0007](../adr/0007-nwc-wallet-configuration.md) §Connection test for the request sequence.
 - Depends on: none.
 
 ## Goal

@@ -1,7 +1,7 @@
 # Auto-boost task 003: Split, boost record, plan, BOLT11 and LNURL rules
 
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md), wave 2. Model: Opus.
-- Decision: [ADR 0012](../adr/0012-auto-boost.md) §The split, §The payment, §The limits.
+- Decision: [ADR 0012](../archive/adr/0012-auto-boost.md) §The split, §The payment, §The limits.
 - Depends on: task 001 (`LiveValueDestination`, `LiveValuePayload`, `BoostPairing`) and task 004 (`TLVRecord`).
 
 ## Goal
@@ -10,7 +10,7 @@ Add the pure rules of a boost. These are the split, the boost record and the boo
 
 ## Files to inspect
 
-- `docs/adr/0012-auto-boost.md`
+- `docs/archive/adr/0012-auto-boost.md`
 - `CitizenRadio/Core/LiveValue.swift`, `CitizenRadio/Core/BoostPairing.swift` (task 001)
 - `CitizenRadio/Core/NWCPayment.swift` (task 004, `TLVRecord`)
 - `CitizenRadio/Core/SpendingLimit.swift`, `CitizenRadio/Core/TrackDisplay.swift`
@@ -170,7 +170,7 @@ Implement only this task. Do not redesign the architecture.
 
 Read:
 - docs/tasks/auto-boost-task-003-split-and-record.md
-- docs/adr/0012-auto-boost.md
+- docs/archive/adr/0012-auto-boost.md
 - CitizenRadio/Core/LiveValue.swift, CitizenRadio/Core/BoostPairing.swift, CitizenRadio/Core/NWCPayment.swift
 - CitizenRadio/Core/SpendingLimit.swift, CitizenRadio/Core/TrackDisplay.swift
 

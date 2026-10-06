@@ -1,7 +1,7 @@
 # Auto-boost task 006: Integration and settings
 
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md), wave 4. Model: Opus.
-- Decision: [ADR 0012](../adr/0012-auto-boost.md), all sections. [ADR 0006](../adr/0006-audio-session-off-main-thread.md) for threading.
+- Decision: [ADR 0012](../archive/adr/0012-auto-boost.md), all sections. [ADR 0006](../adr/0006-audio-session-off-main-thread.md) for threading.
 - Depends on: tasks 001 to 005.
 
 ## Goal
@@ -10,7 +10,7 @@ Connect the boost parts to the app. The app reads the live value stream, gives t
 
 ## Files to inspect
 
-- `docs/adr/0012-auto-boost.md`, `docs/adr/0011-icy-sync-of-the-relay-display.md`
+- `docs/archive/adr/0012-auto-boost.md`, `docs/adr/0011-icy-sync-of-the-relay-display.md`
 - `CitizenRadio/TrackInfoModel.swift` (the relay client lifecycle, the ICY text and `sync.relayTrack`)
 - `CitizenRadio/SettingsView.swift`, `CitizenRadio/WalletSettingsView.swift`, `CitizenRadio/WalletSettingsModel.swift`, `CitizenRadio/PlayerView.swift`
 - `CitizenRadio/Core/StreamSettingsDraft.swift` and its tests
@@ -116,7 +116,7 @@ Implement only this task. Do not redesign the architecture.
 
 Read:
 - docs/tasks/auto-boost-task-006-integration.md
-- docs/adr/0012-auto-boost.md
+- docs/archive/adr/0012-auto-boost.md
 - the files listed in "Files to inspect"
 
 Goal:

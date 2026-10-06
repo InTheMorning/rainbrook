@@ -139,7 +139,7 @@ See [background execution modes](https://developer.apple.com/documentation/xcode
 - A repeated Play request keeps an active connection to the same stream.
 - The player activates and deactivates the audio session on a serial background queue, not on the main thread. See [ADR 0006](../adr/0006-audio-session-off-main-thread.md).
 - If the chime setting is on, `forcdchime.wav` plays in a loop while the state is `connecting`. It stops at all other states.
-- AVPlayer controls the buffer. After a stall, the state is `connecting` and the player calls `play()` again. See [ADR 0010](../adr/0010-player-screen-without-extra-buffer.md).
+- AVPlayer controls the buffer. After a stall, the state is `connecting` and the player calls `play()` again. See [ADR 0014](../adr/0014-player-screen-with-boost-button.md).
 - The Play intent returns success after AVPlayer reports playback.
 - Invalid settings and connection failures return an error to Shortcuts.
 - Stop releases the player item and cancels the connection timeout.

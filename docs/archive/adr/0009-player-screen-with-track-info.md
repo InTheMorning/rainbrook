@@ -1,8 +1,8 @@
-> Archived: superseded by [ADR 0010](../../adr/0010-player-screen-without-extra-buffer.md) on 2026-10-05.
+> Archived: superseded by [ADR 0010](0010-player-screen-without-extra-buffer.md) on 2026-10-05.
 
 # ADR 0009: Player screen with track info
 
-- Status: superseded by [ADR 0010](../../adr/0010-player-screen-without-extra-buffer.md)
+- Status: superseded by [ADR 0010](0010-player-screen-without-extra-buffer.md)
 - Date: 2026-10-04
 - Class: situational. Supersede this record when the primary screen changes, or when a setting moves out of the settings sheet.
 - Supersedes: [ADR 0004](0004-player-screen-and-settings.md)

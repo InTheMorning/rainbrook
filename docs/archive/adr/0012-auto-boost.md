@@ -1,12 +1,14 @@
+> Archived: superseded by [ADR 0013](../../adr/0013-boosts.md) on 2026-10-06.
+
 # ADR 0012: Auto-boost
 
-- Status: accepted
+- Status: superseded by [ADR 0013](../../adr/0013-boosts.md)
 - Date: 2026-10-06
 - Class: situational. Supersede this record when the app pays by a different trigger, by a different method, or from a different value source.
-- Plan: [auto-boost phase plan](../plans/auto-boost-plan.md)
+- Plan: [auto-boost phase plan](../../plans/auto-boost-plan.md)
 - Related:
-  - [ADR 0007](0007-nwc-wallet-configuration.md): the wallet connection, the secret and the daily limit. This record is the payment record that ADR 0007 names.
-  - [ADR 0011](0011-icy-sync-of-the-relay-display.md): the ICY text tells when the listener hears a track.
+  - [ADR 0007](../../adr/0007-nwc-wallet-configuration.md): the wallet connection, the secret and the daily limit. This record is the payment record that ADR 0007 names.
+  - [ADR 0011](../../adr/0011-icy-sync-of-the-relay-display.md): the ICY text tells when the listener hears a track.
   - [ADR 0010](0010-player-screen-without-extra-buffer.md): the settings sheet.
 
 ## Context

@@ -1,7 +1,7 @@
 # Auto-boost task 002: Trigger and settings
 
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md), wave 1. Model: Sonnet.
-- Decision: [ADR 0012](../adr/0012-auto-boost.md) §The trigger, §Settings.
+- Decision: [ADR 0012](../archive/adr/0012-auto-boost.md) §The trigger, §Settings.
 - Depends on: none.
 
 ## Goal
@@ -10,7 +10,7 @@ Add `BoostTrigger`. It decides when the listener heard a track from its start to
 
 ## Files to inspect
 
-- `docs/adr/0012-auto-boost.md`
+- `docs/archive/adr/0012-auto-boost.md`
 - `CitizenRadio/Core/IcySync.swift` (`normalize`), `CitizenRadio/Core/TrackDisplay.swift`
 - `CitizenRadio/Core/ChimeSetting.swift` (the pattern for a stored setting)
 
@@ -105,7 +105,7 @@ Implement only this task. Do not redesign the architecture.
 
 Read:
 - docs/tasks/auto-boost-task-002-trigger.md
-- docs/adr/0012-auto-boost.md
+- docs/archive/adr/0012-auto-boost.md
 - CitizenRadio/Core/IcySync.swift, CitizenRadio/Core/TrackDisplay.swift, CitizenRadio/Core/ChimeSetting.swift
 
 Goal:

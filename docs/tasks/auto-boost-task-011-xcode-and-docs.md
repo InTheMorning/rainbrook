@@ -1,19 +1,19 @@
-# Auto-boost task 007: Xcode project and documents
+# Auto-boost task 011: Xcode project and documents
 
-- Plan: [auto-boost phase plan](../plans/auto-boost-plan.md), wave 5. Model: Sonnet.
-- Decision: [ADR 0012](../adr/0012-auto-boost.md).
-- Depends on: task 006.
+- Plan: [auto-boost phase plan](../plans/auto-boost-plan.md), wave D. Model: Sonnet.
+- Decision: [ADR 0013](../adr/0013-boosts.md), [ADR 0014](../adr/0014-player-screen-with-boost-button.md).
+- Depends on: task 010.
 
 ## Goal
 
-Add the new Swift files to the Xcode project. Document auto-boost in the architecture overview, the README and the runbook.
+Add the new Swift files to the Xcode project. Document boosts in the architecture overview, the README and the runbook.
 
 ## Files to inspect
 
 - `CitizenRadio.xcodeproj/project.pbxproj`
 - `docs/tasks/relay-display-task-009-xcode-and-docs.md` (the same work, with the ID check)
 - `docs/architecture/overview.md`, `README.md`, `docs/runbooks/iphone-setup.md`
-- `docs/adr/0012-auto-boost.md`, `docs/plans/auto-boost-plan.md`
+- `docs/adr/0013-boosts.md`, `docs/adr/0014-player-screen-with-boost-button.md`, `docs/plans/auto-boost-plan.md`
 
 ## Files likely to change
 
@@ -31,12 +31,20 @@ Xcode project: as in relay display task 009. Each Swift file in `CitizenRadio/` 
 
 Documents:
 
-- Architecture overview: a row in the components table for each new type, with one sentence. Add the flows:
-  - `relay /events (remoteValue) -> EventStreamClient -> BoostModel (BoostPairing)`
-  - `ICY text -> TrackInfoModel -> BoostModel (BoostTrigger) -> BoostPlan -> BoostPayer -> NWCClient and LNURL`
+- Architecture overview:
+  - A row in the components table for each new type, with one sentence.
+  - The player screen item list of ADR 0014, with the **Boost** button.
+  - These flows:
+    - `relay /events (remoteValue) -> EventStreamClient -> BoostModel (BoostPairing)`
+    - `ICY text -> TrackInfoModel -> BoostModel (BoostTrigger) -> BoostPlan -> BoostPayer -> NWCClient and LNURL -> BoostHistory`
+    - `Boost button -> BoostSheet -> BoostModel.sendManualBoost -> BoostPayer -> BoostHistory`
   - Change the file count sentence.
-- README: one bullet in "Current implementation" for auto-boost. The document list already has ADR 0012 and the plan.
-- Runbook: a "Configure auto-boost" procedure: connect a wallet, open **Settings**, set **Auto-boost** on, select **Boost amount**, examine the daily limit, tap **Save**. Add the ADR 0012 visual criteria as rows in the device checks table.
+- README: one bullet in "Current implementation" for auto-boost, the manual boost and the history. The document list already has the ADRs and the plan.
+- Runbook:
+  - A "Configure boosts" procedure: connect a wallet, open **Settings**, and set **Auto-boost** on. Enter the **Boost amount**, the **Boost message**, **From** and **App name**. Examine the daily limit, then tap **Save**.
+  - A "Send a boost" procedure: tap **Boost**, change the amount, write a message, tap **Send**.
+  - A "See the boost history" procedure.
+  - The ADR 0013 and ADR 0014 visual criteria as rows in the device checks table.
 - Plan status line: "Status: implemented, <date>. The visual checks are open."
 - Prose in ASD-STE100. Run the STE checker on each changed document.
 
@@ -88,13 +96,13 @@ You are implementing one bounded task from a larger plan.
 Implement only this task. Do not redesign the architecture.
 
 Read:
-- docs/tasks/auto-boost-task-007-xcode-and-docs.md
+- docs/tasks/auto-boost-task-011-xcode-and-docs.md
 - docs/tasks/relay-display-task-009-xcode-and-docs.md
 - CitizenRadio.xcodeproj/project.pbxproj
 - docs/architecture/overview.md, README.md, docs/runbooks/iphone-setup.md
 
 Goal:
-- Register the new Swift files in the Xcode project, and document auto-boost.
+- Register the new Swift files in the Xcode project, and document boosts.
 
 Constraints:
 - Follow the project file rules in the task file. New unique 24-character IDs in the quoted style.

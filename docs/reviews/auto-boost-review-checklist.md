@@ -1,7 +1,7 @@
 # Auto-boost review checklist
 
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md).
-- Decision: [ADR 0012](../adr/0012-auto-boost.md). This checklist does not make rules.
+- Decision: [ADR 0013](../adr/0013-boosts.md). This checklist does not make rules.
 - The general items of the [relay display review checklist](relay-display-review-checklist.md) also apply: scope, threading, module boundaries, SwiftUI, privacy and documents.
 
 Use this checklist for the diff of each task. Give one result: pass, or fail with the required fixes.
@@ -19,7 +19,7 @@ Use this checklist for the diff of each task. Give one result: pass, or fail wit
 
 ## Rules
 
-- [ ] The trigger agrees with each rule of ADR 0012 §The trigger, also the repeat rule.
+- [ ] The trigger agrees with each rule of ADR 0013 §The trigger, also the repeat rule.
 - [ ] The pairing prefers `value.blockGuid`, and does not fall back to the title when the block ID is present.
 
 ## Privacy and threading

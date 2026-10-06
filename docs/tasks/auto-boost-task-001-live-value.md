@@ -1,7 +1,7 @@
 # Auto-boost task 001: Live value and pairing
 
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md), wave 1. Model: Sonnet.
-- Decision: [ADR 0012](../adr/0012-auto-boost.md) §The pairing, §Payable destinations.
+- Decision: [ADR 0012](../archive/adr/0012-auto-boost.md) §The pairing, §Payable destinations.
 - Depends on: none.
 
 ## Goal
@@ -10,7 +10,7 @@ Decode the relay live value payload with only its payable destinations. Pair a c
 
 ## Files to inspect
 
-- `docs/adr/0012-auto-boost.md`
+- `docs/archive/adr/0012-auto-boost.md`
 - `CitizenRadio/Core/TrackDisplay.swift`, `CitizenRadio/Core/RelayEvent.swift`, `CitizenRadio/Core/IcySync.swift` (`normalize`)
 - `Tests/CitizenRadioCoreTests/TrackDisplayTests.swift`, `RelayEventTests.swift`
 
@@ -139,7 +139,7 @@ Implement only this task. Do not redesign the architecture.
 
 Read:
 - docs/tasks/auto-boost-task-001-live-value.md
-- docs/adr/0012-auto-boost.md
+- docs/archive/adr/0012-auto-boost.md
 - CitizenRadio/Core/TrackDisplay.swift, CitizenRadio/Core/RelayEvent.swift, CitizenRadio/Core/IcySync.swift
 - Tests/CitizenRadioCoreTests/TrackDisplayTests.swift, Tests/CitizenRadioCoreTests/RelayEventTests.swift
 

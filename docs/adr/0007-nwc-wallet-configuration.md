@@ -3,7 +3,7 @@
 - Status: accepted. The visual acceptance criteria are open.
 - Date: 2026-10-04
 - Class: situational. Supersede this record when the wallet connection method or its storage changes.
-- Related: [ADR 0010](0010-player-screen-without-extra-buffer.md) puts all configuration in the settings sheet. [ADR 0006](0006-audio-session-off-main-thread.md) keeps blocking calls off the main thread.
+- Related: [ADR 0014](0014-player-screen-with-boost-button.md) puts all configuration in the settings sheet. [ADR 0006](0006-audio-session-off-main-thread.md) keeps blocking calls off the main thread.
 
 ## Context
 

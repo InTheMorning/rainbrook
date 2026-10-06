@@ -1,7 +1,7 @@
 # Auto-boost task 005: Boost payer and status text
 
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md), wave 3. Model: Opus.
-- Decision: [ADR 0012](../adr/0012-auto-boost.md) §The payment, §The limits, §Threading and secrets.
+- Decision: [ADR 0012](../archive/adr/0012-auto-boost.md) §The payment, §The limits, §Threading and secrets.
 - Depends on: tasks 001, 003 and 004.
 
 ## Goal
@@ -10,7 +10,7 @@ Add `BoostPayer` to `CitizenRadioCore`. It gets an invoice for each lightning ad
 
 ## Files to inspect
 
-- `docs/adr/0012-auto-boost.md`
+- `docs/archive/adr/0012-auto-boost.md`
 - `CitizenRadio/Core/BoostSplit.swift`, `BoostRecord.swift`, `BoostPlan.swift`, `LightningAddress.swift`, `LiveValue.swift`
 - `CitizenRadio/Core/NWCPayment.swift`, `NWCClient.swift`
 - `CitizenRadio/Core/EventStreamClient.swift` (`SnapshotFetching`), `CitizenRadio/Core/WalletStatusText.swift` (the pattern for user texts)
@@ -126,7 +126,7 @@ Implement only this task. Do not redesign the architecture.
 
 Read:
 - docs/tasks/auto-boost-task-005-boost-payer.md
-- docs/adr/0012-auto-boost.md
+- docs/archive/adr/0012-auto-boost.md
 - the files listed in "Files to inspect"
 
 Goal:

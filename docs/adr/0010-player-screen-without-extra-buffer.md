@@ -81,6 +81,8 @@ The SwiftUI views and `RadioPlayer` read these values and contain no other displ
 
 - Keep the extra buffer. The test of 2026-10-04 shows that AVPlayer makes a large buffer without it. The wait after each stall also adds to the delay behind the live stream.
 - Keep the extra buffer for the start only. The start of a session is the only time when it can help, but the value is not measured. Add it again only if a test shows fewer stalls.
+- Start a new player item when the network path changes. Nothing repeats, but the listener loses the audio of the outage. The operator prefers a repeat to lost audio.
+- Join the new connection to the old bytes in the app, so nothing repeats and nothing is lost. A spike on 2026-10-05 showed that AVPlayer does not accept a live MP3 stream from `AVAssetResourceLoaderDelegate`: it reads far into the false length. A join needs a local HLS stream or `AVAudioEngine`, which is a large change.
 - Keep a full list of settings in the decision record. Each new setting would then need a new record.
 - Put the track logic in `RadioPlayer`. `RadioPlayer` owns playback and the chime. A model of its own keeps the relay client and the artwork out of the playback code.
 
@@ -88,6 +90,7 @@ The SwiftUI views and `RadioPlayer` read these values and contain no other displ
 
 - Playback starts when AVPlayer is ready, after the first burst from Icecast.
 - During a long session the audio can move further behind the live stream, because AVPlayer waits after each stall. **Stop** and then **Play** connects again near the live position.
+- After a network change, AVPlayer connects again and adds the Icecast burst after the audio that it already holds. So the listener can hear a maximum of one burst length a second time. With a `burst-size` of 320,000 bytes at 128 kbps, that is about 20 s. On 2026-10-05 the operator accepted this repeat in place of lost audio. ICY sync keeps the display correct during a repeat.
 - An old value of the removed setting can stay in `UserDefaults` under `citizenRadio.bufferSeconds`. The app does not read it.
 - The app does not show the Shortcuts help or the output device name.
 - The image of the previous track stays until the app loads the new artwork. If the app cannot load the artwork, the screen shows the placeholder.

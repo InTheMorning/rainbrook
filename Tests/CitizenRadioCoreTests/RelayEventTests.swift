@@ -101,4 +101,22 @@ final class RelayEventTests: XCTestCase {
             XCTAssertEqual(error as? RelayEvent.ParseError, .path)
         }
     }
+
+    func testRemoteValueURL() throws {
+        let uri = "https://api.musicindex.org/v1/liveitems/DFnUwDM1mzcljaF4pI9Q6w"
+        let event = try RelayEvent(uri: uri)
+        let expected = URL(
+            string: "https://api.musicindex.org/v1/liveitems/DFnUwDM1mzcljaF4pI9Q6w/remoteValue"
+        )!
+        XCTAssertEqual(event.remoteValueURL, expected)
+    }
+
+    func testValueEventsURL() throws {
+        let uri = "https://api.musicindex.org/v1/liveitems/DFnUwDM1mzcljaF4pI9Q6w"
+        let event = try RelayEvent(uri: uri)
+        let expected = URL(
+            string: "https://api.musicindex.org/v1/liveitems/DFnUwDM1mzcljaF4pI9Q6w/events"
+        )!
+        XCTAssertEqual(event.valueEventsURL, expected)
+    }
 }

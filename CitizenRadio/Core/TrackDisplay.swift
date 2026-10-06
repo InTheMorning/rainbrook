@@ -11,14 +11,27 @@ public struct TrackDisplay: Equatable, Sendable {
         case invalid
     }
 
+    /// Names the live value payload for this track. ADR 0012 §The pairing names its use.
+    public struct ValueIdentity: Equatable, Sendable {
+        public let eventGuid: String
+        public let blockGuid: String
+
+        public init(eventGuid: String, blockGuid: String) {
+            self.eventGuid = eventGuid
+            self.blockGuid = blockGuid
+        }
+    }
+
     public let artist: String
     public let title: String
     public let artwork: Artwork?
+    public let value: ValueIdentity?
 
-    public init(artist: String, title: String, artwork: Artwork?) {
+    public init(artist: String, title: String, artwork: Artwork?, value: ValueIdentity? = nil) {
         self.artist = artist
         self.title = title
         self.artwork = artwork
+        self.value = value
     }
 
     /// Decodes a relay display state. Gives nil for {"track": null}.
@@ -99,6 +112,14 @@ public struct TrackDisplay: Equatable, Sendable {
             }
         }
 
-        return TrackDisplay(artist: artist, title: title, artwork: artwork)
+        // Read value {eventGuid, blockGuid}. Any other shape gives value = nil, with no throw.
+        var value: ValueIdentity?
+        if let valueDict = track["value"] as? [String: Any],
+           let eventGuid = valueDict["eventGuid"] as? String, !eventGuid.isEmpty,
+           let blockGuid = valueDict["blockGuid"] as? String, !blockGuid.isEmpty {
+            value = ValueIdentity(eventGuid: eventGuid, blockGuid: blockGuid)
+        }
+
+        return TrackDisplay(artist: artist, title: title, artwork: artwork, value: value)
     }
 }

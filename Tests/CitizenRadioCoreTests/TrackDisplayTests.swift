@@ -213,4 +213,76 @@ final class TrackDisplayTests: XCTestCase {
             XCTAssertEqual(error as? TrackDisplay.DecodeError, .invalid)
         }
     }
+
+    func testDecodeReadsValueIdentity() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Miles Davis",
+                "title": "Pharaoh's Dance",
+                "value": {
+                    "eventGuid": "event-guid-1",
+                    "blockGuid": "block-guid-1"
+                }
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertEqual(
+            track?.value,
+            TrackDisplay.ValueIdentity(eventGuid: "event-guid-1", blockGuid: "block-guid-1")
+        )
+    }
+
+    func testDecodeIgnoresValueWithEmptyBlockGuid() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Miles Davis",
+                "title": "Pharaoh's Dance",
+                "value": {
+                    "eventGuid": "event-guid-1",
+                    "blockGuid": ""
+                }
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNil(track?.value)
+    }
+
+    func testDecodeIgnoresValueOfAThirdShape() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Miles Davis",
+                "title": "Pharaoh's Dance",
+                "value": "not-an-object"
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNil(track?.value)
+    }
+
+    func testMissingValueDefaultsToNil() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title"
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNil(track?.value)
+    }
 }

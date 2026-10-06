@@ -87,6 +87,14 @@ public struct RelayEvent: Equatable, Sendable {
         origin.appending(path: "/v1/liveitems/\(eventID)/display/events")
     }
 
+    public var remoteValueURL: URL {
+        origin.appending(path: "/v1/liveitems/\(eventID)/remoteValue")
+    }
+
+    public var valueEventsURL: URL {
+        origin.appending(path: "/v1/liveitems/\(eventID)/events")
+    }
+
     public func artworkURL(sha256: String) -> URL {
         origin.appending(path: "/v1/liveitems/\(eventID)/artwork/\(sha256)")
     }

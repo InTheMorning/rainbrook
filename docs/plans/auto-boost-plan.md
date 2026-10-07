@@ -1,6 +1,6 @@
 # Auto-boost: phase plan
 
-- Status: active, 2026-10-06. This plan does not make rules. [ADR 0013](../adr/0013-boosts.md) owns them. Tasks 001 to 006 implemented the archived [ADR 0012](../archive/adr/0012-auto-boost.md).
+- Status: active, 2026-10-06. This plan does not make rules. [ADR 0013](../adr/0013-boosts.md) owns them. [ADR 0016](../adr/0016-boost-switch-back-play-time-and-retry.md) owns the rules of tasks 012 to 014. Tasks 001 to 006 implemented the archived [ADR 0012](../archive/adr/0012-auto-boost.md).
 - Review: [auto-boost review checklist](../reviews/auto-boost-review-checklist.md).
 
 ## Goal
@@ -42,9 +42,12 @@ The listener can also send a boost with a message to the track that plays, and s
 | [008: Boost history core](../tasks/auto-boost-task-008-boost-history.md) | A | Sonnet | 006 |
 | [009: Message, names, manual decision and part results](../tasks/auto-boost-task-009-message-and-manual.md) | B | Opus | 007, 008 |
 | [010: Manual boost, history writes and history screen](../tasks/auto-boost-task-010-manual-boost-and-history.md) | C | Opus | 007 to 009 |
-| [011: Xcode project and documents](../tasks/auto-boost-task-011-xcode-and-docs.md) | D | Sonnet | 010 |
+| [011: Xcode project and documents](../tasks/auto-boost-task-011-xcode-and-docs.md) | G | Sonnet | 014 |
+| [012: Switch back and minimum play time](../tasks/auto-boost-task-012-switch-back-and-play-time.md) | E | Sonnet | 010 |
+| [013: Failure reason and retry core](../tasks/auto-boost-task-013-retry-core.md) | E | Opus | 010 |
+| [014: Automatic and manual retry in the app](../tasks/auto-boost-task-014-retry-app.md) | F | Opus | 012, 013 |
 
-Tasks 001 to 006 are complete. Tasks in the same wave change different files, so they can run at the same time.
+Tasks 001 to 010 are complete. Task 011 runs after task 014, so its documents include ADR 0016. Tasks in the same wave change different files, so they can run at the same time.
 
 ## API implications
 

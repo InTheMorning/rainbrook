@@ -9,6 +9,7 @@
   - [ADR 0007](0007-nwc-wallet-configuration.md): the wallet connection, the secret and the daily limit.
   - [ADR 0011](0011-icy-sync-of-the-relay-display.md): the ICY text tells when the listener hears a track.
   - [ADR 0014](0014-player-screen-with-boost-button.md): the player screen and its Boost button.
+  - [ADR 0016](0016-boost-switch-back-play-time-and-retry.md): replaces trigger rule 5 and the rule that the app does not retry. It adds the minimum play time, the failure reasons and the retry.
 
 ## Context
 
@@ -54,7 +55,7 @@ The Wallet section of the settings sheet has these boost items. They are active 
 2. A change of the ICY text to a non-empty text T starts a candidate for T. The text before T is P.
 3. While a candidate runs, the trigger keeps the newest relay track that ICY sync selected for T.
 4. A change of the ICY text from T to a text that is not T and not P completes the candidate. An empty text also completes it.
-5. A change of the ICY text from T back to P drops the candidate. This is the reconnect repeat of ADR 0014: the listener hears the end of P again.
+5. A change of the ICY text from T back to P drops the candidate. This is the reconnect repeat of ADR 0014: the listener hears the end of P again. [ADR 0016](0016-boost-switch-back-play-time-and-retry.md) §The switch back replaces this rule.
 6. The end of the session drops the candidate: Stop, a playback error, or a change of the **Track info** event.
 7. A stall or a reconnect with no change of the ICY text does not change the candidate.
 
@@ -110,7 +111,7 @@ The app pays each part in sequence over one NWC connection:
 - The message is the **Boost message** setting for an auto-boost, and the text in the boost sheet for a manual boost.
 - The wallet must list `pay_keysend` for a keysend part and `pay_invoice` for a lightning address part. Else that part is not paid.
 - Each NWC request has a time limit of 30 seconds. Each LNURL request has a time limit of 15 seconds.
-- The app does not retry a failed part. A failure of one part does not stop the other parts.
+- A failure of one part does not stop the other parts. [ADR 0016](0016-boost-switch-back-play-time-and-retry.md) §The retry gives the retry rules.
 
 ### The limits
 
@@ -152,7 +153,7 @@ The app pays each part in sequence over one NWC connection:
 - A track heard from its start to its end gets one auto-boost of the set amount, split among its recipients.
 - The listener can boost the track that plays now, with a message, at any time.
 - A manual boost can make the total of a day more than the daily limit. Auto-boost then stops for the rest of that day.
-- If the same track plays again directly after a different track that was not completed, the trigger can drop it as a repeat. This is a missed auto-boost, never a double payment.
+- If the same track plays again directly after a different track that was not completed, the trigger can drop it as a repeat. This is a missed auto-boost, never a double payment. ADR 0016 §The switch back makes this smaller.
 - Two recent V4V tracks with the same title can make the title pairing pay the newer block. The block ID of relay ADR 0005 removes this risk.
 - The history file grows to a maximum of 200 entries.
 - A message is not secret. Each recipient and the wallet can see it.

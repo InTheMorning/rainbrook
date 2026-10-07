@@ -12,10 +12,25 @@ final class EventStreamClientTests: XCTestCase {
     private let firstBody = Data("{\"title\":\"one\"}".utf8)
     private let secondBody = Data("{\"title\":\"two\"}".utf8)
 
+    private let metadataURL = URL(string: "https://relay.example.com/v1/liveitems/abc/metadata")!
+    private let valueStreamURL = URL(string: "https://relay.example.com/v1/liveitems/abc/events")!
+
     private func makeClient(fetcher: FakeFetcher, opener: FakeOpener, sleeper: FakeSleeper) -> EventStreamClient {
         EventStreamClient(
             snapshotURL: snapshotURL, streamURL: streamURL, eventName: "display",
             opener: opener, fetcher: fetcher, sleep: sleeper.function
+        )
+    }
+
+    /// A client with the settings of the live value client (ADR 0018).
+    private func makeValueClient(
+        fetcher: FakeFetcher, opener: FakeOpener, replayCount: Int = 8,
+        continueCodes: Set<String> = ["metadata_not_found"]
+    ) -> EventStreamClient {
+        EventStreamClient(
+            snapshotURL: metadataURL, streamURL: valueStreamURL, eventName: "remoteValue",
+            replayCount: replayCount, continueCodes: continueCodes,
+            opener: opener, fetcher: fetcher, sleep: FakeSleeper(.suspend).function
         )
     }
 
@@ -186,6 +201,151 @@ final class EventStreamClientTests: XCTestCase {
         await opener.waitUntil { $0.closed.contains(0) }
     }
 
+    // MARK: - Metadata snapshot and replay on connect (ADR 0018)
+
+    func testSnapshotIsReadFromTheGivenURLAndSentAsSnapshot() async {
+        let body = Data(#"{"event_id":"abc","seq":45,"metadata":{}}"#.utf8)
+        let fetcher = FakeFetcher([.response(200, body)])
+        let opener = FakeOpener([.stream(status: 200)])
+        let client = makeValueClient(fetcher: fetcher, opener: opener)
+        var updates = await client.start().makeAsyncIterator()
+
+        let received = await take(3, from: &updates)
+
+        XCTAssertEqual(received, [.status(.connecting), .snapshot(body), .status(.live)])
+        let urls = await fetcher.urls
+        XCTAssertEqual(urls, [metadataURL])
+        await client.stop()
+    }
+
+    func testMetadataNotFoundInContinueCodesOpensStreamWithNoSnapshotAndNoLastEventID() async {
+        let fetcher = FakeFetcher([.response(404, Data(#"{"error":"metadata_not_found"}"#.utf8))])
+        let opener = FakeOpener([.stream(status: 200)])
+        let client = makeValueClient(fetcher: fetcher, opener: opener)
+        var updates = await client.start().makeAsyncIterator()
+
+        let received = await take(2, from: &updates)
+        await opener.send(["event: remoteValue", "id: 5", "data: {}", ""], to: 0)
+        let event = await updates.next()
+
+        XCTAssertEqual(received, [.status(.connecting), .status(.live)])
+        XCTAssertEqual(event, .event(ServerSentEvent(event: "remoteValue", id: "5", data: "{}")))
+        let lastEventIDs = await opener.lastEventIDs
+        XCTAssertEqual(lastEventIDs, [nil])
+        await client.stop()
+    }
+
+    func testEventNotFoundStopsWithNotFoundWhenMetadataNotFoundIsAContinueCode() async {
+        let fetcher = FakeFetcher([.response(404, Data(#"{"error":"event_not_found"}"#.utf8))])
+        let opener = FakeOpener([])
+        let client = makeValueClient(fetcher: fetcher, opener: opener)
+        var updates = await client.start().makeAsyncIterator()
+
+        let received = await take(3, from: &updates)
+
+        XCTAssertEqual(received, [.status(.connecting), .status(.stopped(.notFound))])
+        let openCount = await opener.lastEventIDs.count
+        XCTAssertEqual(openCount, 0)
+    }
+
+    func testMetadataNotFoundWithNoContinueCodesStops() async {
+        let fetcher = FakeFetcher([.response(404, Data(#"{"error":"metadata_not_found"}"#.utf8))])
+        let opener = FakeOpener([])
+        let client = makeClient(fetcher: fetcher, opener: opener, sleeper: FakeSleeper(.suspend))
+        var updates = await client.start().makeAsyncIterator()
+
+        let received = await take(3, from: &updates)
+
+        XCTAssertEqual(received, [.status(.connecting), .status(.stopped(.notFound))])
+        let openCount = await opener.lastEventIDs.count
+        XCTAssertEqual(openCount, 0)
+    }
+
+    func testSeqTwentyAndReplayCountEightReplaysThroughTwenty() async {
+        let body = Data(#"{"event_id":"abc","seq":20,"metadata":{}}"#.utf8)
+        let fetcher = FakeFetcher([.response(200, body)])
+        let opener = FakeOpener([.stream(status: 200)])
+        let client = makeValueClient(fetcher: fetcher, opener: opener)
+        var updates = await client.start().makeAsyncIterator()
+        await skip(3, of: &updates)
+
+        await opener.send([
+            "event: remoteValue", "id: 13", "data: a", "",
+            "event: remoteValue", "id: 20", "data: b", "",
+            "event: remoteValue", "id: 21", "data: c", "",
+        ], to: 0)
+        let received = await take(3, from: &updates)
+
+        XCTAssertEqual(received, [
+            .replay(ServerSentEvent(event: "remoteValue", id: "13", data: "a")),
+            .replay(ServerSentEvent(event: "remoteValue", id: "20", data: "b")),
+            .event(ServerSentEvent(event: "remoteValue", id: "21", data: "c")),
+        ])
+        let lastEventIDs = await opener.lastEventIDs
+        XCTAssertEqual(lastEventIDs, ["12"])
+        await client.stop()
+    }
+
+    func testSeqThreeAndReplayCountEightSendsLastEventIDZero() async {
+        let body = Data(#"{"event_id":"abc","seq":3,"metadata":{}}"#.utf8)
+        let fetcher = FakeFetcher([.response(200, body)])
+        let opener = FakeOpener([.stream(status: 200)])
+        let client = makeValueClient(fetcher: fetcher, opener: opener)
+        var updates = await client.start().makeAsyncIterator()
+        await skip(3, of: &updates)
+
+        let lastEventIDs = await opener.lastEventIDs
+        XCTAssertEqual(lastEventIDs, ["0"])
+        await client.stop()
+    }
+
+    func testSnapshotWithNoSeqSendsNoLastEventIDAndEachEventIsEvent() async {
+        let body = Data(#"{"track":null}"#.utf8)
+        let fetcher = FakeFetcher([.response(200, body)])
+        let opener = FakeOpener([.stream(status: 200)])
+        let client = makeValueClient(fetcher: fetcher, opener: opener)
+        var updates = await client.start().makeAsyncIterator()
+        await skip(3, of: &updates)
+
+        await opener.send(["event: remoteValue", "id: 1", "data: a", ""], to: 0)
+        let event = await updates.next()
+
+        XCTAssertEqual(event, .event(ServerSentEvent(event: "remoteValue", id: "1", data: "a")))
+        let lastEventIDs = await opener.lastEventIDs
+        XCTAssertEqual(lastEventIDs, [nil])
+        await client.stop()
+    }
+
+    func testReconnectAfterEventTwentyOneSendsItsIDAndGivesNoReplay() async {
+        let body = Data(#"{"event_id":"abc","seq":20,"metadata":{}}"#.utf8)
+        let laterBody = Data(#"{"event_id":"abc","seq":22,"metadata":{}}"#.utf8)
+        let fetcher = FakeFetcher([.response(200, body), .response(200, laterBody)])
+        let opener = FakeOpener([.stream(status: 200), .stream(status: 200)])
+        let sleeper = FakeSleeper(.suspendOnly(.seconds(35)))
+        let client = EventStreamClient(
+            snapshotURL: metadataURL, streamURL: valueStreamURL, eventName: "remoteValue",
+            replayCount: 8, continueCodes: ["metadata_not_found"],
+            opener: opener, fetcher: fetcher, sleep: sleeper.function
+        )
+        var updates = await client.start().makeAsyncIterator()
+        await skip(3, of: &updates)
+
+        await opener.send(["event: remoteValue", "id: 21", "data: c", ""], to: 0)
+        _ = await updates.next()
+        await opener.finish(0)
+        let reconnect = await take(4, from: &updates)
+        await opener.send(["event: remoteValue", "id: 22", "data: d", ""], to: 1)
+        let event = await updates.next()
+
+        XCTAssertEqual(reconnect, [
+            .status(.waiting(seconds: 1)), .status(.connecting), .snapshot(laterBody), .status(.live)
+        ])
+        XCTAssertEqual(event, .event(ServerSentEvent(event: "remoteValue", id: "22", data: "d")))
+        let lastEventIDs = await opener.lastEventIDs
+        XCTAssertEqual(lastEventIDs, ["12", "21"])
+        await client.stop()
+    }
+
     // MARK: - Network change
 
     func testNetworkChangedDuringWaitStartsNewAttemptWithNoFurtherWait() async {
@@ -318,6 +478,7 @@ private actor FakeFetcher: SnapshotFetching {
     private var results: [Result]
     private let whenEmpty: Result
     private(set) var callCount = 0
+    private(set) var urls: [URL] = []
 
     init(_ results: [Result], whenEmpty: Result = .suspend) {
         self.results = results
@@ -326,6 +487,7 @@ private actor FakeFetcher: SnapshotFetching {
 
     func fetch(_ url: URL) async throws -> (status: Int, body: Data) {
         callCount += 1
+        urls.append(url)
         let result = results.isEmpty ? whenEmpty : results.removeFirst()
         switch result {
         case .response(let status, let body):

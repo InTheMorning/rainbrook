@@ -196,4 +196,53 @@ final class LiveValueTests: XCTestCase {
             XCTAssertEqual(error as? LiveValuePayload.DecodeError, .invalid)
         }
     }
+
+    // MARK: - GET /metadata snapshot (ADR 0018)
+
+    func testMetadataSnapshotWithPayloadGivesThePayload() throws {
+        let json = """
+        {
+            "event_id": "DFnUwDM1mzcljaF4pI9Q6w",
+            "seq": 45,
+            "updated_at": "2026-10-06T12:00:00Z",
+            "renewed_at": "2026-10-06T12:00:00Z",
+            "lease_expires_at": "2026-10-06T12:10:00Z",
+            "metadata": {
+                "title": "Snapshot Track",
+                "eventGuid": "event-guid-7",
+                "blockGuid": "block-guid-7",
+                "value": {
+                    "destinations": [
+                        { "type": "lnaddress", "address": "artist@merchant.io", "split": 100 }
+                    ]
+                }
+            }
+        }
+        """
+        let payload = try LiveValuePayload.decodeMetadataSnapshot(Data(json.utf8))
+
+        XCTAssertEqual(payload?.title, "Snapshot Track")
+        XCTAssertEqual(payload?.eventGuid, "event-guid-7")
+        XCTAssertEqual(payload?.blockGuid, "block-guid-7")
+        XCTAssertEqual(payload?.destinations.first?.kind, .lightningAddress(name: "artist", host: "merchant.io"))
+    }
+
+    func testMetadataSnapshotWithEmptyMetadataGivesNil() throws {
+        let json = #"{"event_id":"DFnUwDM1mzcljaF4pI9Q6w","seq":3,"metadata":{}}"#
+        let payload = try LiveValuePayload.decodeMetadataSnapshot(Data(json.utf8))
+        XCTAssertNil(payload)
+    }
+
+    func testMetadataSnapshotWithNoMetadataObjectThrows() {
+        let bodies = [
+            #"{"event_id":"DFnUwDM1mzcljaF4pI9Q6w","seq":3}"#,
+            #"{"event_id":"DFnUwDM1mzcljaF4pI9Q6w","metadata":"text"}"#,
+            "[]",
+        ]
+        for body in bodies {
+            XCTAssertThrowsError(try LiveValuePayload.decodeMetadataSnapshot(Data(body.utf8)), body) { error in
+                XCTAssertEqual(error as? LiveValuePayload.DecodeError, .invalid)
+            }
+        }
+    }
 }

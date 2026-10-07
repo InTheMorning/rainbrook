@@ -87,8 +87,9 @@ public struct RelayEvent: Equatable, Sendable {
         origin.appending(path: "/v1/liveitems/\(eventID)/display/events")
     }
 
-    public var remoteValueURL: URL {
-        origin.appending(path: "/v1/liveitems/\(eventID)/remoteValue")
+    /// GET /v1/liveitems/{event_id}/metadata. ADR 0018 §The value snapshot.
+    public var metadataURL: URL {
+        origin.appending(path: "/v1/liveitems/\(eventID)/metadata")
     }
 
     public var valueEventsURL: URL {

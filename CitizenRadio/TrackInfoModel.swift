@@ -174,6 +174,9 @@ final class TrackInfoModel: ObservableObject {
             snapshotURL: event.displayURL,
             streamURL: event.displayEventsURL,
             eventName: "display",
+            // ADR 0018 §The replay on connect: the replay count is IcySync.capacity.
+            // GET /display has no seq on 2026-10-06, so this replay does not occur at this time.
+            replayCount: IcySync.capacity,
             opener: opener,
             fetcher: fetcher
         )
@@ -255,6 +258,20 @@ final class TrackInfoModel: ObservableObject {
                 let delay = DisplayTiming.delay(bufferedAhead: player.bufferedAheadSeconds())
                 schedule(track, after: delay)
             }
+        case .replay(let streamed):
+            // ADR 0018 §The replay on connect: a replayed state goes only into the ICY sync list.
+            // It does not go to the timed apply, and it does not set the relay track.
+            let track: TrackDisplay?
+            do {
+                track = try TrackDisplay.decode(Data(streamed.data.utf8))
+            } catch {
+                return
+            }
+            sync.receive(track)
+            if sync.hasIcy {
+                // ADR 0011: the ICY text releases the state.
+                updateLines()
+            }
         case .status(let status):
             relayStatus = status
             switch status {
@@ -297,9 +314,13 @@ final class TrackInfoModel: ObservableObject {
     private func startValueClient() {
         guard valueClient == nil, let event else { return }
         let valueClient = EventStreamClient(
-            snapshotURL: event.remoteValueURL,
+            // ADR 0018 §The value snapshot: GET /metadata is on the instant timeline, as GET /display is.
+            snapshotURL: event.metadataURL,
             streamURL: event.valueEventsURL,
             eventName: "remoteValue",
+            // ADR 0018 §The replay on connect: the replay count is BoostPairing.capacity.
+            replayCount: BoostPairing.capacity,
+            continueCodes: ["metadata_not_found"],
             opener: opener,
             fetcher: fetcher
         )
@@ -324,17 +345,18 @@ final class TrackInfoModel: ObservableObject {
     }
 
     /// Gives each live value payload to the boost model. An empty or invalid payload is ignored.
+    /// ADR 0018: a replayed payload goes into the pairing, as each other payload does.
     private func handleValue(_ update: EventStreamUpdate) {
-        let data: Data
+        let decoded: LiveValuePayload?
         switch update {
         case .snapshot(let snapshot):
-            data = snapshot
-        case .event(let streamed):
-            data = Data(streamed.data.utf8)
+            decoded = try? LiveValuePayload.decodeMetadataSnapshot(snapshot)
+        case .event(let streamed), .replay(let streamed):
+            decoded = try? LiveValuePayload.decode(Data(streamed.data.utf8))
         case .status:
             return
         }
-        guard let payload = try? LiveValuePayload.decode(data) else { return }
+        guard let payload = decoded else { return }
         boost.payload(payload)
     }
 

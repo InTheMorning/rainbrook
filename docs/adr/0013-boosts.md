@@ -26,7 +26,7 @@ ADR 0012 made these items non-goals, so this record supersedes it. It restates A
 
 Facts on 2026-10-06:
 
-- The relay sends the live value on `GET /v1/liveitems/{id}/remoteValue` and on the SSE route `/v1/liveitems/{id}/events`, with the event name `remoteValue`. The data is one payload.
+- The relay sends the live value on `GET /v1/liveitems/{id}/remoteValue` and on the SSE route `/v1/liveitems/{id}/events`, with the event name `remoteValue`. The data is one payload. [ADR 0018](0018-instant-snapshots-and-replay-on-connect.md) replaces the snapshot source: the app reads `GET /metadata`, not `GET /remoteValue`.
 - A V4V payload has `title`, `eventGuid`, `blockGuid`, optional `feedGuid`, `itemGuid` and `duration`, and `value.model.method = keysend`. Each destination has `type`, `address`, `split`, and optional `name`, `customKey`, `customValue` and `fee`.
 - Between V4V tracks, the payload is a placeholder: the title "No V4V track playing" and one `lnaddress` destination `no-v4v-track@example.invalid`.
 - The display state does not name its payload yet. Relay ADR 0005 and publisher ADR 0012 propose `value {eventGuid, blockGuid}` in the display track.

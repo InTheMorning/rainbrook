@@ -116,4 +116,32 @@ final class BoostPairingTests: XCTestCase {
         let track = TrackDisplay(artist: "Artist", title: "Pharaoh's Dance", artwork: nil)
         XCTAssertNil(pairing.payload(for: track))
     }
+
+    /// ADR 0018: after a connect, the /metadata snapshot gives the payload of the block that plays.
+    func testMetadataSnapshotPayloadPairsWithRelayTrackByBlockGuid() throws {
+        let body = """
+        {
+            "event_id": "DFnUwDM1mzcljaF4pI9Q6w",
+            "seq": 45,
+            "metadata": {
+                "title": "Pharaoh's Dance",
+                "eventGuid": "event-guid",
+                "blockGuid": "block-b",
+                "value": {
+                    "destinations": [{ "type": "lnaddress", "address": "name@merchant.io", "split": 100 }]
+                }
+            }
+        }
+        """
+        let snapshot = try XCTUnwrap(LiveValuePayload.decodeMetadataSnapshot(Data(body.utf8)))
+        var pairing = BoostPairing()
+        pairing.receive(snapshot)
+
+        let track = TrackDisplay(
+            artist: "Miles Davis", title: "Pharaoh's Dance", artwork: nil,
+            value: TrackDisplay.ValueIdentity(eventGuid: "event-guid", blockGuid: "block-b")
+        )
+        XCTAssertEqual(pairing.payload(for: track), snapshot)
+        XCTAssertEqual(pairing.payload(for: track)?.blockGuid, "block-b")
+    }
 }

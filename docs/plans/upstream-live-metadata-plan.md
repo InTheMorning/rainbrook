@@ -77,6 +77,15 @@ The upstream changes are deployed. This phase can start.
 - The ICY sync of ADR 0011 can compare the ICY text with `songLine` by equality, before its text rules. The text rules stay as the fallback for a state with no `songLine`. A new app ADR decides this.
 - A display state with `value` names the block of its track. A boost on ICY can then pay that block, not the newest block. The payment record of the app decides this.
 
+## Phase 2c: snapshots and replay on connect
+
+[ADR 0018](../adr/0018-instant-snapshots-and-replay-on-connect.md) decides this phase. Task: [relay replay task 001](../tasks/relay-replay-task-001-metadata-snapshot-and-replay.md).
+
+- The value client reads its snapshot from the instant `GET /metadata`, not from `GET /remoteValue`.
+- On connect, each client asks for the recent updates with `Last-Event-ID`. So the ICY sync list and the pairing hold the track that the listener hears, also after a connect near a track change. This applies to Icecast and to HLS.
+- Request to the relay: add the display `seq` to the body of `GET /display`. The display replay starts when the relay gives it.
+- Not in this phase: `album`. Relay ADR 0006 and publisher ADR 0013 are Proposed.
+
 ## Phase 3: after publisher ADR 0009
 
 A new app ADR supersedes ADR 0011 for an HLS session. Its expected content:

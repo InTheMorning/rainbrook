@@ -60,7 +60,23 @@ public struct LiveValuePayload: Equatable, Sendable {
               let dict = json as? [String: Any] else {
             throw DecodeError.invalid
         }
+        return try decode(object: dict)
+    }
 
+    /// Decodes the body of GET /metadata: reads the "metadata" object and gives it to decode(_:).
+    /// Throws DecodeError.invalid when the body is not an object or has no "metadata" object.
+    /// ADR 0018 §The value snapshot names this body.
+    public static func decodeMetadataSnapshot(_ data: Data) throws -> LiveValuePayload? {
+        guard let json = try? JSONSerialization.jsonObject(with: data),
+              let body = json as? [String: Any],
+              let metadata = body["metadata"] as? [String: Any] else {
+            throw DecodeError.invalid
+        }
+        return try decode(object: metadata)
+    }
+
+    /// Decodes one payload object. `decode(_:)` names the rules.
+    private static func decode(object dict: [String: Any]) throws -> LiveValuePayload? {
         if dict.isEmpty {
             return nil
         }

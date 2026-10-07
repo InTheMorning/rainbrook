@@ -35,13 +35,16 @@ public enum EventStreamStatus: Equatable, Sendable {
 public enum EventStreamUpdate: Equatable, Sendable {
     case snapshot(Data)                 // apply at once
     case event(ServerSentEvent)         // a streamed event with the configured event name
+    /// A streamed event with an id of the snapshot seq or less (ADR 0018 §The replay on connect).
+    case replay(ServerSentEvent)
     case status(EventStreamStatus)
 }
 
 /// Reads a snapshot, then keeps one server-sent event stream open.
 ///
 /// ADR 0008 §Transport names the attempt sequence, the watchdog and the
-/// backoff. This client imports only `Foundation`. The app gives the HTTP
+/// backoff. ADR 0018 names the snapshot error codes that open the stream, and
+/// the replay on connect. This client imports only `Foundation`. The app gives the HTTP
 /// transport through `LineStreamOpening` and `SnapshotFetching`.
 public actor EventStreamClient {
     public static let backoffSeconds = [1, 2, 4, 8, 16, 30]
@@ -66,6 +69,8 @@ public actor EventStreamClient {
     private let snapshotURL: URL
     private let streamURL: URL
     private let eventName: String
+    private let replayCount: Int
+    private let continueCodes: Set<String>
     private let opener: any LineStreamOpening
     private let fetcher: any SnapshotFetching
     private let watchdog: Duration
@@ -78,10 +83,14 @@ public actor EventStreamClient {
     private var parser = EventStreamParser()
     private var backoffIndex = 0
 
+    /// replayCount: 0 gives no replay.
+    /// continueCodes: the 404 error codes of the snapshot that open the stream with no snapshot.
     public init(
         snapshotURL: URL,
         streamURL: URL,
         eventName: String,
+        replayCount: Int = 0,
+        continueCodes: Set<String> = [],
         opener: any LineStreamOpening,
         fetcher: any SnapshotFetching,
         watchdog: Duration = .seconds(35),
@@ -90,6 +99,8 @@ public actor EventStreamClient {
         self.snapshotURL = snapshotURL
         self.streamURL = streamURL
         self.eventName = eventName
+        self.replayCount = replayCount
+        self.continueCodes = continueCodes
         self.opener = opener
         self.fetcher = fetcher
         self.watchdog = watchdog
@@ -195,25 +206,44 @@ public actor EventStreamClient {
             return .retry
         }
         guard !Task.isCancelled else { return .retry }
+        // ADR 0018: the seq of the snapshot belongs to this attempt only.
+        var snapshotSeq: Int?
         switch snapshot.status {
         case 200:
             send(.snapshot(snapshot.body))
             backoffIndex = 0
+            snapshotSeq = Self.seq(in: snapshot.body)
         case 404:
-            return .stop(.notFound)
+            // ADR 0018 §The value snapshot: a code in continueCodes opens the stream with no snapshot.
+            guard let code = Self.errorCode(in: snapshot.body), continueCodes.contains(code) else {
+                return .stop(.notFound)
+            }
+            backoffIndex = 0
         case 409:
             return .stop(.notReserved)
         default:
             return .retry
         }
 
+        // ADR 0018 §The replay on connect: with no last event ID, ask for the recent updates.
+        let lastEventID: String?
+        var replayThrough: Int?
+        if let parsedID = parser.lastEventID {
+            lastEventID = parsedID
+        } else if let snapshotSeq, replayCount > 0 {
+            lastEventID = String(max(0, snapshotSeq - replayCount))
+            replayThrough = snapshotSeq
+        } else {
+            lastEventID = nil
+        }
+
         let response: LineStreamResponse
         do {
-            response = try await opener.open(streamURL, lastEventID: parser.lastEventID)
+            response = try await opener.open(streamURL, lastEventID: lastEventID)
         } catch {
             return .retry
         }
-        let outcome = await readResponse(response)
+        let outcome = await readResponse(response, replayThrough: replayThrough)
         await Self.close(response.lines)
         return outcome
     }
@@ -221,7 +251,8 @@ public actor EventStreamClient {
     /// Reads the stream until it ends, it fails, or the watchdog fires.
     ///
     /// The caller closes the line stream after this method.
-    private func readResponse(_ response: LineStreamResponse) async -> Outcome {
+    /// An event with a whole-number id of `replayThrough` or less is sent as `.replay`.
+    private func readResponse(_ response: LineStreamResponse, replayThrough: Int?) async -> Outcome {
         guard !Task.isCancelled else { return .retry }
         switch response.status {
         case 200:
@@ -240,10 +271,36 @@ public actor EventStreamClient {
                 return .retry
             }
             if let event = parser.feed(line: line), event.event == eventName {
-                send(.event(event))
+                if let replayThrough, let id = event.id.flatMap({ Int($0) }), id <= replayThrough {
+                    send(.replay(event))
+                } else {
+                    send(.event(event))
+                }
             }
         }
         return .retry
+    }
+
+    // MARK: - Snapshot body
+
+    /// Gives the top-level whole-number `seq` of a JSON object body, or nil.
+    private static func seq(in body: Data) -> Int? {
+        guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+              let number = object["seq"] as? NSNumber,
+              String(cString: number.objCType) != "c" else {
+            return nil
+        }
+        // A JSON boolean has the type code `c`. The check above rejects it.
+        guard let seq = Int(exactly: number.doubleValue), seq >= 0 else { return nil }
+        return seq
+    }
+
+    /// Gives the `error` code of a JSON object body, or nil.
+    private static func errorCode(in body: Data) -> String? {
+        guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else {
+            return nil
+        }
+        return object["error"] as? String
     }
 
     /// Races the next line against the watchdog sleep, and cancels the loser.

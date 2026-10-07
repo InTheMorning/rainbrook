@@ -102,13 +102,13 @@ final class RelayEventTests: XCTestCase {
         }
     }
 
-    func testRemoteValueURL() throws {
+    func testMetadataURL() throws {
         let uri = "https://api.musicindex.org/v1/liveitems/DFnUwDM1mzcljaF4pI9Q6w"
         let event = try RelayEvent(uri: uri)
         let expected = URL(
-            string: "https://api.musicindex.org/v1/liveitems/DFnUwDM1mzcljaF4pI9Q6w/remoteValue"
+            string: "https://api.musicindex.org/v1/liveitems/DFnUwDM1mzcljaF4pI9Q6w/metadata"
         )!
-        XCTAssertEqual(event.remoteValueURL, expected)
+        XCTAssertEqual(event.metadataURL, expected)
     }
 
     func testValueEventsURL() throws {

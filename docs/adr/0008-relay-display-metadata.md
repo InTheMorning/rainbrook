@@ -48,6 +48,7 @@ The research note compares the two transports for a phone in a moving car.
   - A reconnect sends `Last-Event-ID` with the last display sequence number.
 - The client runs only while the playback state is `connecting` or `playing`. Stop closes it.
 - `404 event_not_found` and `409 event_not_reserved` stop the client and show a message in Settings. Other errors start the backoff.
+- [ADR 0018](0018-instant-snapshots-and-replay-on-connect.md) adds the replay on connect, and the `metadata_not_found` rule for the value client.
 
 ### Display data
 

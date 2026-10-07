@@ -17,36 +17,45 @@ final class StreamQualityTests: XCTestCase {
         defaults.removePersistentDomain(forName: suiteName)
     }
 
-    func testAutoHasNoPeakBitRate() {
-        XCTAssertEqual(StreamQuality.auto.peakBitRate, 0)
+    func testCaseOrderIsThePickerOrder() {
+        XCTAssertEqual(StreamQuality.allCases, [.high, .medium, .low])
     }
 
-    func testMediumPeakBitRate() {
+    func testMaximumBandwidths() {
+        XCTAssertNil(StreamQuality.high.maximumBandwidth)
+        XCTAssertEqual(StreamQuality.medium.maximumBandwidth, 120_000)
+        XCTAssertEqual(StreamQuality.low.maximumBandwidth, 64_000)
+    }
+
+    func testPeakBitRates() {
+        XCTAssertEqual(StreamQuality.high.peakBitRate, 0)
         XCTAssertEqual(StreamQuality.medium.peakBitRate, 120_000)
-    }
-
-    func testLowPeakBitRate() {
         XCTAssertEqual(StreamQuality.low.peakBitRate, 64_000)
     }
 
     func testLabels() {
-        XCTAssertEqual(StreamQuality.auto.label, "Auto")
+        XCTAssertEqual(StreamQuality.high.label, "High")
         XCTAssertEqual(StreamQuality.medium.label, "Medium")
         XCTAssertEqual(StreamQuality.low.label, "Low")
     }
 
-    func testDefaultQualityIsAuto() {
-        XCTAssertEqual(StreamQualitySetting(defaults: defaults).quality, .auto)
+    func testDefaultQualityIsMedium() {
+        XCTAssertEqual(StreamQualitySetting(defaults: defaults).quality, .medium)
     }
 
     func testStoredLowQualityIsRead() {
-        StreamQualitySetting(defaults: defaults).quality = .low
+        defaults.set("low", forKey: "citizenRadio.streamQuality")
         XCTAssertEqual(StreamQualitySetting(defaults: defaults).quality, .low)
     }
 
-    func testStoredBadValueGivesAuto() {
+    func testStoredAutoGivesMedium() {
+        defaults.set("auto", forKey: "citizenRadio.streamQuality")
+        XCTAssertEqual(StreamQualitySetting(defaults: defaults).quality, .medium)
+    }
+
+    func testStoredBadValueGivesMedium() {
         defaults.set("bad", forKey: "citizenRadio.streamQuality")
-        XCTAssertEqual(StreamQualitySetting(defaults: defaults).quality, .auto)
+        XCTAssertEqual(StreamQualitySetting(defaults: defaults).quality, .medium)
     }
 
     // ADR 0020 §The HLS live offset.

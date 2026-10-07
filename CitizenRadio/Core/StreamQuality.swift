@@ -1,22 +1,33 @@
 import Foundation
 
-/// ADR 0020 §Stream quality: the choice for the HLS bitrate maximum.
+/// ADR 0020 §Stream quality: the choice for the HLS variant.
+/// Each choice plays one fixed variant of the master playlist.
 public enum StreamQuality: String, CaseIterable, Equatable, Sendable {
-    case auto, medium, low
+    // The sequence of the cases is the sequence in the Settings picker.
+    case high, medium, low
 
-    /// The maximum in bits each second for preferredPeakBitRate. 0 means no maximum.
-    public var peakBitRate: Double {
+    /// The maximum in bits each second. nil means no maximum (high).
+    public var maximumBandwidth: Int? {
         switch self {
-        case .auto: return 0
+        case .high: return nil
         case .medium: return 120_000
         case .low: return 64_000
         }
     }
 
-    /// The text in Settings: "Auto", "Medium", "Low".
+    /// preferredPeakBitRate when the app plays the URL as it is. 0 means no maximum.
+    public var peakBitRate: Double {
+        switch self {
+        case .high: return 0
+        case .medium: return 120_000
+        case .low: return 64_000
+        }
+    }
+
+    /// The text in Settings: "High", "Medium", "Low".
     public var label: String {
         switch self {
-        case .auto: return "Auto"
+        case .high: return "High"
         case .medium: return "Medium"
         case .low: return "Low"
         }
@@ -32,12 +43,12 @@ public struct StreamQualitySetting {
         self.defaults = defaults
     }
 
-    /// The default is .auto. A stored value that is not a case gives .auto.
+    /// The default is .medium. A stored value that is not a case, for example "auto" from a previous version, gives .medium.
     public var quality: StreamQuality {
         get {
             guard let rawValue = defaults.string(forKey: key),
                   let quality = StreamQuality(rawValue: rawValue) else {
-                return .auto
+                return .medium
             }
             return quality
         }

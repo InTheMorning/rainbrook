@@ -25,13 +25,22 @@ Facts on 2026-10-07:
 
 ### Stream quality
 
+Amended 2026-10-07. The first form of this section had Auto, Medium and Low as maximum values for `preferredPeakBitRate`. A test on HLS showed a problem. After a network gap of 15 seconds, AVPlayer changed from the 96k variant to the 48k variant and back. Each change was a jump back in the audio.
+
+During the gap each reload of the playlist of the variant failed, and AVPlayer then changed to a different variant. A maximum value does not prevent this, because two variants stay below 120,000 bits each second.
+
 - A **Stream quality** setting in Settings, for each station together:
-  - **Auto**: no maximum. The default.
-  - **Medium**: a maximum of 120,000 bits each second.
-  - **Low**: a maximum of 64,000 bits each second.
-- The app sets `preferredPeakBitRate` of each new player item from the setting. A change of the setting applies to the item that plays, with no restart.
+  - **High**: the variant with the highest bandwidth.
+  - **Medium**: the variant with the highest bandwidth of 120,000 or less. The default.
+  - **Low**: the variant with the highest bandwidth of 64,000 or less.
+- For High, Medium and Low, the app reads the master playlist of the stream before playback. It gives AVPlayer the media playlist of the selected variant only. So AVPlayer has no other variant to change to.
+  - If no variant has a bandwidth at or below the limit, the app selects the variant with the lowest bandwidth.
+  - If the URL is not a master playlist, or the read fails, the app plays the URL as it is. Then the maximum value of the setting applies with `preferredPeakBitRate`: High none, Medium 120,000, Low 64,000.
+- The app reads the master playlist of each stream of the station when playback starts, and keeps the result for that playback session. The reads run at the same time, with a time limit of 5 seconds. So they leave a minimum of 15 seconds of the connection time limit of ADR 0021. A fallback and a new item of ADR 0021 use it.
+- A change of the setting applies at the next **Play**.
 - The setting applies to HLS. An Icecast stream has one bitrate, and the setting has no effect on it.
-- With the variants of 2026-10-07, **Low** selects the 48k variant and **Medium** selects the 96k variant. AVPlayer selects a lower variant when the network is slow, with each setting.
+- A saved Medium or Low keeps its value. A saved Auto gives Medium.
+- There is no Auto choice. With the master playlist, AVPlayer changes the variant by itself, and a change can give a jump. A lower bitrate helps only on a very slow or throttled network, and the operator can then select Low. Removed 2026-10-07 by the operator.
 
 ### The HLS live offset
 
@@ -46,7 +55,7 @@ Facts on 2026-10-07:
 
 ## Alternatives considered
 
-- **No setting, Auto only.** The operator asked for a choice. Low also limits the mobile data.
+- **Auto, the master playlist.** AVPlayer adapts the bitrate to the network, but a change of variant after a network gap gave jumps back. Removed 2026-10-07.
 - **A quality for each station.** The network, not the station, decides the correct quality. One setting is simpler.
 - **Only `preferredForwardBufferDuration`, with no offset.** A live player cannot buffer audio that the server does not yet have. The offset from the live edge makes the space for the buffer, and this property fills it.
 - **A fixed offset.** The operator asked for a choice. 30 seconds stays the default, because it is more than most network problems on a phone, and a larger value adds delay.
@@ -62,7 +71,7 @@ Facts on 2026-10-07:
 
 These rules apply while this decision is current.
 
-- The three choices, their maximum values and the default. The four buffer values and the default of 30 seconds. `StreamQualityTests` enforces them.
+- The four choices, the variant selection, their maximum values and the default. The four buffer values and the default of 30 seconds. `StreamQualityTests` enforces them.
 - The live offset and the quality on each new player item, and the quality change on the item that plays. Manual check: examine `RadioPlayer`.
 
 ## Acceptance criteria

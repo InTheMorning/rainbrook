@@ -3,7 +3,7 @@ import Foundation
 public struct StreamSettingsDraft: Equatable, Sendable {
     public var chimeEnabled: Bool
     public var dailyLimitSats: Int
-    /// ADR 0020 §Stream quality: the Settings choice for the HLS bitrate maximum.
+    /// ADR 0020 §Stream quality: the Settings choice for the HLS variant.
     public var streamQuality: StreamQuality
     /// ADR 0020 §The HLS live offset: the Settings choice for the HLS buffer.
     public var hlsBuffer: HLSBuffer

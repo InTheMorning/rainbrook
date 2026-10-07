@@ -7,6 +7,16 @@ import UIKit
 import CitizenRadioCore
 #endif
 
+/// ADR 0020 §Stream quality: one stream of the station after the read of its master playlist.
+private struct PlaybackStream: Sendable {
+    /// The media playlist of the selected variant, or the station URL as it is.
+    let url: URL
+    /// The bandwidth of the selected variant, or nil when the app plays the URL as it is.
+    let bandwidth: Int?
+    /// 0 for a selected variant. Else the maximum of the quality.
+    let peakBitRate: Double
+}
+
 @MainActor
 final class RadioPlayer: ObservableObject {
     static let shared = RadioPlayer()
@@ -32,7 +42,9 @@ final class RadioPlayer: ObservableObject {
     private var activeStationID: UUID?
     private var activeURL: URL?
     /// ADR 0017 §The fallback: the streams of the station, and the index of the stream that plays.
-    private var streams: [URL] = []
+    /// ADR 0020 §Stream quality: each stream is the result of the read at Play, for this playback session.
+    /// The fallback and each new item of ADR 0021 use this list.
+    private var streams: [PlaybackStream] = []
     private var streamIndex = 0
     private var request = PlaybackRequest()
     /// Changes at each Play, Stop and interruption. `playAndWait()` waits on this value.
@@ -133,11 +145,6 @@ final class RadioPlayer: ObservableObject {
         deactivateSession()
     }
 
-    /// ADR 0020 §Stream quality: a saved quality change applies to the item that plays, with no restart.
-    func setQuality(_ quality: StreamQuality) {
-        player?.currentItem?.preferredPeakBitRate = quality.peakBitRate
-    }
-
     /// Gives the seconds of loaded audio after the play position, or 0 without an item.
     func bufferedAheadSeconds() -> Double {
         guard let item = player?.currentItem else { return 0 }
@@ -182,10 +189,12 @@ final class RadioPlayer: ObservableObject {
         request.play()
         activeStationID = station.id
         activeURL = station.stream
-        streams = station.streams
+        // ADR 0020 §Stream quality: the list stays empty until the read of the master playlists is complete.
+        streams = []
         streamIndex = 0
         usingAlternateStream = false
-        let url = station.stream
+        let stationStreams = station.streams
+        let quality = StreamQualitySetting().quality
         sessionActive = false
         state = .connecting
         updateNowPlaying()
@@ -200,10 +209,77 @@ final class RadioPlayer: ObservableObject {
                 self.fail(error.localizedDescription)
                 return
             }
-            guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
+            // ADR 0020 §Stream quality: read the master playlists off the main actor, before the first item.
+            let resolved = await Self.resolveStreams(stationStreams, quality: quality)
+            guard let self, self.sessionID == expectedID, self.request.wantsPlayback,
+                  let first = resolved.first else { return }
+            // Do not record a URL.
+            for (index, stream) in resolved.enumerated() {
+                let result = stream.bandwidth.map(String.init) ?? "as it is"
+                PlaybackDiagnostics.record("Variant: stream \(index), \(result)")
+            }
+            self.streams = resolved
             self.sessionActive = true
             self.updateChime()
-            self.startPlayer(url: url, expectedID: expectedID)
+            self.startPlayer(stream: first, expectedID: expectedID)
+        }
+    }
+
+    /// ADR 0020 §Stream quality: reads the master playlist of each stream, one after the other,
+    /// and gives the URL of the selected variant. If a read fails, the app keeps the URL of that stream.
+    @concurrent
+    private nonisolated static func resolveStreams(_ urls: [URL], quality: StreamQuality) async -> [PlaybackStream] {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = masterReadSeconds
+        configuration.timeoutIntervalForResource = masterReadSeconds
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        // The reads run at the same time, so they use a maximum of `masterReadSeconds` together.
+        // The 20-second connection limit of ADR 0021 runs during the reads.
+        return await withTaskGroup(of: (Int, PlaybackStream).self) { group in
+            for (index, url) in urls.enumerated() {
+                group.addTask {
+                    let text = await readMasterText(url, session: session)
+                    let variants = text.map { HLSMasterPlaylist.variants(in: $0, baseURL: url) } ?? []
+                    if let variant = HLSMasterPlaylist.select(quality, from: variants) {
+                        return (index, PlaybackStream(url: variant.url, bandwidth: variant.bandwidth, peakBitRate: 0))
+                    }
+                    return (index, PlaybackStream(url: url, bandwidth: nil, peakBitRate: quality.peakBitRate))
+                }
+            }
+            var resolved: [(Int, PlaybackStream)] = []
+            for await item in group {
+                resolved.append(item)
+            }
+            return resolved.sorted { $0.0 < $1.0 }.map(\.1)
+        }
+    }
+
+    /// The time limit of one read of a master playlist, in seconds.
+    private nonisolated static let masterReadSeconds: TimeInterval = 5
+    /// The maximum size of a master playlist. A larger response is not a master playlist.
+    private nonisolated static let masterMaximumBytes = 65_536
+
+    /// Gives the text of the URL when the status is 200 and the text starts with `#EXTM3U`. Else nil.
+    /// An Icecast URL sends audio with no stop, so the read stops at the first bytes that are not
+    /// a playlist, or at `masterMaximumBytes`.
+    @concurrent
+    private nonisolated static func readMasterText(_ url: URL, session: URLSession) async -> String? {
+        do {
+            let (bytes, response) = try await session.bytes(from: url)
+            defer { bytes.task.cancel() }
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+            let header = Array("#EXTM3U".utf8)
+            var data = Data()
+            for try await byte in bytes {
+                if data.count < header.count, byte != header[data.count] { return nil }
+                data.append(byte)
+                if data.count > masterMaximumBytes { return nil }
+            }
+            return String(data: data, encoding: .utf8)
+        } catch {
+            return nil
         }
     }
 
@@ -222,11 +298,12 @@ final class RadioPlayer: ObservableObject {
         }
     }
 
-    private func startPlayer(url: URL, expectedID: UUID) {
-        let item = AVPlayerItem(url: url)
-        // ADR 0020 §Stream quality and §The HLS live offset: these three properties apply
+    private func startPlayer(stream: PlaybackStream, expectedID: UUID) {
+        let item = AVPlayerItem(url: stream.url)
+        // ADR 0020 §Stream quality and §The HLS live offset: these properties apply
         // to the primary stream and to the alternate stream.
-        item.preferredPeakBitRate = StreamQualitySetting().quality.peakBitRate
+        // A selected variant has no other variant, so its value is 0. A URL as it is has the maximum of the quality.
+        item.preferredPeakBitRate = stream.peakBitRate
         item.configuredTimeOffsetFromLive = CMTime(seconds: Double(HLSBufferSetting().buffer.seconds), preferredTimescale: 1)
         // ADR 0020 §The HLS live offset: the offset applies at the start only. With the preserve property on,
         // AVPlayer jumped back during and after a network gap, because the live edge it knew stopped moving.
@@ -475,7 +552,7 @@ final class RadioPlayer: ObservableObject {
         state = .connecting
         updateNowPlaying()
         startConnectionTimeout()
-        startPlayer(url: streams[nextIndex], expectedID: sessionID)
+        startPlayer(stream: streams[nextIndex], expectedID: sessionID)
     }
 
     /// Releases the player, the item and the station of the session.
@@ -644,7 +721,7 @@ final class RadioPlayer: ObservableObject {
         }
         lastNewItemSecond = now
         newItemWaitsForPath = false
-        startPlayer(url: streams[streamIndex], expectedID: sessionID)
+        startPlayer(stream: streams[streamIndex], expectedID: sessionID)
     }
 
     /// Ends the drop that runs: cancels its task, and clears `dropSeconds` and the budget.

@@ -3,7 +3,7 @@ import XCTest
 
 final class StreamSettingsDraftTests: XCTestCase {
     private func makeDraft(
-        chimeEnabled: Bool, dailyLimitSats: Int = 1000, streamQuality: StreamQuality = .auto,
+        chimeEnabled: Bool, dailyLimitSats: Int = 1000, streamQuality: StreamQuality = .medium,
         boostEnabled: Bool, boostAmountText: String = "100", boostMessage: String = "",
         boostSenderName: String = "", boostAppName: String = "", boostMinimumPlaySecondsText: String = "60"
     ) -> StreamSettingsDraft {
@@ -47,7 +47,7 @@ final class StreamSettingsDraftTests: XCTestCase {
     func testStreamQualityChangeBackToSavedValueCannotSave() {
         var draft = makeDraft(chimeEnabled: true, boostEnabled: false)
         draft.streamQuality = .low
-        draft.streamQuality = .auto
+        draft.streamQuality = .medium
         XCTAssertFalse(draft.canSave)
     }
 

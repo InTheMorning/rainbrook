@@ -37,6 +37,7 @@ Facts on 2026-10-07:
 
 - A **HLS buffer** setting in Settings: 10, 30, 60 or 90 seconds. The default is 30 seconds. Added 2026-10-07.
 - Each new player item gets `configuredTimeOffsetFromLive` from the setting, and `automaticallyPreservesTimeOffsetFromLive` true.
+- Each new player item also gets `preferredForwardBufferDuration` equal to the setting. The offset only permits the buffer. This property asks AVPlayer to load that much audio ahead. Added 2026-10-07.
 - A change of the setting applies at the next **Play**, because AVPlayer reads the offset when a stream starts.
 - The largest value is 90 seconds. The server window of 2 minutes needs some segments of space behind the player.
 - If the live window is shorter, AVPlayer uses the largest offset that the window permits.
@@ -45,7 +46,7 @@ Facts on 2026-10-07:
 
 - **No setting, Auto only.** The operator asked for a choice. Low also limits the mobile data.
 - **A quality for each station.** The network, not the station, decides the correct quality. One setting is simpler.
-- **A larger `preferredForwardBufferDuration`.** A live player cannot buffer audio that the server does not yet have. The offset from the live edge is the buffer.
+- **Only `preferredForwardBufferDuration`, with no offset.** A live player cannot buffer audio that the server does not yet have. The offset from the live edge makes the space for the buffer, and this property fills it.
 - **A fixed offset.** The operator asked for a choice. 30 seconds stays the default, because it is more than most network problems on a phone, and a larger value adds delay.
 
 ## Consequences

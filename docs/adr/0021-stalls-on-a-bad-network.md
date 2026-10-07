@@ -35,6 +35,7 @@ The app has a `NetworkPathMonitor`, but only the relay clients use it.
 - In the played phase, a stall, a player item failure and an end of the stream are each a drop.
 - A drop starts a stall budget of 60 seconds. The budget counts only the seconds while the network path is satisfied. With no path, the app waits for the network and does not fail.
 - **Item failure or stream end in the played phase:** the app makes a new player item for the same stream. It waits until the network path is satisfied, then starts the item. The same budget continues. It does not start the alternate stream.
+- **A stall with a network:** a stall that lasts 4 seconds while the path is satisfied also gets a new item for the same stream. While the stall continues, the app makes a new item each 5 seconds. Added 2026-10-07: on HLS, after a network gap of 15 seconds, AVPlayer played the buffer to its end and did not load again, with no item failure.
 - In one drop, a new item starts a minimum of 5 seconds after the new item before it. So a stream that fails at once does not get many requests each second. The first new item of a drop starts at once.
 - When the stream plays again, the budget ends. The next drop starts a new budget.
 - When the budget ends with no playback, the failure path of ADR 0017 applies: the alternate stream, if there is one, else the error.
@@ -75,7 +76,7 @@ These rules apply while this decision is current.
 - The stall budget counts only the seconds with a satisfied path, and ends at 60. `StallBudgetTests` enforces it.
 - The chime rule for each phase and the 3 seconds. `ChimeSettingTests` enforces it.
 - The status text with no network path. `PlayerScreenModelTests` enforces it.
-- The new item for the same stream after a drop, the phases, and the call to `play()` at a path change. Manual check: examine `RadioPlayer`.
+- The phases, and the call to `play()` at a path change. The new item for the same stream after a drop, also after a stall of 4 seconds with a network. Manual check: examine `RadioPlayer`.
 
 ## Acceptance criteria
 

@@ -80,6 +80,9 @@ final class RadioPlayer: ObservableObject {
     /// A new item starts a minimum of `newItemIntervalSeconds` after the one before it.
     private var lastNewItemSecond: Int?
     private static let newItemIntervalSeconds = 5
+    /// ADR 0021 §The stall budget: a stall that lasts this time with a satisfied path also gets a new item.
+    /// AVPlayer can stop loading a live HLS item after a network change, with no item failure.
+    private static let stalledItemSeconds = 4
 
     private init() {
         updateOutput()
@@ -226,6 +229,9 @@ final class RadioPlayer: ObservableObject {
         item.preferredPeakBitRate = StreamQualitySetting().quality.peakBitRate
         item.configuredTimeOffsetFromLive = CMTime(seconds: Double(HLSBufferSetting().buffer.seconds), preferredTimescale: 1)
         item.automaticallyPreservesTimeOffsetFromLive = true
+        // ADR 0020 §The HLS live offset: AVPlayer loads this much audio ahead. Without it, iOS selects
+        // a smaller amount, and the cushion does not fill.
+        item.preferredForwardBufferDuration = Double(HLSBufferSetting().buffer.seconds)
         let newPlayer = AVPlayer(playerItem: item)
         newPlayer.automaticallyWaitsToMinimizeStalling = true
         player = newPlayer
@@ -535,7 +541,8 @@ final class RadioPlayer: ObservableObject {
                         )
                         return
                     }
-                    // A new item that waited for its interval starts now.
+                    // A stalled item gets a new item, and a new item that waited for its interval starts now.
+                    self.replaceStalledItemIfDue()
                     self.startNewItemIfDue()
                 }
             }
@@ -547,6 +554,24 @@ final class RadioPlayer: ObservableObject {
             startNewItemIfDue()
         }
         updateWaitingForNetwork()
+        updateNowPlaying()
+    }
+
+    /// ADR 0021 §The stall budget: a stall with a satisfied path gets a new item for the same stream.
+    /// The first one comes after `stalledItemSeconds` of drop. While the stall continues, each next one
+    /// comes `newItemIntervalSeconds` after the one before it.
+    private func replaceStalledItemIfDue() {
+        guard dropTask != nil, !newItemWaitsForPath, pathSatisfied, request.wantsPlayback else { return }
+        let now = dropSeconds ?? 0
+        if let lastNewItemSecond {
+            guard now - lastNewItemSecond >= Self.newItemIntervalSeconds else { return }
+        } else {
+            guard now >= Self.stalledItemSeconds else { return }
+        }
+        // releaseItem() sets a new session identifier. Then the callbacks of the stalled item do nothing.
+        releaseItem()
+        newItemWaitsForPath = true
+        startNewItemIfDue()
         updateNowPlaying()
     }
 

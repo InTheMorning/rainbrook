@@ -36,7 +36,9 @@ Facts on 2026-10-07:
 ### The HLS live offset
 
 - A **HLS buffer** setting in Settings: 10, 30, 60 or 90 seconds. The default is 30 seconds. Added 2026-10-07.
-- Each new player item gets `configuredTimeOffsetFromLive` from the setting, and `automaticallyPreservesTimeOffsetFromLive` true.
+- Each new player item gets `configuredTimeOffsetFromLive` from the setting, and `automaticallyPreservesTimeOffsetFromLive` false. So the offset applies at the start only.
+  - Changed 2026-10-07 from true. With true, a network gap of 15 seconds on HLS gave two jumps back: a few seconds of repeated audio at a lower quality, then a second repeat. During the gap the player cannot load the playlist, so the live edge that it knows stops moving. The distance appears to become smaller, and the player moves back to keep the offset.
+  - After a stall, playback stays behind live by the length of the stall, until the next **Play**. If playback falls behind the live window, the segment requests fail, and ADR 0021 makes a new item at the configured offset.
 - Each new player item also gets `preferredForwardBufferDuration` equal to the setting. The offset only permits the buffer. This property asks AVPlayer to load that much audio ahead. Added 2026-10-07.
 - A change of the setting applies at the next **Play**, because AVPlayer reads the offset when a stream starts.
 - The largest value is 90 seconds. The server window of 2 minutes needs some segments of space behind the player.

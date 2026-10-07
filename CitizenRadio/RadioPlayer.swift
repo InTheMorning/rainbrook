@@ -228,7 +228,9 @@ final class RadioPlayer: ObservableObject {
         // to the primary stream and to the alternate stream.
         item.preferredPeakBitRate = StreamQualitySetting().quality.peakBitRate
         item.configuredTimeOffsetFromLive = CMTime(seconds: Double(HLSBufferSetting().buffer.seconds), preferredTimescale: 1)
-        item.automaticallyPreservesTimeOffsetFromLive = true
+        // ADR 0020 §The HLS live offset: the offset applies at the start only. With the preserve property on,
+        // AVPlayer jumped back during and after a network gap, because the live edge it knew stopped moving.
+        item.automaticallyPreservesTimeOffsetFromLive = false
         // ADR 0020 §The HLS live offset: AVPlayer loads this much audio ahead. Without it, iOS selects
         // a smaller amount, and the cushion does not fill.
         item.preferredForwardBufferDuration = Double(HLSBufferSetting().buffer.seconds)

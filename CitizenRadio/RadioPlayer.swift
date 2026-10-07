@@ -224,7 +224,7 @@ final class RadioPlayer: ObservableObject {
         // ADR 0020 §Stream quality and §The HLS live offset: these three properties apply
         // to the primary stream and to the alternate stream.
         item.preferredPeakBitRate = StreamQualitySetting().quality.peakBitRate
-        item.configuredTimeOffsetFromLive = CMTime(seconds: 30, preferredTimescale: 1)
+        item.configuredTimeOffsetFromLive = CMTime(seconds: Double(HLSBufferSetting().buffer.seconds), preferredTimescale: 1)
         item.automaticallyPreservesTimeOffsetFromLive = true
         let newPlayer = AVPlayer(playerItem: item)
         newPlayer.automaticallyWaitsToMinimizeStalling = true

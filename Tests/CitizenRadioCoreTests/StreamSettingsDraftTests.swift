@@ -51,6 +51,14 @@ final class StreamSettingsDraftTests: XCTestCase {
         XCTAssertFalse(draft.canSave)
     }
 
+    func testHLSBufferChangeAloneCanSave() {
+        var draft = makeDraft(chimeEnabled: true, boostEnabled: false)
+        draft.hlsBuffer = .seconds60
+        XCTAssertTrue(draft.canSave)
+        draft.hlsBuffer = .seconds30
+        XCTAssertFalse(draft.canSave)
+    }
+
     func testBoostEnabledChangeAloneCanSave() {
         var draft = makeDraft(chimeEnabled: true, boostEnabled: false)
         draft.boostEnabled = true

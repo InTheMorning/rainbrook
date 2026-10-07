@@ -35,7 +35,10 @@ Facts on 2026-10-07:
 
 ### The HLS live offset
 
-- Each new player item gets `configuredTimeOffsetFromLive` of 30 seconds and `automaticallyPreservesTimeOffsetFromLive` true.
+- A **HLS buffer** setting in Settings: 10, 30, 60 or 90 seconds. The default is 30 seconds. Added 2026-10-07.
+- Each new player item gets `configuredTimeOffsetFromLive` from the setting, and `automaticallyPreservesTimeOffsetFromLive` true.
+- A change of the setting applies at the next **Play**, because AVPlayer reads the offset when a stream starts.
+- The largest value is 90 seconds. The server window of 2 minutes needs some segments of space behind the player.
 - If the live window is shorter, AVPlayer uses the largest offset that the window permits.
 
 ## Alternatives considered
@@ -43,7 +46,7 @@ Facts on 2026-10-07:
 - **No setting, Auto only.** The operator asked for a choice. Low also limits the mobile data.
 - **A quality for each station.** The network, not the station, decides the correct quality. One setting is simpler.
 - **A larger `preferredForwardBufferDuration`.** A live player cannot buffer audio that the server does not yet have. The offset from the live edge is the buffer.
-- **An offset of 60 seconds.** It doubles the delay. 30 seconds is more than most network problems on a phone.
+- **A fixed offset.** The operator asked for a choice. 30 seconds stays the default, because it is more than most network problems on a phone, and a larger value adds delay.
 
 ## Consequences
 
@@ -56,7 +59,7 @@ Facts on 2026-10-07:
 
 These rules apply while this decision is current.
 
-- The three choices, their maximum values and the default. `StreamQualityTests` enforces them.
+- The three choices, their maximum values and the default. The four buffer values and the default of 30 seconds. `StreamQualityTests` enforces them.
 - The live offset and the quality on each new player item, and the quality change on the item that plays. Manual check: examine `RadioPlayer`.
 
 ## Acceptance criteria

@@ -35,6 +35,7 @@ struct SettingsView: View {
             chimeEnabled: ChimeSetting().isEnabled,
             dailyLimitSats: SpendingLimitStore().limit.dailySats,
             streamQuality: StreamQualitySetting().quality,
+            hlsBuffer: HLSBufferSetting().buffer,
             boostEnabled: boostSettings.isEnabled,
             boostAmountText: String(boostSettings.amountSats),
             boostMessage: boostSettings.message,
@@ -58,8 +59,14 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityIdentifier("streamQualityPicker")
+                    Picker("HLS buffer", selection: $draft.hlsBuffer) {
+                        ForEach(HLSBuffer.allCases, id: \.self) { buffer in
+                            Text(buffer.label).tag(buffer)
+                        }
+                    }
+                    .accessibilityIdentifier("hlsBufferPicker")
                 } footer: {
-                    Text("The chime plays until the stream starts. Auto selects the bitrate for the network. Low uses less data. This applies to HLS streams.")
+                    Text("The chime plays until the stream starts. Auto selects the bitrate for the network. Low uses less data. This applies to HLS streams. A larger HLS buffer survives a longer network problem, but you hear the stream later. A buffer change applies at the next Play.")
                 }
 
                 WalletSettingsView(
@@ -195,6 +202,8 @@ struct SettingsView: View {
         // ADR 0020 §Stream quality: a saved quality change applies to the current item.
         StreamQualitySetting().quality = draft.streamQuality
         player.setQuality(draft.streamQuality)
+        // ADR 0020 §The HLS live offset: AVPlayer reads the offset when a stream starts.
+        HLSBufferSetting().buffer = draft.hlsBuffer
         let boostSettings = BoostSettings()
         boostSettings.isEnabled = draft.boostEnabled
         if let amount = BoostSettings.parseAmount(draft.boostAmountText) {

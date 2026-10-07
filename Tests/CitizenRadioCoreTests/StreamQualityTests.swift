@@ -48,4 +48,25 @@ final class StreamQualityTests: XCTestCase {
         defaults.set("bad", forKey: "citizenRadio.streamQuality")
         XCTAssertEqual(StreamQualitySetting(defaults: defaults).quality, .auto)
     }
+
+    // ADR 0020 §The HLS live offset.
+
+    func testHLSBufferValuesAndLabels() {
+        XCTAssertEqual(HLSBuffer.allCases.map(\.seconds), [10, 30, 60, 90])
+        XCTAssertEqual(HLSBuffer.seconds30.label, "30 seconds")
+    }
+
+    func testDefaultHLSBufferIs30Seconds() {
+        XCTAssertEqual(HLSBufferSetting(defaults: defaults).buffer, .seconds30)
+    }
+
+    func testStoredHLSBufferIsRead() {
+        HLSBufferSetting(defaults: defaults).buffer = .seconds90
+        XCTAssertEqual(HLSBufferSetting(defaults: defaults).buffer, .seconds90)
+    }
+
+    func testStoredBadHLSBufferGives30Seconds() {
+        defaults.set(45, forKey: "citizenRadio.hlsBufferSeconds")
+        XCTAssertEqual(HLSBufferSetting(defaults: defaults).buffer, .seconds30)
+    }
 }

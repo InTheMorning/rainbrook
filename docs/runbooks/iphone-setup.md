@@ -300,6 +300,7 @@ Complete these checks before normal use of the automation.
 | On HLS, set **Stream quality** to **Low**. | The server log shows requests for `aac_low` segments (ADR 0020). |
 | On HLS, turn flight mode on for 15 seconds, then off. | Playback continues with no stall (ADR 0020). |
 | On Icecast, play with each **Stream quality** value. | Playback works as before (ADR 0020). |
+| On HLS, set **HLS buffer** to 90 seconds, then tap **Play**. | A network problem of 60 seconds gives no stall (ADR 0020). |
 | On Icecast, turn flight mode on for 10 seconds, then off. | No chime for 3 seconds, then the chime. Playback continues with no error (ADR 0021). |
 | Turn flight mode on for 2 minutes, then off. | The screen shows "Waiting for the network". Playback continues after flight mode is off (ADR 0021). |
 | Stop the stream on the server while the iPhone has a network. | After about 60 seconds, the alternate stream plays, or the error shows (ADR 0021). |

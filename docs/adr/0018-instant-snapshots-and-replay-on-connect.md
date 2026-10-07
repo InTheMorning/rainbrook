@@ -27,7 +27,7 @@ Relay facts, examined in the relay source on 2026-10-06:
 - `GET /metadata` gives `404` with `metadata_not_found` when the event has no payload, for example after a lease end or a relay restart. It gives `404` with `event_not_found` when the event does not exist.
 - `/events` and `/display/events` each keep the last 100 updates. With `Last-Event-ID: N`, a stream first sends each kept update with a `seq` greater than N, in sequence, then the new updates. The relay accepts each whole number for N.
 - `/events` sends no update at connect when there is no `Last-Event-ID`.
-- `GET /display` gives `{"track": …}` with no `seq`.
+- `GET /display` gave `{"track": …}` with no `seq` on 2026-10-06. On 2026-10-07 the relay gives `{"seq": N, "track": …}` (relay ADR 0003, amended 2026-10-06). N is the id of the same state on `/display/events`.
 
 ## Decision
 
@@ -49,7 +49,7 @@ Relay facts, examined in the relay source on 2026-10-06:
   - A replayed display state is never the relay track of a session with no ICY.
   - A replayed value payload goes into the pairing, as each other payload does.
 - A reconnect sends the last event ID, as ADR 0008 says. It makes no replay of this kind.
-- A snapshot with no `seq` gives no replay. `GET /display` has no `seq` on 2026-10-06, so the display replay starts only when the relay adds it. The app needs no other change then.
+- A snapshot with no `seq` gives no replay. `GET /display` gives `seq` since 2026-10-07, so the display replay occurs.
 
 ## Alternatives considered
 
@@ -61,8 +61,7 @@ Relay facts, examined in the relay source on 2026-10-06:
 
 - After a connect, the value snapshot and the display snapshot name the same block. The **Boost** button works for the first track, outside the window above.
 - The pairing holds the blocks of the last 8 updates, so a boost for the track that plays finds its payload in the window.
-- The display part of the window stays until the relay gives `seq` in `GET /display`. In that window the ICY sync has no state for the track that plays, so the manual boost of that track is still not possible.
-- A connect reads a maximum of 8 more value updates. When the relay gives the display `seq`, it also reads a maximum of 4 more display states.
+- A connect reads a maximum of 8 more value updates and a maximum of 4 more display states.
 
 ## Invariants
 

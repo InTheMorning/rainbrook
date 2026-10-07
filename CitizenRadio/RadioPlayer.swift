@@ -2,7 +2,6 @@
 import AVFoundation
 import Combine
 import MediaPlayer
-import os
 import UIKit
 #if SWIFT_PACKAGE
 import CitizenRadioCore
@@ -11,8 +10,6 @@ import CitizenRadioCore
 @MainActor
 final class RadioPlayer: ObservableObject {
     static let shared = RadioPlayer()
-    /// Playback events for a diagnosis on the device, with `idevicesyslog`. No URL and no title.
-    private static let log = Logger(subsystem: "org.citizenradio.CitizenRadio", category: "playback")
 
     struct PlaybackError: LocalizedError {
         let message: String
@@ -264,14 +261,14 @@ final class RadioPlayer: ObservableObject {
         observeItemLogs(item, expectedID: expectedID)
         updateOutput()
         updateNowPlaying()
-        Self.log.notice("New item: stream \(self.streamIndex, privacy: .public), played \(self.hasPlayed, privacy: .public), drop \(self.dropSeconds ?? -1, privacy: .public) s")
+        PlaybackDiagnostics.record("New item: stream \(streamIndex), played \(hasPlayed), drop \(dropSeconds ?? -1) s")
         newPlayer.play()
     }
 
     /// Logs one event with the play position: the seconds behind the live edge and the buffered seconds.
     private func logPosition(_ event: String) {
         guard let item = player?.currentItem else {
-            Self.log.notice("\(event, privacy: .public): no item")
+            PlaybackDiagnostics.record("\(event): no item")
             return
         }
         let now = item.currentTime().seconds
@@ -280,7 +277,9 @@ final class RadioPlayer: ObservableObject {
         let buffered = item.loadedTimeRanges.last.map { CMTimeRangeGetEnd($0.timeRangeValue).seconds - now } ?? -1
         let status = player?.timeControlStatus.rawValue ?? -1
         let reason = player?.reasonForWaitingToPlay?.rawValue ?? "none"
-        Self.log.notice("\(event, privacy: .public): status \(status, privacy: .public), waiting \(reason, privacy: .public), behind live \(behind, format: .fixed(precision: 1), privacy: .public) s, buffered \(buffered, format: .fixed(precision: 1), privacy: .public) s, path \(self.pathSatisfied, privacy: .public)")
+        let behindText = String(format: "%.1f", behind)
+        let bufferedText = String(format: "%.1f", buffered)
+        PlaybackDiagnostics.record("\(event): status \(status), waiting \(reason), behind live \(behindText) s, buffered \(bufferedText) s, path \(pathSatisfied)")
     }
 
     private func refreshPlayback(expectedID: UUID) {
@@ -288,7 +287,7 @@ final class RadioPlayer: ObservableObject {
         logPosition("Status change")
         if player.currentItem?.status == .failed {
             let error = player.currentItem?.error as NSError?
-            Self.log.notice("Item failed: \(error?.domain ?? "none", privacy: .public) \(error?.code ?? 0, privacy: .public)")
+            PlaybackDiagnostics.record("Item failed: \(error?.domain ?? "none") \(error?.code ?? 0)")
             // ADR 0021 §The stall budget: in the played phase, an item failure is a drop.
             if hasPlayed {
                 startDrop(newItem: true)
@@ -337,7 +336,7 @@ final class RadioPlayer: ObservableObject {
                 .sink { [weak self] notification in
                     guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
                     let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError
-                    Self.log.notice("Item end: \(notification.name.rawValue, privacy: .public), \(error?.domain ?? "none", privacy: .public) \(error?.code ?? 0, privacy: .public)")
+                    PlaybackDiagnostics.record("Item end: \(notification.name.rawValue), \(error?.domain ?? "none") \(error?.code ?? 0)")
                     // ADR 0021 §The stall budget: in the played phase, an item failure or an end of the stream is a drop.
                     if self.hasPlayed {
                         self.startDrop(newItem: true)
@@ -372,14 +371,14 @@ final class RadioPlayer: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self, self.sessionID == expectedID, let event = item.accessLog()?.events.last else { return }
-                Self.log.notice("Access log: indicated \(Int(event.indicatedBitrate), privacy: .public), observed \(Int(event.observedBitrate), privacy: .public), switch \(Int(event.switchBitrate), privacy: .public), stalls \(event.numberOfStalls, privacy: .public)")
+                PlaybackDiagnostics.record("Access log: indicated \(Int(event.indicatedBitrate)), observed \(Int(event.observedBitrate)), switch \(Int(event.switchBitrate)), stalls \(event.numberOfStalls)")
             }
             .store(in: &itemSubscriptions)
         NotificationCenter.default.publisher(for: AVPlayerItem.newErrorLogEntryNotification, object: item)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self, self.sessionID == expectedID, let event = item.errorLog()?.events.last else { return }
-                Self.log.notice("Error log: \(event.errorDomain, privacy: .public) \(event.errorStatusCode, privacy: .public)")
+                PlaybackDiagnostics.record("Error log: \(event.errorDomain) \(event.errorStatusCode)")
             }
             .store(in: &itemSubscriptions)
         NotificationCenter.default.publisher(for: AVPlayerItem.timeJumpedNotification, object: item)
@@ -575,7 +574,7 @@ final class RadioPlayer: ObservableObject {
     /// the item and makes a new item for the same stream. The same budget continues.
     private func startDrop(newItem: Bool) {
         if dropTask == nil {
-            Self.log.notice("Drop started: new item \(newItem, privacy: .public)")
+            PlaybackDiagnostics.record("Drop started: new item \(newItem)")
         }
         state = .connecting
         if dropTask == nil {

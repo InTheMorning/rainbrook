@@ -65,6 +65,11 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityIdentifier("hlsBufferPicker")
+                    // ADR 0022 §The playback log.
+                    NavigationLink("Playback log") {
+                        PlaybackLogView()
+                    }
+                    .accessibilityIdentifier("playbackLogLink")
                 } footer: {
                     Text("The chime plays until the stream starts. Auto selects the bitrate for the network. Low uses less data. This applies to HLS streams. A larger HLS buffer survives a longer network problem, but you hear the stream later. A buffer change applies at the next Play.")
                 }

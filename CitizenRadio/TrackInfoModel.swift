@@ -47,6 +47,9 @@ final class TrackInfoModel: ObservableObject {
     private var valueUpdatesTask: Task<Void, Never>?
     private var pathTask: Task<Void, Never>?
     private var artworkTask: Task<Void, Never>?
+    /// ADR 0022 §The playback log: the last recorded relay track and value client status.
+    private var recordedRelayTrack: TrackDisplay?
+    private var valueStatus: EventStreamStatus?
     private var pending: [PendingApply] = []
     private var nextApplyID: UInt64 = 0
     private var subscriptions = Set<AnyCancellable>()
@@ -201,6 +204,10 @@ final class TrackInfoModel: ObservableObject {
                         await valueClient.networkChanged()
                     }
                 }
+                // ADR 0022 §The artwork retry: a path that becomes satisfied loads a missing artwork immediately.
+                if summary.isSatisfied, let previous, !previous.isSatisfied {
+                    self?.pathBecameSatisfied()
+                }
                 previous = summary
             }
         }
@@ -273,6 +280,9 @@ final class TrackInfoModel: ObservableObject {
                 updateLines()
             }
         case .status(let status):
+            if status != relayStatus {
+                PlaybackDiagnostics.record("Display client: \(Self.statusText(status))")
+            }
             relayStatus = status
             switch status {
             case .stopped(.notFound), .stopped(.notReserved):
@@ -342,6 +352,7 @@ final class TrackInfoModel: ObservableObject {
             Task { await valueClient.stop() }
         }
         valueClient = nil
+        valueStatus = nil
     }
 
     /// Gives each live value payload to the boost model. An empty or invalid payload is ignored.
@@ -353,7 +364,11 @@ final class TrackInfoModel: ObservableObject {
             decoded = try? LiveValuePayload.decodeMetadataSnapshot(snapshot)
         case .event(let streamed), .replay(let streamed):
             decoded = try? LiveValuePayload.decode(Data(streamed.data.utf8))
-        case .status:
+        case .status(let status):
+            if status != valueStatus {
+                PlaybackDiagnostics.record("Value client: \(Self.statusText(status))")
+            }
+            valueStatus = status
             return
         }
         guard let payload = decoded else { return }
@@ -405,6 +420,7 @@ final class TrackInfoModel: ObservableObject {
     /// Gives an ICY text to the sync. A nil text changes nothing, because Stop makes a new sync.
     private func icyTextChanged(_ text: String?) {
         guard let text else { return }
+        PlaybackDiagnostics.record("ICY: \(text)")
         let firstIcyText = !sync.hasIcy
         sync.receiveIcyText(text)
         // ADR 0016 §The switch back: give the relay track that the sync selects for this text.
@@ -419,17 +435,23 @@ final class TrackInfoModel: ObservableObject {
     private func updateLines() {
         // ADR 0012 §The trigger: give each change of the ICY sync selection to the boost model.
         boost.selectedTrack(sync.relayTrack)
+        recordRelayTrack(sync.hasIcy ? sync.relayTrack : relayTrack)
         let newLines = sync.hasIcy ? sync.lines : TrackLines.select(relay: relayTrack, icy: nil)
         guard newLines != lines else { return }
         let artworkChanged = newLines.artwork != lines.artwork
         lines = newLines
         if artworkChanged {
+            PlaybackDiagnostics.record("Artwork: \(Self.artworkKind(newLines.artwork))")
             loadArtwork()
         }
         updateNowPlaying()
     }
 
     /// Loads the artwork of `lines`. A result for an older artwork is ignored.
+    ///
+    /// ADR 0022 §The artwork retry: a load with no image starts a retry after each interval of `ArtworkRetry`,
+    /// while the lines keep the same artwork. A change of the artwork cancels the retry.
+    /// The image stays nil while a retry waits.
     private func loadArtwork() {
         artworkTask?.cancel()
         artworkTask = nil
@@ -439,10 +461,71 @@ final class TrackInfoModel: ObservableObject {
         }
         let loader = self.loader
         artworkTask = Task { [weak self] in
-            let loaded = await loader.image(for: artwork, event: event)
-            guard let self, !Task.isCancelled, self.lines.artwork == artwork else { return }
-            self.image = loaded
-            self.updateNowPlaying()
+            var attempt = 1
+            while true {
+                let loaded = await loader.image(for: artwork, event: event)
+                guard !Task.isCancelled,
+                      let delay = self?.artworkLoadEnded(loaded, artwork: artwork, attempt: attempt) else { return }
+                do {
+                    try await Task.sleep(for: .seconds(delay))
+                } catch {
+                    return
+                }
+                attempt += 1
+            }
+        }
+    }
+
+    /// Applies the result of load `attempt` (1 is the first load) of `artwork`.
+    /// Gives the interval in seconds before the next load, or nil when no retry is necessary.
+    private func artworkLoadEnded(_ loaded: UIImage?, artwork: TrackDisplay.Artwork, attempt: Int) -> Int? {
+        guard lines.artwork == artwork else { return nil }
+        image = loaded
+        updateNowPlaying()
+        guard loaded == nil else {
+            PlaybackDiagnostics.record("Artwork load: ok")
+            return nil
+        }
+        PlaybackDiagnostics.record("Artwork load: failed, attempt \(attempt)")
+        return ArtworkRetry.delay(beforeRetry: attempt)
+    }
+
+    /// ADR 0022 §The artwork retry: when the path becomes satisfied, load an artwork with no image immediately.
+    private func pathBecameSatisfied() {
+        guard lines.artwork != nil, image == nil else { return }
+        loadArtwork()
+    }
+
+    /// ADR 0022 §The playback log: records a change of the selected relay track.
+    /// The text has only the artist and the title.
+    private func recordRelayTrack(_ track: TrackDisplay?) {
+        guard track != recordedRelayTrack else { return }
+        recordedRelayTrack = track
+        if let track {
+            PlaybackDiagnostics.record("Relay track: \(track.artist) - \(track.title)")
+        } else {
+            PlaybackDiagnostics.record("Relay track: none")
+        }
+    }
+
+    /// The log text for the type of an artwork: relay, URL or none.
+    private static func artworkKind(_ artwork: TrackDisplay.Artwork?) -> String {
+        switch artwork {
+        case .relay?: "relay"
+        case .url?: "URL"
+        case nil: "none"
+        }
+    }
+
+    /// The log text for a relay client status.
+    private static func statusText(_ status: EventStreamStatus) -> String {
+        switch status {
+        case .connecting: "connecting"
+        case .live: "live"
+        case .waiting(let seconds): "waiting \(seconds) s"
+        case .stopped(.requested): "stopped"
+        case .stopped(.notFound): "stopped, not found"
+        case .stopped(.notReserved): "stopped, not reserved"
         }
     }
 

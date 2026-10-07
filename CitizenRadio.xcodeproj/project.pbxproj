@@ -732,6 +732,46 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "000000000000000000000174";
 		};
+		"000000000000000000000176" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/PlaybackLog.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000177" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000176";
+		};
+		"000000000000000000000178" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/ArtworkRetry.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000179" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000178";
+		};
+		"00000000000000000000017A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PlaybackLogStore.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000017B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000017A";
+		};
+		"00000000000000000000017C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PlaybackLogView.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000017D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000017C";
+		};
 		"000000000000000000000122" = {
 			"isa" = "XCRemoteSwiftPackageReference";
 			"repositoryURL" = "https://github.com/21-DOT-DEV/swift-secp256k1";
@@ -859,6 +899,10 @@
 				"000000000000000000000170",
 				"000000000000000000000172",
 				"000000000000000000000174",
+				"000000000000000000000176",
+				"000000000000000000000178",
+				"00000000000000000000017A",
+				"00000000000000000000017C",
 			);
 			"path" = "CitizenRadio";
 			"sourceTree" = "<group>";
@@ -952,6 +996,10 @@
 				"000000000000000000000171",
 				"000000000000000000000173",
 				"000000000000000000000175",
+				"000000000000000000000177",
+				"000000000000000000000179",
+				"00000000000000000000017B",
+				"00000000000000000000017D",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};

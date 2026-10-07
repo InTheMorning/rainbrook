@@ -21,7 +21,11 @@ struct PlayerView: View {
     }
 
     private var model: PlayerScreenModel {
-        PlayerScreenModel(state: player.state, hasSavedStream: hasSelectedStation)
+        PlayerScreenModel(
+            state: player.state,
+            hasSavedStream: hasSelectedStation,
+            waitingForNetwork: player.waitingForNetwork
+        )
     }
 
     var body: some View {

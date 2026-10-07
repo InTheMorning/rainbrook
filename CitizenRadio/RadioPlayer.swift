@@ -23,6 +23,8 @@ final class RadioPlayer: ObservableObject {
     @Published private(set) var icyText: String?
     /// ADR 0017 §The fallback: true while the alternate stream plays. Stop and each new Play set it to false.
     @Published private(set) var usingAlternateStream = false
+    /// ADR 0021 §The status: true during a drop while the network path is not satisfied.
+    @Published private(set) var waitingForNetwork = false
 
     private let audioSession = AVAudioSession.sharedInstance()
     private var player: AVPlayer?
@@ -57,11 +59,33 @@ final class RadioPlayer: ObservableObject {
     /// ADR 0019: the album for Now Playing, or nil when the track has no album.
     private var nowPlayingAlbum: String?
     private var nowPlayingImage: UIImage?
+    /// ADR 0021: the last `isSatisfied` value of the network path. The start value is true.
+    private var pathSatisfied = true
+    /// ADR 0021: the subscription to the network path. It stays for the life of the player.
+    private var pathTask: Task<Void, Never>?
+    /// ADR 0021 §Two phases: true after the stream that plays gives its first `.playing`.
+    /// A new Play, Stop and a fallback set it to false.
+    private var hasPlayed = false
+    /// ADR 0021 §The stall budget: the task of the drop that runs, or nil when no drop runs.
+    private var dropTask: Task<Void, Never>?
+    private var budget = StallBudget()
+    /// ADR 0021 §The chime: the seconds since the drop started, or nil when no drop runs.
+    private var dropSeconds: Int? {
+        didSet { updateChime() }
+    }
+    /// ADR 0021 §The stall budget: true when the new item for the same stream
+    /// waits for a satisfied network path.
+    private var newItemWaitsForPath = false
+    /// ADR 0021 §The stall budget: the `dropSeconds` value when the last new item of the drop started.
+    /// A new item starts a minimum of `newItemIntervalSeconds` after the one before it.
+    private var lastNewItemSecond: Int?
+    private static let newItemIntervalSeconds = 5
 
     private init() {
         updateOutput()
         observeAudioSession()
         installRemoteCommands()
+        observeNetworkPath()
     }
 
     func playFromControls() {
@@ -234,13 +258,23 @@ final class RadioPlayer: ObservableObject {
     private func refreshPlayback(expectedID: UUID) {
         guard sessionID == expectedID, request.wantsPlayback, let player else { return }
         if player.currentItem?.status == .failed {
-            streamFailed("The stream could not play. Check the URL, network connection, and stream format.")
+            // ADR 0021 §The stall budget: in the played phase, an item failure is a drop.
+            if hasPlayed {
+                startDrop(newItem: true)
+            } else {
+                streamFailed("The stream could not play. Check the URL, network connection, and stream format.")
+            }
             return
         }
         if player.timeControlStatus == .playing {
+            hasPlayed = true
+            endDrop()
             state = .playing
             connectionTimeout?.cancel()
             connectionTimeout = nil
+        } else if hasPlayed {
+            startDrop(newItem: false)
+            return
         } else {
             state = .connecting
             startConnectionTimeout()
@@ -248,8 +282,9 @@ final class RadioPlayer: ObservableObject {
         updateNowPlaying()
     }
 
+    /// The 20-second limit of the start phase. ADR 0021 §Two phases: it does not run in the played phase.
     private func startConnectionTimeout() {
-        guard connectionTimeout == nil else { return }
+        guard connectionTimeout == nil, !hasPlayed else { return }
         let expectedID = sessionID
         let seconds = Self.connectionTimeoutSeconds
         connectionTimeout = Task { @MainActor [weak self] in
@@ -259,7 +294,7 @@ final class RadioPlayer: ObservableObject {
                 return
             }
             guard let self, self.sessionID == expectedID,
-                  self.request.wantsPlayback, self.state != .playing else { return }
+                  self.request.wantsPlayback, !self.hasPlayed, self.state != .playing else { return }
             self.streamFailed("The stream did not respond within \(seconds) seconds. Check your connection, then tap Play.")
         }
     }
@@ -270,6 +305,11 @@ final class RadioPlayer: ObservableObject {
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] _ in
                     guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
+                    // ADR 0021 §The stall budget: in the played phase, an item failure or an end of the stream is a drop.
+                    if self.hasPlayed {
+                        self.startDrop(newItem: true)
+                        return
+                    }
                     self.streamFailed("The live stream ended. Tap Play to connect again.")
                 }
                 .store(in: &itemSubscriptions)
@@ -278,6 +318,12 @@ final class RadioPlayer: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
+                // ADR 0021 §The stall budget: in the played phase, a stall is a drop.
+                if self.hasPlayed {
+                    self.startDrop(newItem: false)
+                    self.player?.play()
+                    return
+                }
                 self.state = .connecting
                 self.updateNowPlaying()
                 self.startConnectionTimeout()
@@ -362,6 +408,9 @@ final class RadioPlayer: ObservableObject {
             return
         }
         streamIndex = nextIndex
+        // ADR 0021 §Two phases: a fallback starts a new start phase.
+        endDrop()
+        hasPlayed = false
         // releaseItem() sets a new session identifier. Then the callbacks of the previous item do nothing.
         releaseItem()
         usingAlternateStream = true
@@ -374,6 +423,9 @@ final class RadioPlayer: ObservableObject {
     /// Releases the player, the item and the station of the session.
     private func releasePlayer() {
         playbackID = UUID()
+        // ADR 0021 §Two phases: Stop, a new Play and an interruption end the played phase.
+        endDrop()
+        hasPlayed = false
         releaseItem()
         activeStationID = nil
         activeURL = nil
@@ -416,7 +468,10 @@ final class RadioPlayer: ObservableObject {
 
     private func updateChime() {
         // AVAudioPlayer activates an inactive session on the calling thread, so wait for activation.
-        guard sessionActive, ChimeSetting.shouldPlay(state: state, enabled: ChimeSetting().isEnabled) else {
+        // ADR 0021 §The chime: nil in the start phase. In the played phase with no drop, use 0.
+        let seconds = hasPlayed ? (dropSeconds ?? 0) : nil
+        guard sessionActive,
+              ChimeSetting.shouldPlay(state: state, enabled: ChimeSetting().isEnabled, dropSeconds: seconds) else {
             chime?.stop()
             chime = nil
             return
@@ -427,6 +482,107 @@ final class RadioPlayer: ObservableObject {
         player.numberOfLoops = -1
         player.play()
         chime = player
+    }
+
+    // MARK: - ADR 0021: drops in the played phase
+
+    /// Starts the subscription to the network path. It stays for the life of the player.
+    private func observeNetworkPath() {
+        let monitor = NetworkPathMonitor()
+        pathTask = Task { @MainActor [weak self] in
+            for await summary in monitor.summaries() {
+                guard let self else { return }
+                self.networkPathChanged(satisfied: summary.isSatisfied)
+            }
+        }
+    }
+
+    /// ADR 0021 §The stall budget: a satisfied path during a drop starts playback at once.
+    private func networkPathChanged(satisfied: Bool) {
+        pathSatisfied = satisfied
+        updateWaitingForNetwork()
+        guard satisfied, dropTask != nil, request.wantsPlayback else { return }
+        if newItemWaitsForPath {
+            startNewItemIfDue()
+        } else {
+            player?.play()
+        }
+    }
+
+    /// Starts a drop in the played phase, if no drop runs. The state is `.connecting`.
+    ///
+    /// newItem: true for an item failure or an end of the stream. Then this function releases
+    /// the item and makes a new item for the same stream. The same budget continues.
+    private func startDrop(newItem: Bool) {
+        state = .connecting
+        if dropTask == nil {
+            budget = StallBudget()
+            dropSeconds = 0
+            let expectedID = playbackID
+            dropTask = Task { @MainActor [weak self] in
+                while true {
+                    do {
+                        try await Task.sleep(nanoseconds: 1_000_000_000)
+                    } catch {
+                        return
+                    }
+                    guard let self, self.playbackID == expectedID, self.request.wantsPlayback else { return }
+                    self.dropSeconds = (self.dropSeconds ?? 0) + 1
+                    if self.budget.tick(pathSatisfied: self.pathSatisfied) {
+                        self.endDrop()
+                        self.streamFailed(
+                            "The stream did not respond within \(StallBudget.limitSeconds) seconds. Check your connection, then tap Play."
+                        )
+                        return
+                    }
+                    // A new item that waited for its interval starts now.
+                    self.startNewItemIfDue()
+                }
+            }
+        }
+        if newItem {
+            // releaseItem() sets a new session identifier. Then the callbacks of the previous item do nothing.
+            releaseItem()
+            newItemWaitsForPath = true
+            startNewItemIfDue()
+        }
+        updateWaitingForNetwork()
+        updateNowPlaying()
+    }
+
+    /// Makes a new item for the stream that played, and starts it, when the path is satisfied
+    /// and the interval since the last new item of the drop has ended.
+    /// So a stream that fails at once does not get a new request each second.
+    private func startNewItemIfDue() {
+        guard newItemWaitsForPath, pathSatisfied, request.wantsPlayback,
+              streams.indices.contains(streamIndex) else { return }
+        let now = dropSeconds ?? 0
+        if let lastNewItemSecond, now - lastNewItemSecond < Self.newItemIntervalSeconds {
+            return
+        }
+        lastNewItemSecond = now
+        newItemWaitsForPath = false
+        startPlayer(url: streams[streamIndex], expectedID: sessionID)
+    }
+
+    /// Ends the drop that runs: cancels its task, and clears `dropSeconds` and the budget.
+    private func endDrop() {
+        dropTask?.cancel()
+        dropTask = nil
+        budget = StallBudget()
+        newItemWaitsForPath = false
+        lastNewItemSecond = nil
+        if dropSeconds != nil {
+            dropSeconds = nil
+        }
+        updateWaitingForNetwork()
+    }
+
+    private func updateWaitingForNetwork() {
+        let waiting = dropTask != nil && !pathSatisfied
+        if waitingForNetwork != waiting {
+            waitingForNetwork = waiting
+        }
     }
 
     private func updateNowPlaying() {

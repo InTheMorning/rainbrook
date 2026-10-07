@@ -722,6 +722,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "000000000000000000000172";
 		};
+		"000000000000000000000174" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/StallBudget.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000175" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000174";
+		};
 		"000000000000000000000122" = {
 			"isa" = "XCRemoteSwiftPackageReference";
 			"repositoryURL" = "https://github.com/21-DOT-DEV/swift-secp256k1";
@@ -848,6 +858,7 @@
 				"00000000000000000000016E",
 				"000000000000000000000170",
 				"000000000000000000000172",
+				"000000000000000000000174",
 			);
 			"path" = "CitizenRadio";
 			"sourceTree" = "<group>";
@@ -940,6 +951,7 @@
 				"00000000000000000000016F",
 				"000000000000000000000171",
 				"000000000000000000000173",
+				"000000000000000000000175",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};

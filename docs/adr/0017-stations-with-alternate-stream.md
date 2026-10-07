@@ -55,6 +55,7 @@ If no station list exists, the app examines the old stream URL. If that URL is s
   - The stream does not play in the connection time limit of 20 seconds, also after a stall.
   - The stream ends.
 - If the alternate stream fails, playback stops with the error, as now.
+- [ADR 0021](0021-stalls-on-a-bad-network.md) replaces the failure rule for a stream that played: a drop then starts a stall budget, and the fallback occurs only when the budget ends.
 - The app does not go back to the primary stream in the same playback session. The next **Play** starts with the primary stream again.
 - The player screen shows "Alternate stream" while the alternate stream plays.
 - For the ICY sync and the boost trigger, a fallback is a new session:

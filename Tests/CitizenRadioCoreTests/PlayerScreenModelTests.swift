@@ -33,4 +33,21 @@ final class PlayerScreenModelTests: XCTestCase {
         XCTAssertEqual(PlayerScreenModel(state: .playing, hasSavedStream: true).status, "Playing live")
         XCTAssertEqual(PlayerScreenModel(state: .stopped, hasSavedStream: true).status, "Ready to play")
     }
+
+    /// ADR 0021 §The status.
+    func testDropWithNoPathShowsWaitingForNetwork() {
+        let model = PlayerScreenModel(state: .connecting, hasSavedStream: true, waitingForNetwork: true)
+        XCTAssertEqual(model.status, "Waiting for the network")
+        XCTAssertEqual(model.control, .stop)
+    }
+
+    func testDropWithPathShowsConnecting() {
+        let model = PlayerScreenModel(state: .connecting, hasSavedStream: true, waitingForNetwork: false)
+        XCTAssertEqual(model.status, "Connecting")
+    }
+
+    func testPlayingIgnoresWaitingForNetwork() {
+        let model = PlayerScreenModel(state: .playing, hasSavedStream: true, waitingForNetwork: true)
+        XCTAssertEqual(model.status, "Playing live")
+    }
 }

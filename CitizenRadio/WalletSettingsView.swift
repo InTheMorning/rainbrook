@@ -12,7 +12,10 @@ struct WalletSettingsView: View {
     @ObservedObject var model: WalletSettingsModel
     @Binding var dailyLimitSats: Int
     @Binding var boostEnabled: Bool
-    @Binding var boostAmountSats: Int
+    @Binding var boostAmountText: String
+    @Binding var boostMessage: String
+    @Binding var boostSenderName: String
+    @Binding var boostAppName: String
     /// The result of the last boost, or nil.
     let boostStatus: String?
     @State private var showingDisconnectConfirmation = false
@@ -55,7 +58,7 @@ struct WalletSettingsView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("The wallet connection is saved at once. Save applies the daily limit.")
                 if isConnected {
-                    Text("When you hear a V4V track from its start to its end, the app pays this amount to its artists. The daily limit applies.")
+                    Text("Auto-boost pays this amount when you hear a V4V track from its start to its end. A manual boost starts with this amount. The daily limit stops auto-boost, not a manual boost.")
                 }
             }
         }
@@ -112,16 +115,26 @@ struct WalletSettingsView: View {
         if let warning {
             Text(warning)
         }
-        // ADR 0012 §Settings: these items show only when a wallet is connected.
+        // ADR 0013 §Settings: these items show only when a wallet is connected.
         Toggle("Auto-boost", isOn: $boostEnabled)
             .accessibilityIdentifier("autoBoostToggle")
-        Picker("Boost amount", selection: $boostAmountSats) {
-            ForEach(BoostSettings.amountChoices, id: \.self) { sats in
-                Text("\(sats) sats").tag(sats)
-            }
+        HStack {
+            TextField("Boost amount", text: $boostAmountText)
+                .keyboardType(.numberPad)
+                .accessibilityIdentifier("boostAmountField")
+            Text("sats")
+                .foregroundStyle(.secondary)
         }
-        .disabled(!boostEnabled)
-        .accessibilityIdentifier("boostAmountPicker")
+        if BoostSettings.parseAmount(boostAmountText) == nil {
+            Text("Enter 1 to 100,000 sats.")
+                .foregroundStyle(.red)
+        }
+        TextField("Boost message", text: $boostMessage, axis: .vertical)
+            .accessibilityIdentifier("boostMessageField")
+        TextField("From", text: $boostSenderName, prompt: Text("Your name"))
+            .accessibilityIdentifier("boostSenderField")
+        TextField("App name", text: $boostAppName, prompt: Text("CitizenRadio"))
+            .accessibilityIdentifier("boostAppNameField")
         if let boostStatus {
             Text(boostStatus)
                 .foregroundStyle(.secondary)

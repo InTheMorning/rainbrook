@@ -28,7 +28,10 @@ struct SettingsView: View {
             dailyLimitSats: SpendingLimitStore().limit.dailySats,
             relayText: RelayEventStore().savedText,
             boostEnabled: boostSettings.isEnabled,
-            boostAmountSats: boostSettings.amountSats
+            boostAmountText: String(boostSettings.amountSats),
+            boostMessage: boostSettings.message,
+            boostSenderName: boostSettings.senderName,
+            boostAppName: boostSettings.appName
         ))
     }
 
@@ -87,7 +90,10 @@ struct SettingsView: View {
                     model: wallet,
                     dailyLimitSats: $draft.dailyLimitSats,
                     boostEnabled: $draft.boostEnabled,
-                    boostAmountSats: $draft.boostAmountSats,
+                    boostAmountText: $draft.boostAmountText,
+                    boostMessage: $draft.boostMessage,
+                    boostSenderName: $draft.boostSenderName,
+                    boostAppName: $draft.boostAppName,
                     boostStatus: boostStatus
                 )
             }
@@ -132,7 +138,12 @@ struct SettingsView: View {
             SpendingLimitStore().setDailySats(draft.dailyLimitSats)
             let boostSettings = BoostSettings()
             boostSettings.isEnabled = draft.boostEnabled
-            boostSettings.amountSats = draft.boostAmountSats
+            if let amount = BoostSettings.parseAmount(draft.boostAmountText) {
+                boostSettings.amountSats = amount
+            }
+            boostSettings.message = draft.boostMessage
+            boostSettings.senderName = draft.boostSenderName
+            boostSettings.appName = draft.boostAppName
             try RelayEventStore().save(draft.relayText)
             dismiss()
         } catch {

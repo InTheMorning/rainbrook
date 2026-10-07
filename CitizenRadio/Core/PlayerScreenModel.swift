@@ -7,7 +7,8 @@ public struct PlayerScreenModel: Equatable, Sendable {
     /// ADR 0021 §The status: the status during a drop with no network path.
     public static let waitingForNetworkStatus = "Waiting for the network"
 
-    public let status: String
+    /// The status line, or nil while the stream plays. ADR 0014 §Player screen: the Stop button shows that state.
+    public let status: String?
     public let control: Control
     public let isControlEnabled: Bool
 
@@ -21,6 +22,8 @@ public struct PlayerScreenModel: Equatable, Sendable {
             status = "Add a station in Settings"
         } else if waitingForNetwork && state == .connecting {
             status = Self.waitingForNetworkStatus
+        } else if state == .playing {
+            status = nil
         } else {
             status = state.title
         }

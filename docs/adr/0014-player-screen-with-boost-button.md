@@ -21,7 +21,7 @@ The primary screen is a standard music player screen. It shows only these items:
 - The track artwork, or the artwork placeholder.
 - The track title, or "CitizenRadio" when there is no track.
 - The artist, if there is one.
-- One status line.
+- One status line. It does not show while the stream plays, because the **Stop** button shows that state. It shows while the app connects, waits for the network, is interrupted or fails. Amended 2026-10-07.
 - One Play or Stop button.
 - The AirPlay route button.
 - A **Boost** button. It is active only when the track that the listener hears has a payable payload (ADR 0013 §Manual boost). It opens the boost sheet.

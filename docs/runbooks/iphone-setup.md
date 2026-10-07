@@ -85,7 +85,7 @@ With an alternate stream, the app plays it if the stream fails (ADR 0017). The p
 5. Tap a station in the **Stations** section to play it.
 
 If the chime is on, it plays in a loop until the stream starts.
-The expected status is **Playing live**.
+When the stream plays, the status line goes away and the button shows **Stop**.
 Tap the AirPlay button to select the output device.
 The iPhone must play a station before you configure the automation.
 For a local stream server, allow local network access when iOS requests it.

@@ -90,11 +90,14 @@ struct PlayerView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                Text(model.status)
-                    .font(.body)
-                    .foregroundStyle(player.state.errorMessage == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
-                    .multilineTextAlignment(.center)
-                    .accessibilityIdentifier("playbackStatus")
+                // ADR 0014 §Player screen: no status line while the stream plays.
+                if let status = model.status {
+                    Text(status)
+                        .font(.body)
+                        .foregroundStyle(player.state.errorMessage == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+                        .multilineTextAlignment(.center)
+                        .accessibilityIdentifier("playbackStatus")
+                }
                 // ADR 0017 §The fallback: show when the alternate stream plays.
                 if player.usingAlternateStream {
                     Text("Alternate stream")

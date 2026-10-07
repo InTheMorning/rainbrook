@@ -30,7 +30,7 @@ final class PlayerScreenModelTests: XCTestCase {
     }
 
     func testSavedStreamShowsStateTitle() {
-        XCTAssertEqual(PlayerScreenModel(state: .playing, hasSavedStream: true).status, "Playing live")
+        XCTAssertNil(PlayerScreenModel(state: .playing, hasSavedStream: true).status)
         XCTAssertEqual(PlayerScreenModel(state: .stopped, hasSavedStream: true).status, "Ready to play")
     }
 
@@ -48,6 +48,6 @@ final class PlayerScreenModelTests: XCTestCase {
 
     func testPlayingIgnoresWaitingForNetwork() {
         let model = PlayerScreenModel(state: .playing, hasSavedStream: true, waitingForNetwork: true)
-        XCTAssertEqual(model.status, "Playing live")
+        XCTAssertNil(model.status)
     }
 }

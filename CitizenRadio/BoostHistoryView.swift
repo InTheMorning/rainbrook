@@ -55,7 +55,7 @@ private struct BoostHistoryRow: View {
 /// The data of one entry: the track, the amount, the message and the result of each part.
 /// The view reads the entry by its id from the boost model, so it shows the result of a retry.
 @MainActor
-private struct BoostHistoryDetailView: View {
+struct BoostHistoryDetailView: View {
     let entryID: UUID
     @EnvironmentObject private var boost: BoostModel
 

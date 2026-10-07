@@ -64,7 +64,9 @@ The Wallet section of the settings sheet has these boost items. They are active 
 - The player screen has a **Boost** button (ADR 0014). It is active when the relay track that ICY sync shows now has a payable payload.
 - The button opens a boost sheet with the amount, from **Boost amount**, and an empty message. The listener can change both, then tap **Send**.
 - A manual boost pays the payload of the track that the listener hears when the sheet opens.
+- The sheet shows the split before **Send**: each recipient with its sats for the amount that the sheet shows. The split of §The split applies. A recipient with less than 1 sat does not show.
 - The app shows the result in the sheet, and adds it to the history.
+- After the boost, the sheet shows **Payment details**, a link to the history entry of that boost. **Close** in the toolbar closes the sheet.
 - A manual boost does not use the trigger and does not use the paid block set of auto-boost.
 
 ### The pairing
@@ -191,3 +193,5 @@ A person must examine these items on an iPhone. Report each item as open until a
 - An auto-boost occurs also while the iPhone is locked.
 - A manual boost with a message pays the track that plays. A recipient sees the message and the sender name.
 - The history shows each recipient with **confirmed**, **failed** or **unknown**.
+- The boost sheet shows the split for the amount, and it changes when the amount changes.
+- After a manual boost, **Payment details** opens the history entry of that boost.

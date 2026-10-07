@@ -101,6 +101,12 @@ final class BoostModel: ObservableObject {
         updateManualTarget()
     }
 
+    /// ADR 0017 §The fallback: a change to the alternate stream ends the trigger session only.
+    /// The trigger drops its candidate. The pairing, the paid blocks and the history stay.
+    func streamChanged() {
+        trigger.endSession()
+    }
+
     /// Ends the session. The candidate, the payloads and the paid blocks are cleared.
     func sessionEnded() {
         trigger.endSession()
@@ -175,17 +181,33 @@ final class BoostModel: ObservableObject {
 
     // MARK: - Manual boost
 
+    /// The parts that a manual boost of the amount pays for the track, or an empty list.
+    /// The boost sheet shows them before Send (ADR 0013 §Manual boost).
+    func manualParts(track: TrackDisplay?, amountSats: Int) -> [BoostPart] {
+        guard case .pay(_, let parts) = BoostPlan.decideManual(amountSats: amountSats, track: track, pairing: pairing) else {
+            return []
+        }
+        return parts
+    }
+
+    /// The result of one manual boost for the boost sheet.
+    struct ManualBoostOutcome {
+        let text: String
+        /// The history entry of the boost, or nil when the app made no entry.
+        let entryID: UUID?
+    }
+
     /// Sends one manual boost for the given track, and gives the result text for the boost sheet.
     ///
     /// The boost sheet gives the track of the moment that it opened. Usually this track is `manualTarget`.
     /// ADR 0013 §The limits: the daily limit does not stop a manual boost, but its sats count.
     /// A skipped boost gives no history entry.
-    func sendManualBoost(track: TrackDisplay?, amountSats: Int, message: String) async -> String {
+    func sendManualBoost(track: TrackDisplay?, amountSats: Int, message: String) async -> ManualBoostOutcome {
         let decision = BoostPlan.decideManual(amountSats: amountSats, track: track, pairing: pairing)
         switch decision {
         case .skip(let reason):
             Self.log.notice("Manual boost skipped: \(Self.reasonName(reason), privacy: .public)")
-            return BoostStatusText.text(for: reason) ?? "No boost. No V4V track plays."
+            return ManualBoostOutcome(text: BoostStatusText.text(for: reason) ?? "No boost. No V4V track plays.", entryID: nil)
         case .pay(let payload, let parts):
             let settingsSender = BoostSender(settings: BoostSettings())
             let sender = BoostSender(
@@ -198,14 +220,15 @@ final class BoostModel: ObservableObject {
             Self.log.notice("Manual boost started: \(amountSats, privacy: .public) sats, \(parts.count, privacy: .public) parts")
             guard let result = await pay(parts: parts, payload: payload, amountSats: amountSats, sender: sender) else {
                 status = BoostStatusText.noWallet
-                return BoostStatusText.noWallet
+                return ManualBoostOutcome(text: BoostStatusText.noWallet, entryID: nil)
             }
             let text = BoostStatusText.text(for: result)
             status = text
+            var entryID: UUID?
             if let track {
-                await addHistoryEntry(kind: .manual, track: track, amountSats: amountSats, message: sender.message, result: result)
+                entryID = await addHistoryEntry(kind: .manual, track: track, amountSats: amountSats, message: sender.message, result: result)
             }
-            return text
+            return ManualBoostOutcome(text: text, entryID: entryID)
         }
     }
 
@@ -246,9 +269,11 @@ final class BoostModel: ObservableObject {
 
     /// Adds one entry to the history list, then to the history store.
     /// The store is an actor, so the file write occurs off the main actor.
+    /// Gives the id of the new entry.
+    @discardableResult
     private func addHistoryEntry(
         kind: BoostHistoryEntry.Kind, track: TrackDisplay, amountSats: Int, message: String?, result: BoostResult
-    ) async {
+    ) async -> UUID {
         let entry = BoostHistoryEntry(
             date: Date(),
             kind: kind,
@@ -268,6 +293,7 @@ final class BoostModel: ObservableObject {
         if entry.hasRetryableParts {
             startAutomaticRetry(entryID: entry.id)
         }
+        return entry.id
     }
 
     // MARK: - Retry

@@ -17,6 +17,8 @@ struct BoostSheet: View {
     @State private var message = ""
     @State private var isSending = false
     @State private var resultText: String?
+    /// The history entry of the sent boost, or nil.
+    @State private var entryID: UUID?
     @Environment(\.dismiss) private var dismiss
 
     init(boost: BoostModel) {
@@ -69,26 +71,43 @@ struct BoostSheet: View {
                 }
                 .disabled(isSending || isFinished)
 
+                // ADR 0013 §Manual boost: the split for the amount, before Send.
+                if !isFinished, let amount {
+                    let parts = boost.manualParts(track: track, amountSats: amount)
+                    if !parts.isEmpty {
+                        Section("Split") {
+                            ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
+                                LabeledContent(part.destination.name ?? "Recipient", value: "\(part.sats) sats")
+                            }
+                        }
+                    }
+                }
+
                 Section {
                     if let resultText {
                         Text(resultText)
                             .accessibilityIdentifier("manualBoostResult")
                     }
-                    Button {
-                        if isFinished {
-                            dismiss()
-                        } else {
+                    if let entryID {
+                        // ADR 0013 §Manual boost: a link to the history entry of the boost.
+                        NavigationLink("Payment details") {
+                            BoostHistoryDetailView(entryID: entryID)
+                                .environmentObject(boost)
+                        }
+                        .accessibilityIdentifier("boostPaymentDetailsLink")
+                    } else if !isFinished {
+                        Button {
                             send()
+                        } label: {
+                            if isSending {
+                                ProgressView()
+                            } else {
+                                Text("Send")
+                            }
                         }
-                    } label: {
-                        if isSending {
-                            ProgressView()
-                        } else {
-                            Text(isFinished ? "Done" : "Send")
-                        }
+                        .disabled(isSending || amount == nil)
+                        .accessibilityIdentifier("sendBoostButton")
                     }
-                    .disabled(isSending || (!isFinished && amount == nil))
-                    .accessibilityIdentifier("sendBoostButton")
                 }
             }
             .navigationTitle("Boost")
@@ -96,7 +115,7 @@ struct BoostSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     // A boost that started continues after the sheet closes.
-                    Button("Cancel") { dismiss() }
+                    Button(isFinished ? "Close" : "Cancel") { dismiss() }
                 }
             }
         }
@@ -110,8 +129,9 @@ struct BoostSheet: View {
         let track = self.track
         let message = self.message
         Task {
-            let text = await boost.sendManualBoost(track: track, amountSats: amount, message: message)
-            resultText = text
+            let outcome = await boost.sendManualBoost(track: track, amountSats: amount, message: message)
+            resultText = outcome.text
+            entryID = outcome.entryID
             isSending = false
         }
     }

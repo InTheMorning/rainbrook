@@ -65,6 +65,7 @@ The research note compares the two transports for a phone in a moving car.
 - The app keeps images in a memory cache keyed by the SHA-256 or the URL, with a limit of 8 images.
   A relay image never changes for its hash, so the app does not load it again.
 - The app rejects a response larger than 524,288 bytes, or a type that is not JPEG or PNG.
+  For an image from a URL, [ADR 0015](0015-artwork-from-url-and-animated-gif.md) replaces this rule.
 - Download and decode run off the main thread. Only the finished image goes to the main actor.
 - A failed image load keeps the placeholder and does not stop the text.
 

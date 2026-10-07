@@ -68,6 +68,7 @@ The memory cache of ADR 0008 does not change: 8 images, keyed by the SHA-256 or 
 
 - A URL image with a maximum size of 40 MiB can show. It uses network data for each new load. The memory cache keeps the last 8 images, so a track that plays again in the same session does not load its image again.
 - A GIF with very many frames plays with fewer frames, at the same speed.
+- `UIImage.animatedImage` shows each frame for the same time. The full play time is correct, but a GIF with a different delay for each frame loses that timing.
 - Now Playing shows the first frame of an animated GIF.
 
 ## Invariants

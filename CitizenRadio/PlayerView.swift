@@ -131,7 +131,9 @@ private struct Artwork: View {
             .aspectRatio(1, contentMode: .fit)
             .frame(maxWidth: 360, maxHeight: 360)
             .overlay {
-                if let image {
+                if let image, (image.images?.count ?? 0) >= 2 {
+                    AnimatedArtwork(image: image)
+                } else if let image {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
@@ -143,6 +145,29 @@ private struct Artwork: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .accessibilityHidden(true)
+    }
+}
+
+/// Shows an animated image in a `UIImageView`, because SwiftUI `Image` does not animate it.
+/// ADR 0015 §Display. The view fills and clips like the still image.
+private struct AnimatedArtwork: UIViewRepresentable {
+    let image: UIImage
+
+    func makeUIView(context: Context) -> UIImageView {
+        let view = UIImageView()
+        view.contentMode = .scaleAspectFill
+        view.clipsToBounds = true
+        view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        view.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        view.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        view.setContentHuggingPriority(.defaultLow, for: .vertical)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIImageView, context: Context) {
+        if uiView.image !== image {
+            uiView.image = image
+        }
     }
 }
 

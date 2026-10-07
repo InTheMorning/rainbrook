@@ -47,6 +47,134 @@ final class BoostHistoryTests: XCTestCase {
         XCTAssertEqual(BoostPaymentResult(.notSent), .failed)
     }
 
+    // MARK: - BoostFailure
+
+    func testFailureForEachOutcome() {
+        XCTAssertNil(BoostFailure(.paid))
+        XCTAssertNil(BoostFailure(.timeout))
+        XCTAssertEqual(BoostFailure(.unsupported), .unsupported)
+        XCTAssertEqual(
+            BoostFailure(.walletError(code: "PAYMENT_FAILED", message: "No route")),
+            .walletError(code: "PAYMENT_FAILED", message: "No route")
+        )
+        XCTAssertEqual(BoostFailure(.invalidResponse), .invalidResponse)
+        XCTAssertEqual(BoostFailure(.notSent), .notSent)
+    }
+
+    func testIsRetryableForEachFailure() {
+        XCTAssertTrue(BoostFailure.walletError(code: "CODE", message: "message").isRetryable)
+        XCTAssertTrue(BoostFailure.notSent.isRetryable)
+        XCTAssertTrue(BoostFailure.lightningAddress.isRetryable)
+        XCTAssertFalse(BoostFailure.unsupported.isRetryable)
+        XCTAssertFalse(BoostFailure.invalidResponse.isRetryable)
+    }
+
+    func testAWalletErrorMessageOf250CharactersKeeps200() {
+        let message = String(repeating: "a", count: 200) + String(repeating: "b", count: 50)
+        XCTAssertEqual(
+            BoostFailure(.walletError(code: "CODE", message: message)),
+            .walletError(code: "CODE", message: String(repeating: "a", count: 200))
+        )
+    }
+
+    // MARK: - BoostPartResult
+
+    private let retryData = BoostRetryPayment.keysend(
+        pubkey: "02" + String(repeating: "a", count: 64), amountMsat: 70_000,
+        tlvRecords: [TLVRecord(type: 7_629_169, value: "7b7d")]
+    )
+
+    func testAPartThatDidNotFailHasNoFailureAndNoRetryData() {
+        let part = BoostPartResult(
+            name: nil, kind: .keysend, sats: 70, result: .confirmed, failure: .notSent, retry: retryData
+        )
+        XCTAssertNil(part.failure)
+        XCTAssertNil(part.retry)
+        XCTAssertFalse(part.isRetryable)
+    }
+
+    func testAPartWithAFailureThatIsNotRetryableHasNoRetryData() {
+        let part = BoostPartResult(
+            name: nil, kind: .keysend, sats: 70, result: .failed, failure: .invalidResponse, retry: retryData
+        )
+        XCTAssertEqual(part.failure, .invalidResponse)
+        XCTAssertNil(part.retry)
+        XCTAssertFalse(part.isRetryable)
+    }
+
+    // MARK: - Retryable parts of an entry
+
+    func testRetryablePartsAndRetryableSats() {
+        let entry = entry(sats: 100, parts: [
+            BoostPartResult(name: "A", kind: .keysend, sats: 70, result: .failed, failure: .notSent, retry: retryData),
+            BoostPartResult(name: "B", kind: .keysend, sats: 20, result: .failed, failure: .unsupported),
+            BoostPartResult(name: "C", kind: .keysend, sats: 10, result: .confirmed)
+        ])
+        XCTAssertTrue(entry.hasRetryableParts)
+        XCTAssertEqual(entry.retryableSats, 70)
+    }
+
+    func testAnEntryWithNoRetryablePart() {
+        let entry = entry(sats: 100, parts: [
+            BoostPartResult(name: "A", kind: .keysend, sats: 100, result: .unknown)
+        ])
+        XCTAssertFalse(entry.hasRetryableParts)
+        XCTAssertEqual(entry.retryableSats, 0)
+    }
+
+    func testReplacingPartsKeepsTheOtherFields() {
+        let original = BoostHistoryEntry(
+            id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!, date: fixedDate, kind: .manual,
+            title: "Track", artist: "Artist", amountSats: 100, message: "Hello",
+            parts: [BoostPartResult(name: "A", kind: .keysend, sats: 100, result: .failed)]
+        )
+        let newParts = [BoostPartResult(name: "A", kind: .keysend, sats: 100, result: .confirmed, attempts: 2)]
+
+        let replaced = original.replacingParts(newParts)
+
+        XCTAssertEqual(replaced, BoostHistoryEntry(
+            id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!, date: fixedDate, kind: .manual,
+            title: "Track", artist: "Artist", amountSats: 100, message: "Hello", parts: newParts
+        ))
+    }
+
+    // MARK: - BoostHistory.update
+
+    func testUpdateReplacesTheEntryAtItsPositionAndKeepsTheOtherEntries() {
+        let first = entry(sats: 1)
+        let second = entry(sats: 2)
+        let third = entry(sats: 3)
+        var history = BoostHistory(entries: [first, second, third])
+        let updated = second.replacingParts([BoostPartResult(name: "A", kind: .keysend, sats: 2, result: .confirmed)])
+
+        history.update(updated)
+
+        XCTAssertEqual(history.entries, [first, updated, third])
+    }
+
+    func testUpdateWithAnUnknownIdChangesNothing() {
+        let history = BoostHistory(entries: [entry(sats: 1), entry(sats: 2)])
+        var changed = history
+
+        changed.update(entry(sats: 3))
+
+        XCTAssertEqual(changed, history)
+    }
+
+    func testFileStoreUpdateWritesTheUpdatedEntry() async {
+        let fileURL = tempDirectory.appendingPathComponent("history.json")
+        let store = BoostHistoryFileStore(fileURL: fileURL)
+        let original = entry(sats: 50)
+        _ = await store.add(original)
+        let updated = original.replacingParts([BoostPartResult(name: "A", kind: .keysend, sats: 50, result: .confirmed)])
+
+        let result = await store.update(updated)
+        let loaded = await BoostHistoryFileStore(fileURL: fileURL).load()
+
+        XCTAssertEqual(result.entries, [updated])
+        XCTAssertEqual(loaded.entries, [updated])
+    }
+
     // MARK: - BoostHistory.add
 
     func testAddPutsTheNewestEntryFirst() {
@@ -79,6 +207,44 @@ final class BoostHistoryTests: XCTestCase {
         let decoded = try BoostHistory.decode(data)
 
         XCTAssertEqual(decoded, history)
+    }
+
+    func testEncodedThenDecodeKeepsTheFailureTheRetryDataAndTheAttempts() throws {
+        var history = BoostHistory()
+        history.add(entry(sats: 100, parts: [
+            BoostPartResult(
+                name: "Alice", kind: .keysend, sats: 60, result: .failed,
+                failure: .walletError(code: "PAYMENT_FAILED", message: "No route"), retry: retryData, attempts: 2
+            ),
+            BoostPartResult(
+                name: nil, kind: .lightningAddress, sats: 40, result: .failed, failure: .lightningAddress,
+                retry: .lightningAddress(name: "alice", host: "pay.io", amountMsat: 40_000, comment: "Great set")
+            )
+        ]))
+
+        let decoded = try BoostHistory.decode(try history.encoded())
+
+        XCTAssertEqual(decoded, history)
+    }
+
+    func testTheHistoryFileOfADR0013DecodesWithOneAttempt() throws {
+        let json = """
+        [{"id":"22222222-2222-2222-2222-222222222222","date":"2023-11-14T22:13:20Z","kind":"auto",
+          "title":"Track","artist":"Artist","amountSats":100,
+          "parts":[{"name":"Alice","kind":"keysend","sats":70,"result":"failed"},
+                   {"kind":"lightningAddress","sats":30,"result":"confirmed"}]}]
+        """
+
+        let history = try BoostHistory.decode(Data(json.utf8))
+
+        XCTAssertEqual(history.entries, [BoostHistoryEntry(
+            id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!, date: fixedDate, kind: .auto,
+            title: "Track", artist: "Artist", amountSats: 100, message: nil,
+            parts: [
+                BoostPartResult(name: "Alice", kind: .keysend, sats: 70, result: .failed, failure: nil, retry: nil, attempts: 1),
+                BoostPartResult(name: nil, kind: .lightningAddress, sats: 30, result: .confirmed, failure: nil, retry: nil, attempts: 1)
+            ]
+        )])
     }
 
     // MARK: - BoostHistoryFileStore
@@ -183,5 +349,23 @@ final class BoostHistoryTests: XCTestCase {
         XCTAssertEqual(BoostHistoryText.label(for: .confirmed), "Confirmed")
         XCTAssertEqual(BoostHistoryText.label(for: .failed), "Failed")
         XCTAssertEqual(BoostHistoryText.label(for: .unknown), "Unknown")
+    }
+
+    // MARK: - BoostHistoryText.reason
+
+    private func failedPart(_ failure: BoostFailure?) -> BoostPartResult {
+        BoostPartResult(name: nil, kind: .keysend, sats: 10, result: .failed, failure: failure)
+    }
+
+    func testReasonForEachFailure() {
+        XCTAssertEqual(
+            BoostHistoryText.reason(for: failedPart(.walletError(code: "PAYMENT_FAILED", message: "No route"))),
+            "Wallet error PAYMENT_FAILED: No route"
+        )
+        XCTAssertEqual(BoostHistoryText.reason(for: failedPart(.unsupported)), "The wallet does not support this payment.")
+        XCTAssertEqual(BoostHistoryText.reason(for: failedPart(.invalidResponse)), "The wallet answer was not valid.")
+        XCTAssertEqual(BoostHistoryText.reason(for: failedPart(.notSent)), "The payment was not sent.")
+        XCTAssertEqual(BoostHistoryText.reason(for: failedPart(.lightningAddress)), "The lightning address request failed.")
+        XCTAssertNil(BoostHistoryText.reason(for: failedPart(nil)))
     }
 }

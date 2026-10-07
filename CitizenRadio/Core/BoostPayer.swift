@@ -43,10 +43,16 @@ public struct BoostResult: Equatable, Sendable {
 /// Pays the parts of one boost. ADR 0013 §The payment names the sequence.
 ///
 /// The payer gets an invoice for each lightning address part, then sends all parts
-/// through the wallet in one call. The payer does not retry a failed part.
+/// through the wallet in one call. `retry(parts:)` sends the retryable parts again (ADR 0016 §The retry).
 /// The payer does not record the spending. The caller records `paidSats + unknownSats`
 /// in `SpendingLimitStore` (ADR 0013 §The limits).
 public actor BoostPayer {
+    /// The result and the failure reason of one part that the payer tried to pay.
+    private struct Attempt {
+        let result: BoostPaymentResult
+        let failure: BoostFailure?
+    }
+
     private let wallet: any WalletPaying
     private let fetcher: any SnapshotFetching
 
@@ -57,48 +63,111 @@ public actor BoostPayer {
 
     /// Never throws. A failed part counts as not paid.
     /// The result has one part result for each part, in the part sequence.
+    /// A part with a retryable failure keeps the data to send it again.
     public func pay(
         parts: [BoostPart], payload: LiveValuePayload, amountSats: Int, sender: BoostSender
     ) async -> BoostResult {
-        // The payments, in the part sequence, without the parts that failed before the wallet.
-        var payments: [NWCPayment] = []
-        // The index of the part of each payment.
-        var paymentParts: [Int] = []
-        // The result of each part. A part that is not sent stays failed.
-        var results = [BoostPaymentResult](repeating: .failed, count: parts.count)
-
-        for (index, part) in parts.enumerated() {
+        let payments: [BoostRetryPayment] = parts.map { part in
             let amountMsat = Int64(part.sats) * 1000
             switch part.destination.kind {
             case .node(let pubkey):
                 let records = BoostRecord.tlvRecords(
                     part: part, payload: payload, totalSats: amountSats, sender: sender
                 )
-                payments.append(.keysend(KeysendPayment(amountMsat: amountMsat, pubkey: pubkey, tlvRecords: records)))
-                paymentParts.append(index)
+                return .keysend(pubkey: pubkey, amountMsat: amountMsat, tlvRecords: records)
             case .lightningAddress(let name, let host):
                 let comment = LightningAddress.comment(for: sender)
+                return .lightningAddress(name: name, host: host, amountMsat: amountMsat, comment: comment)
+            }
+        }
+        let attempts = await send(payments)
+
+        return BoostResult(parts: parts.indices.map { index in
+            let part = parts[index]
+            // Each part is sent, so each part has an attempt.
+            let attempt = attempts[index] ?? Attempt(result: .failed, failure: .notSent)
+            // The initializer keeps the retry data only for a retryable failure.
+            return BoostPartResult(
+                name: part.destination.name, kind: Self.kind(of: part), sats: part.sats,
+                result: attempt.result, failure: attempt.failure, retry: payments[index], attempts: 1
+            )
+        })
+    }
+
+    /// Sends each retryable part again, in one wallet call. Other parts stay unchanged.
+    /// Gives the full list in the same sequence. A retried part has attempts + 1.
+    ///
+    /// A part with the result unknown or confirmed is never sent.
+    /// A failed part with no retry data is never sent.
+    public func retry(parts: [BoostPartResult]) async -> [BoostPartResult] {
+        let payments: [BoostRetryPayment?] = parts.map { $0.isRetryable ? $0.retry : nil }
+        let attempts = await send(payments)
+
+        return parts.indices.map { index in
+            let part = parts[index]
+            guard let payment = payments[index] else { return part }
+            let attempt = attempts[index] ?? Attempt(result: .failed, failure: .notSent)
+            return BoostPartResult(
+                name: part.name, kind: part.kind, sats: part.sats,
+                result: attempt.result, failure: attempt.failure, retry: payment, attempts: part.attempts + 1
+            )
+        }
+    }
+
+    /// Sends the given payments through the wallet in one call.
+    /// A nil payment is not sent and gives a nil attempt.
+    ///
+    /// A lightning address payment first gets a new invoice. When the LNURL requests or checks fail,
+    /// the part fails with the reason lightning address, and the wallet does not get it.
+    /// A wallet throw gives the reason not sent for each part in the call.
+    private func send(_ payments: [BoostRetryPayment?]) async -> [Attempt?] {
+        var attempts = [Attempt?](repeating: nil, count: payments.count)
+        // The wallet payments, in the part sequence.
+        var walletPayments: [NWCPayment] = []
+        // The index of the part of each wallet payment.
+        var walletParts: [Int] = []
+
+        for (index, payment) in payments.enumerated() {
+            switch payment {
+            case nil:
+                continue
+            case .keysend(let pubkey, let amountMsat, let records)?:
+                walletPayments.append(.keysend(KeysendPayment(amountMsat: amountMsat, pubkey: pubkey, tlvRecords: records)))
+                walletParts.append(index)
+            case .lightningAddress(let name, let host, let amountMsat, let comment)?:
                 guard let invoice = await invoice(name: name, host: host, amountMsat: amountMsat, comment: comment) else {
+                    attempts[index] = Attempt(result: .failed, failure: .lightningAddress)
                     continue
                 }
-                payments.append(.invoice(invoice))
-                paymentParts.append(index)
+                walletPayments.append(.invoice(invoice))
+                walletParts.append(index)
             }
         }
 
-        if !payments.isEmpty {
-            // A throw means that the wallet sent no payment, so each sent part stays failed.
-            if let outcomes = try? await wallet.pay(payments) {
-                // A payment with no outcome stays failed.
-                for (index, outcome) in zip(paymentParts, outcomes) {
-                    results[index] = BoostPaymentResult(outcome)
-                }
+        guard !walletPayments.isEmpty else { return attempts }
+
+        let outcomes: [NWCPaymentOutcome]
+        do {
+            outcomes = try await wallet.pay(walletPayments)
+        } catch {
+            // A throw means that the wallet sent no payment.
+            for index in walletParts {
+                attempts[index] = Attempt(result: .failed, failure: .notSent)
             }
+            return attempts
         }
 
-        return BoostResult(parts: zip(parts, results).map { part, result in
-            BoostPartResult(name: part.destination.name, kind: Self.kind(of: part), sats: part.sats, result: result)
-        })
+        for (position, index) in walletParts.enumerated() {
+            guard position < outcomes.count else {
+                // The wallet gave no outcome for this payment. It can have sent it,
+                // so the part is failed with a reason that is not retryable.
+                attempts[index] = Attempt(result: .failed, failure: .invalidResponse)
+                continue
+            }
+            let outcome = outcomes[position]
+            attempts[index] = Attempt(result: BoostPaymentResult(outcome), failure: BoostFailure(outcome))
+        }
+        return attempts
     }
 
     /// The kind of the part result for a part.

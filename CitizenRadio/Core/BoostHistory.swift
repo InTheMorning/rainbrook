@@ -21,6 +21,59 @@ public enum BoostPaymentResult: String, Codable, Equatable, Sendable {
     }
 }
 
+/// The reason of one failed part. ADR 0016 §The failure reason.
+public enum BoostFailure: Codable, Equatable, Sendable {
+    /// The wallet sent an error. The message has a maximum of 200 characters.
+    case walletError(code: String, message: String)
+    /// The wallet does not list the method.
+    case unsupported
+    /// The wallet answer was not valid.
+    case invalidResponse
+    /// The app sent no request for the part.
+    case notSent
+    /// An LNURL request or check failed.
+    case lightningAddress
+
+    /// The maximum number of characters of a wallet error message that the app keeps.
+    public static let maximumMessageLength = 200
+
+    /// True for walletError, notSent and lightningAddress.
+    /// ADR 0016 §The retry names the retryable reasons.
+    public var isRetryable: Bool {
+        switch self {
+        case .walletError, .notSent, .lightningAddress:
+            return true
+        case .unsupported, .invalidResponse:
+            return false
+        }
+    }
+
+    /// Maps one wallet outcome to its reason. Nil for .paid and .timeout.
+    /// A wallet error keeps the first 200 characters of its message.
+    public init?(_ outcome: NWCPaymentOutcome) {
+        switch outcome {
+        case .paid, .timeout:
+            return nil
+        case .unsupported:
+            self = .unsupported
+        case .walletError(let code, let message):
+            self = .walletError(code: code, message: String(message.prefix(Self.maximumMessageLength)))
+        case .invalidResponse:
+            self = .invalidResponse
+        case .notSent:
+            self = .notSent
+        }
+    }
+}
+
+/// The data to send one part again. ADR 0016 §The retry.
+public enum BoostRetryPayment: Codable, Equatable, Sendable {
+    /// A keysend part. A retry sends the same TLV records.
+    case keysend(pubkey: String, amountMsat: Int64, tlvRecords: [TLVRecord])
+    /// A lightning address part. A retry gets a new invoice with the same comment.
+    case lightningAddress(name: String, host: String, amountMsat: Int64, comment: String)
+}
+
 /// The result of one part of a boost.
 public struct BoostPartResult: Codable, Equatable, Sendable {
     /// A part pays a keysend destination or a lightning address.
@@ -31,12 +84,46 @@ public struct BoostPartResult: Codable, Equatable, Sendable {
     public let kind: Kind
     public let sats: Int
     public let result: BoostPaymentResult
+    /// The reason of the failure. Nil unless the result is failed.
+    public let failure: BoostFailure?
+    /// The data to send the part again.
+    /// Not nil only when the result is failed and the failure is retryable.
+    public let retry: BoostRetryPayment?
+    /// The number of payments of this part. It is 1 after the first payment.
+    public let attempts: Int
 
-    public init(name: String?, kind: Kind, sats: Int, result: BoostPaymentResult) {
+    /// True when the result is failed and the part has retry data.
+    public var isRetryable: Bool { result == .failed && retry != nil }
+
+    /// Removes a failure from a part that did not fail.
+    /// Removes the retry data from a part that is not retryable (ADR 0016 §The retry).
+    public init(
+        name: String?, kind: Kind, sats: Int, result: BoostPaymentResult,
+        failure: BoostFailure? = nil, retry: BoostRetryPayment? = nil, attempts: Int = 1
+    ) {
+        let keptFailure = result == .failed ? failure : nil
         self.name = name
         self.kind = kind
         self.sats = sats
         self.result = result
+        self.failure = keptFailure
+        self.retry = keptFailure?.isRetryable == true ? retry : nil
+        self.attempts = attempts
+    }
+
+    /// Decodes a part result. The keys `failure`, `retry` and `attempts` are optional,
+    /// because the history file of ADR 0013 does not have them. A missing `attempts` gives 1.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            name: try container.decodeIfPresent(String.self, forKey: .name),
+            kind: try container.decode(Kind.self, forKey: .kind),
+            sats: try container.decode(Int.self, forKey: .sats),
+            result: try container.decode(BoostPaymentResult.self, forKey: .result),
+            failure: try container.decodeIfPresent(BoostFailure.self, forKey: .failure),
+            retry: try container.decodeIfPresent(BoostRetryPayment.self, forKey: .retry),
+            attempts: try container.decodeIfPresent(Int.self, forKey: .attempts) ?? 1
+        )
     }
 }
 
@@ -74,6 +161,24 @@ public struct BoostHistoryEntry: Codable, Equatable, Sendable, Identifiable {
     public var confirmedSats: Int {
         parts.filter { $0.result == .confirmed }.reduce(0) { $0 + $1.sats }
     }
+
+    /// True when one or more parts are retryable.
+    public var hasRetryableParts: Bool {
+        parts.contains { $0.isRetryable }
+    }
+
+    /// The sum of the sats of the retryable parts.
+    public var retryableSats: Int {
+        parts.filter(\.isRetryable).reduce(0) { $0 + $1.sats }
+    }
+
+    /// The same entry (id, date, kind, title, artist, amount, message) with new parts.
+    public func replacingParts(_ parts: [BoostPartResult]) -> BoostHistoryEntry {
+        BoostHistoryEntry(
+            id: id, date: date, kind: kind, title: title, artist: artist,
+            amountSats: amountSats, message: message, parts: parts
+        )
+    }
 }
 
 /// The last 200 boosts, newest first.
@@ -98,6 +203,13 @@ public struct BoostHistory: Equatable, Sendable {
         }
     }
 
+    /// Replaces the entry with the same id, at the same position.
+    /// When no entry has that id, the history does not change.
+    public mutating func update(_ entry: BoostHistoryEntry) {
+        guard let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        entries[index] = entry
+    }
+
     /// Encodes the entries as JSON, with ISO 8601 dates.
     public func encoded() throws -> Data {
         let encoder = JSONEncoder()
@@ -120,6 +232,8 @@ public protocol BoostHistoryStoring: Sendable {
     func load() async -> BoostHistory
     /// Adds the entry to the stored history, and gives the new history.
     func add(_ entry: BoostHistoryEntry) async -> BoostHistory
+    /// Replaces the stored entry with the same id, and gives the new history.
+    func update(_ entry: BoostHistoryEntry) async -> BoostHistory
 }
 
 /// Stores the boost history in a file. ADR 0013 §The history names this store.
@@ -145,6 +259,16 @@ public actor BoostHistoryFileStore: BoostHistoryStoring {
     public func add(_ entry: BoostHistoryEntry) async -> BoostHistory {
         var history = await load()
         history.add(entry)
+        write(history)
+        return history
+    }
+
+    /// Loads the file, replaces the entry with the same id, and writes the file. Gives the new history.
+    ///
+    /// A write error does not throw, as in `add(_:)`.
+    public func update(_ entry: BoostHistoryEntry) async -> BoostHistory {
+        var history = await load()
+        history.update(entry)
         write(history)
         return history
     }
@@ -193,6 +317,25 @@ public enum BoostHistoryText {
             return "Failed"
         case .unknown:
             return "Unknown"
+        }
+    }
+
+    /// The text of the failure reason of one part. Nil when the part has no failure.
+    /// ADR 0016 §The failure reason names the reasons.
+    public static func reason(for part: BoostPartResult) -> String? {
+        switch part.failure {
+        case nil:
+            return nil
+        case .walletError(let code, let message):
+            return "Wallet error \(code): \(message)"
+        case .unsupported:
+            return "The wallet does not support this payment."
+        case .invalidResponse:
+            return "The wallet answer was not valid."
+        case .notSent:
+            return "The payment was not sent."
+        case .lightningAddress:
+            return "The lightning address request failed."
         }
     }
 }

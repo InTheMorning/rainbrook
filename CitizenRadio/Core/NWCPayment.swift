@@ -1,7 +1,7 @@
 import Foundation
 
 /// One TLV record of a keysend payment.
-public struct TLVRecord: Equatable, Sendable {
+public struct TLVRecord: Codable, Equatable, Sendable {
     public let type: UInt64
     /// The value as lowercase hexadecimal text.
     public let value: String

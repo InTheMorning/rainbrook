@@ -7,7 +7,7 @@
 - Related:
   - [ADR 0008](0008-relay-display-metadata.md): this record replaces its display delay rule and its backoff fallback for a session with ICY. See §Changes at implementation.
   - [ADR 0014](0014-player-screen-with-boost-button.md): the player screen and the settings.
-  - [Upstream live metadata plan](../plans/upstream-live-metadata-plan.md), added 2026-10-06: four upstream ADRs with the status Proposed. If they are accepted, a new app ADR supersedes this record for an HLS session.
+  - [Upstream live metadata plan](../plans/upstream-live-metadata-plan.md), added 2026-10-06. Five of its upstream ADRs are deployed. The display state now has `songLine` and `value`. Publisher ADR 0009, the HLS tagger, is Proposed. When it is implemented, a new app ADR supersedes this record for an HLS session.
 
 ## Context
 

@@ -1,7 +1,8 @@
 # Upstream live metadata changes: plan
 
 - Status: proposed, 2026-10-06. This plan does not make rules. It lists the app work that follows from six upstream ADRs.
-- Upstream status: relay ADR 0004 and publisher ADR 0011 are Accepted. The others are Proposed. No upstream ADR is implemented yet.
+- Upstream status, 2026-10-06: relay ADR 0004 and ADR 0005, and publisher ADR 0010, ADR 0011 and ADR 0012, are implemented and deployed on `api.musicindex.org`. Relay ADR 0005 is Implemented. The others wait for app checks. Publisher ADR 0009 is Proposed, and no tagger exists.
+- Phases 2 and 2b can start. §Available Now gives the live display body.
 - Source: `musicindex-live-relay` ADR 0004 and ADR 0005, and `musicindex-live-publisher` ADR 0009, ADR 0010, ADR 0011 and ADR 0012, as written on 2026-10-06.
 - Evidence: the research report `~/build/musicindex-research/reports/Live RSS metadata delivery paths.md`.
 
@@ -24,6 +25,36 @@ The app gets the artwork, the track text and the payment block of the track that
 | Publisher ADR 0010 | The Socket.IO payload adds `line`, `author` and `podcastName`. | None. The app does not read Socket.IO. |
 | Relay ADR 0005 and publisher ADR 0012 | A display track carries `songLine`, the exact ICY line, and `value {eventGuid, blockGuid}` for a V4V track. | The ICY sync can compare the ICY text with `songLine` by equality. A display state names its payment block. |
 
+## Available now
+
+On 2026-10-06 the operator played two V4V tracks on the live relay. The display state of a V4V track on `GET /v1/liveitems/{event_id}/display` and on `/display/events` had this shape. The poll did not record the artwork, so the example shows only its form:
+
+```json
+{
+  "track": {
+    "artist": "HeyCitizen",
+    "title": "The Platform",
+    "artwork": {"sha256": "…", "mime": "image/jpeg"},
+    "songLine": "HeyCitizen - The Platform",
+    "value": {
+      "eventGuid": "DFnUwDM1mzcljaF4pI9Q6w",
+      "blockGuid": "b3790cee-4849-4cf9-915e-33795268b67b"
+    }
+  }
+}
+```
+
+`songLine` is the first line of `now-playing.txt`, the line that `butt` sends to Icecast as `StreamTitle` (publisher ADR 0009 §The Song Line). The ICY sync of ADR 0011 can thus compare the two by equality. A device check of that comparison is open.
+
+These facts were seen on the live relay:
+
+- `value` names the block of the same play. The display state and that block arrive in the same poll of 0.5 seconds.
+- A display state can arrive before its block. It then has no `value`. The same state then arrives one more time with `value`.
+- A track with no V4V block has `songLine` and no `value`.
+- `/display/events` and `/events` are instant. Socket.IO and `GET /remoteValue` wait for `stream_delay_secs` of the broadcaster. The live test used 15 seconds.
+
+`musicindex-live-publisher` ADR 0012 owns the two keys. `musicindex-live-relay` ADR 0005 owns their limits on the wire: `songLine` has 1 to 1,024 characters, and each GUID has 1 to 128 characters.
+
 ## Phase 1: checks that need no upstream change
 
 1. On the iPhone, play `https://bastone.heycitizen.xyz/hls/live.m3u8`. Make sure that `IcyMetadataReader` gives the `TIT2` title through `commonKeyTitle`. Make sure that the ICY sync of ADR 0011 shows the artwork in time.
@@ -32,12 +63,16 @@ The app gets the artwork, the track text and the payment block of the track that
 
 ## Phase 2: after relay ADR 0004 and publisher ADR 0011
 
+The upstream changes are deployed. This phase can start.
+
 The display states become instant. Two rules of ADR 0011 then behave differently:
 
 - **A session with ICY.** No change. Each state now arrives before its ICY title, also for a listener with a short buffer.
 - **A session with no ICY.** The ADR 0008 rule applies each streamed state after the audio that AVPlayer holds. The states now arrive earlier by the stream delay. The display thus becomes earlier than the 30 seconds that the test of 2026-10-04 measured. A new app ADR must keep this rule, change it, or remove it.
 
 ## Phase 2b: after relay ADR 0005 and publisher ADR 0012
+
+The upstream changes are deployed. This phase can start.
 
 - The ICY sync of ADR 0011 can compare the ICY text with `songLine` by equality, before its text rules. The text rules stay as the fallback for a state with no `songLine`. A new app ADR decides this.
 - A display state with `value` names the block of its track. A boost on ICY can then pay that block, not the newest block. The payment record of the app decides this.

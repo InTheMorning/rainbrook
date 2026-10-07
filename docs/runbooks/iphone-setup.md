@@ -293,6 +293,13 @@ Complete these checks before normal use of the automation.
 | Give a station a primary stream that does not work. | The station plays the alternate stream after a maximum of 20 seconds. The player screen shows "Alternate stream". |
 | Play a station with an HLS stream. | The title and the artwork of the track show. |
 | Say "Play CitizenRadio" with more than one station saved. | The selected station plays. |
+| Tap **Play** on a V4V track. | **Boost** is active for the first track (ADR 0018). |
+| Tap **Play** in the first minute of a new V4V track. | **Boost** is active, and the boost pays that track (ADR 0018). |
+| Play a track with an album. | The album shows below the artist, and the lock screen shows it (ADR 0019). |
+| Play a track with no album. | No empty line shows below the artist (ADR 0019). |
+| On HLS, set **Stream quality** to **Low**. | The server log shows requests for `aac_low` segments (ADR 0020). |
+| On HLS, turn flight mode on for 15 seconds, then off. | Playback continues with no stall (ADR 0020). |
+| On Icecast, play with each **Stream quality** value. | Playback works as before (ADR 0020). |
 
 Also test the locked automation after you restart and unlock the iPhone.
 Record the actual behavior after force-quitting the app, because iOS can prevent background launches.

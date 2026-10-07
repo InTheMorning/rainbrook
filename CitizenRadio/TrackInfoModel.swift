@@ -72,6 +72,17 @@ final class TrackInfoModel: ObservableObject {
                 self?.objectWillChange.send()
             }
             .store(in: &subscriptions)
+        // The player screen reads the manual boost target. The settings sheet reads the history.
+        boost.$manualTarget
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &subscriptions)
+        boost.$history
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &subscriptions)
         // RadioPlayer is on the main actor, so these values arrive on the main thread.
         // A @Published publisher sends the new value before the property changes, so use the value.
         player.$state

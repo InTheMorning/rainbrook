@@ -10,17 +10,22 @@ struct SettingsView: View {
     @Binding var savedURL: String
     let relayStatus: EventStreamStatus?
     let boostStatus: String?
+    let boostHistory: [BoostHistoryEntry]
     @State private var draft: StreamSettingsDraft
     @State private var error: String?
     @State private var relayError: String?
     @StateObject private var wallet = WalletSettingsModel()
     @Environment(\.dismiss) private var dismiss
 
-    init(player: RadioPlayer, savedURL: Binding<String>, relayStatus: EventStreamStatus?, boostStatus: String?) {
+    init(
+        player: RadioPlayer, savedURL: Binding<String>, relayStatus: EventStreamStatus?, boostStatus: String?,
+        boostHistory: [BoostHistoryEntry]
+    ) {
         self.player = player
         _savedURL = savedURL
         self.relayStatus = relayStatus
         self.boostStatus = boostStatus
+        self.boostHistory = boostHistory
         let boostSettings = BoostSettings()
         _draft = State(initialValue: StreamSettingsDraft(
             savedURL: savedURL.wrappedValue,
@@ -94,7 +99,8 @@ struct SettingsView: View {
                     boostMessage: $draft.boostMessage,
                     boostSenderName: $draft.boostSenderName,
                     boostAppName: $draft.boostAppName,
-                    boostStatus: boostStatus
+                    boostStatus: boostStatus,
+                    boostHistory: boostHistory
                 )
             }
             .navigationTitle("Settings")

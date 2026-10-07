@@ -18,6 +18,8 @@ struct WalletSettingsView: View {
     @Binding var boostAppName: String
     /// The result of the last boost, or nil.
     let boostStatus: String?
+    /// The boost history, newest first.
+    let boostHistory: [BoostHistoryEntry]
     @State private var showingDisconnectConfirmation = false
     @State private var isShowingScanner = false
     @State private var cameraAccessMessage: String?
@@ -140,6 +142,10 @@ struct WalletSettingsView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("boostStatus")
         }
+        NavigationLink("Boost history") {
+            BoostHistoryView(entries: boostHistory)
+        }
+        .accessibilityIdentifier("boostHistoryLink")
         Button("Disconnect", role: .destructive) {
             showingDisconnectConfirmation = true
         }

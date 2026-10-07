@@ -11,6 +11,7 @@ struct PlayerView: View {
     @StateObject private var trackInfo: TrackInfoModel
     @State private var savedURL = StreamStore().savedURL
     @State private var showingSettings = false
+    @State private var showingBoost = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     init(player: RadioPlayer) {
@@ -56,7 +57,8 @@ struct PlayerView: View {
                     player: player,
                     savedURL: $savedURL,
                     relayStatus: trackInfo.relayStatus,
-                    boostStatus: trackInfo.boost.status
+                    boostStatus: trackInfo.boost.status,
+                    boostHistory: trackInfo.boost.history
                 )
             }
         }
@@ -96,9 +98,25 @@ struct PlayerView: View {
             .accessibilityLabel(model.control == .stop ? "Stop" : "Play")
             .accessibilityIdentifier("playbackButton")
 
-            AudioRoutePicker()
-                .frame(width: 44, height: 44)
-                .accessibilityLabel("Audio output")
+            HStack(spacing: 32) {
+                AudioRoutePicker()
+                    .frame(width: 44, height: 44)
+                    .accessibilityLabel("Audio output")
+                Button {
+                    showingBoost = true
+                } label: {
+                    Label("Boost", systemImage: "bolt.heart")
+                        .labelStyle(.iconOnly)
+                        .font(.title2)
+                        .frame(width: 44, height: 44)
+                }
+                .disabled(trackInfo.boost.manualTarget == nil)
+                .accessibilityIdentifier("boostButton")
+                // ADR 0013 §Manual boost: the sheet keeps the track of the moment that it opened.
+                .sheet(isPresented: $showingBoost) {
+                    BoostSheet(boost: trackInfo.boost)
+                }
+            }
         }
         .frame(maxWidth: .infinity)
     }

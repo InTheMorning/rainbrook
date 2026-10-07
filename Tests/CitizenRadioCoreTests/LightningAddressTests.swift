@@ -27,8 +27,18 @@ final class LightningAddressTests: XCTestCase {
         )
     }
 
-    func testComment() {
-        XCTAssertEqual(LightningAddress.comment, "Boost from CitizenRadio")
+    // MARK: comment
+
+    func testCommentIsTheMessage() {
+        let sender = BoostSender(message: "Great set!", senderName: "Maik", appName: "MyApp")
+
+        XCTAssertEqual(LightningAddress.comment(for: sender), "Great set!")
+    }
+
+    func testCommentWithoutMessageNamesTheApp() {
+        let sender = BoostSender(message: nil, senderName: "Maik", appName: "MyApp")
+
+        XCTAssertEqual(LightningAddress.comment(for: sender), "Boost from MyApp")
     }
 
     // MARK: decodePayRequest
@@ -153,7 +163,7 @@ final class LightningAddressTests: XCTestCase {
         { "tag": "payRequest", "callback": "https://merchant.io/cb?id=7", "minSendable": 1000, "maxSendable": 5000 }
         """)
 
-        let url = try LightningAddress.callbackURL(for: request, amountMsat: 2000)
+        let url = try LightningAddress.callbackURL(for: request, amountMsat: 2000, comment: "Boost from CitizenRadio")
 
         XCTAssertEqual(url.absoluteString, "https://merchant.io/cb?id=7&amount=2000")
     }
@@ -164,7 +174,7 @@ final class LightningAddressTests: XCTestCase {
           "minSendable": 1000, "maxSendable": 5000, "commentAllowed": 10 }
         """)
 
-        let url = try LightningAddress.callbackURL(for: request, amountMsat: 1000)
+        let url = try LightningAddress.callbackURL(for: request, amountMsat: 1000, comment: "Boost from CitizenRadio")
 
         XCTAssertEqual(url.absoluteString, "https://merchant.io/cb?amount=1000&comment=Boost%20from")
     }
@@ -175,9 +185,37 @@ final class LightningAddressTests: XCTestCase {
           "minSendable": 1000, "maxSendable": 5000, "commentAllowed": 255 }
         """)
 
-        let url = try LightningAddress.callbackURL(for: request, amountMsat: 5000)
+        let url = try LightningAddress.callbackURL(for: request, amountMsat: 5000, comment: "Boost from CitizenRadio")
 
         XCTAssertEqual(url.absoluteString, "https://merchant.io/cb?amount=5000&comment=Boost%20from%20CitizenRadio")
+    }
+
+    func testCallbackURLCutsA300CharacterCommentTo100() throws {
+        let request = try payRequest("""
+        { "tag": "payRequest", "callback": "https://merchant.io/cb",
+          "minSendable": 1000, "maxSendable": 5000, "commentAllowed": 100 }
+        """)
+        let comment = String(repeating: "a", count: 100) + String(repeating: "b", count: 200)
+
+        let url = try LightningAddress.callbackURL(for: request, amountMsat: 1000, comment: comment)
+
+        XCTAssertEqual(
+            url.absoluteString,
+            "https://merchant.io/cb?amount=1000&comment="
+                + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        )
+    }
+
+    func testCallbackURLWithCommentAllowedZeroHasNoComment() throws {
+        let request = try payRequest("""
+        { "tag": "payRequest", "callback": "https://merchant.io/cb",
+          "minSendable": 1000, "maxSendable": 5000, "commentAllowed": 0 }
+        """)
+
+        let url = try LightningAddress.callbackURL(for: request, amountMsat: 1000, comment: "Great set!")
+
+        XCTAssertEqual(url.absoluteString, "https://merchant.io/cb?amount=1000")
     }
 
     func testCallbackURLAmountOutOfRangeThrows() throws {
@@ -185,8 +223,8 @@ final class LightningAddressTests: XCTestCase {
         { "tag": "payRequest", "callback": "https://merchant.io/cb", "minSendable": 1000, "maxSendable": 5000 }
         """)
 
-        assertFailure(.amountOutOfRange) { try LightningAddress.callbackURL(for: request, amountMsat: 999) }
-        assertFailure(.amountOutOfRange) { try LightningAddress.callbackURL(for: request, amountMsat: 5001) }
+        assertFailure(.amountOutOfRange) { try LightningAddress.callbackURL(for: request, amountMsat: 999, comment: "x") }
+        assertFailure(.amountOutOfRange) { try LightningAddress.callbackURL(for: request, amountMsat: 5001, comment: "x") }
     }
 
     // MARK: decodeInvoice

@@ -1,7 +1,7 @@
 import Foundation
 
 /// The LNURL-pay rules for a lightning address (LUD-06, LUD-12 and LUD-16).
-/// ADR 0012 §The payment names the checks. This type makes no request.
+/// ADR 0013 §The payment names the checks. This type makes no request.
 public enum LightningAddress {
     /// The fields of a LUD-06 payRequest response that the app uses.
     public struct PayRequest: Equatable, Sendable {
@@ -17,7 +17,10 @@ public enum LightningAddress {
     }
 
     /// The comment that the app sends when the service permits a comment.
-    public static let comment = "Boost from CitizenRadio"
+    /// It is the boost message. With no message, it is "Boost from" and the app name.
+    public static func comment(for sender: BoostSender) -> String {
+        sender.message ?? "Boost from \(sender.appName)"
+    }
 
     /// The LUD-16 address: https://{host}/.well-known/lnurlp/{name}.
     public static func wellKnownURL(name: String, host: String) -> URL {
@@ -67,7 +70,8 @@ public enum LightningAddress {
     }
 
     /// The callback URL with the amount and, if the service permits it, the comment.
-    public static func callbackURL(for request: PayRequest, amountMsat: Int64) throws -> URL {
+    /// The comment is cut to `commentAllowed` characters. A `commentAllowed` of 0 gives no comment.
+    public static func callbackURL(for request: PayRequest, amountMsat: Int64, comment: String) throws -> URL {
         guard amountMsat >= request.minSendable, amountMsat <= request.maxSendable else {
             throw Failure.amountOutOfRange
         }

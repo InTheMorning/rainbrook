@@ -32,14 +32,67 @@ final class BoostRecordTests: XCTestCase {
         return BoostPart(destination: destination, sats: sats)
     }
 
+    /// A sender with no message and no sender name.
+    private let plainSender = BoostSender(message: nil, senderName: nil, appName: "CitizenRadio")
+
     func testConstants() {
         XCTAssertEqual(BoostRecord.recordType, 7_629_169)
-        XCTAssertEqual(BoostRecord.appName, "CitizenRadio")
     }
+
+    // MARK: - BoostSender
+
+    func testSenderKeepsItsTexts() {
+        let sender = BoostSender(message: "Great set", senderName: "Maik", appName: "MyApp")
+
+        XCTAssertEqual(sender.message, "Great set")
+        XCTAssertEqual(sender.senderName, "Maik")
+        XCTAssertEqual(sender.appName, "MyApp")
+    }
+
+    func testSenderEmptyTextsGiveNilAndTheDefaultAppName() {
+        let sender = BoostSender(message: "", senderName: "", appName: "")
+
+        XCTAssertNil(sender.message)
+        XCTAssertNil(sender.senderName)
+        XCTAssertEqual(sender.appName, "CitizenRadio")
+    }
+
+    func testSenderWhiteSpaceTextsGiveNilAndTheDefaultAppName() {
+        let sender = BoostSender(message: "  ", senderName: "\n", appName: " ")
+
+        XCTAssertNil(sender.message)
+        XCTAssertNil(sender.senderName)
+        XCTAssertEqual(sender.appName, "CitizenRadio")
+    }
+
+    func testSenderReadsTheSettings() throws {
+        let suite = "BoostRecordTests.sender"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = BoostSettings(defaults: defaults)
+
+        XCTAssertEqual(
+            BoostSender(settings: settings),
+            BoostSender(message: nil, senderName: nil, appName: "CitizenRadio")
+        )
+
+        settings.message = "Great set"
+        settings.senderName = "Maik"
+        settings.appName = "MyApp"
+
+        let sender = BoostSender(settings: settings)
+        XCTAssertEqual(sender.message, "Great set")
+        XCTAssertEqual(sender.senderName, "Maik")
+        XCTAssertEqual(sender.appName, "MyApp")
+    }
+
+    // MARK: - JSON
 
     func testJSONWithAllOptionalKeys() {
         let data = BoostRecord.json(
-            part: part(name: "Miles", sats: 85), payload: payload(fullPayloadJSON), totalSats: 100
+            part: part(name: "Miles", sats: 85), payload: payload(fullPayloadJSON), totalSats: 100,
+            sender: plainSender
         )
 
         XCTAssertEqual(
@@ -51,7 +104,10 @@ final class BoostRecordTests: XCTestCase {
     }
 
     func testJSONWithoutOptionalKeys() {
-        let data = BoostRecord.json(part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100)
+        let data = BoostRecord.json(
+            part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100,
+            sender: plainSender
+        )
 
         XCTAssertEqual(
             String(decoding: data, as: UTF8.self),
@@ -60,9 +116,36 @@ final class BoostRecordTests: XCTestCase {
         )
     }
 
+    func testJSONWithMessageAndSenderName() {
+        let data = BoostRecord.json(
+            part: part(name: "Miles", sats: 85), payload: payload(fullPayloadJSON), totalSats: 100,
+            sender: BoostSender(message: "Great set!", senderName: "Maik", appName: "MyApp")
+        )
+
+        XCTAssertEqual(
+            String(decoding: data, as: UTF8.self),
+            #"{"action":"boost","app_name":"MyApp","block_guid":"block-1","episode":"Pharaoh's Dance","#
+                + #""episode_guid":"item-1","event_guid":"event-1","guid":"feed-1","message":"Great set!","#
+                + #""name":"Miles","sender_name":"Maik","value_msat":85000,"value_msat_total":100000}"#
+        )
+    }
+
+    func testJSONWithoutMessageAndSenderNameUsesTheSenderAppName() {
+        let data = BoostRecord.json(
+            part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100,
+            sender: BoostSender(message: "", senderName: nil, appName: "MyApp")
+        )
+
+        XCTAssertEqual(
+            String(decoding: data, as: UTF8.self),
+            #"{"action":"boost","app_name":"MyApp","block_guid":"b","episode":"T","event_guid":"e","#
+                + #""value_msat":5000,"value_msat_total":100000}"#
+        )
+    }
+
     func testBoostRecordHexOfShortJSON() {
         let records = BoostRecord.tlvRecords(
-            part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100
+            part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender
         )
 
         XCTAssertEqual(records, [
@@ -79,7 +162,7 @@ final class BoostRecordTests: XCTestCase {
     func testCustomRecordFollowsTheBoostRecord() {
         let records = BoostRecord.tlvRecords(
             part: part(name: nil, sats: 5, customKey: "696969", customValue: "abc"),
-            payload: payload(shortPayloadJSON), totalSats: 100
+            payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender
         )
 
         XCTAssertEqual(records.count, 2)
@@ -90,7 +173,7 @@ final class BoostRecordTests: XCTestCase {
     func testNonNumericCustomKeyGivesNoCustomRecord() {
         let records = BoostRecord.tlvRecords(
             part: part(name: nil, sats: 5, customKey: "x", customValue: "abc"),
-            payload: payload(shortPayloadJSON), totalSats: 100
+            payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender
         )
 
         XCTAssertEqual(records.map(\.type), [7_629_169])
@@ -99,7 +182,7 @@ final class BoostRecordTests: XCTestCase {
     func testCustomKeyWithoutValueGivesNoCustomRecord() {
         let records = BoostRecord.tlvRecords(
             part: part(name: nil, sats: 5, customKey: "696969", customValue: nil),
-            payload: payload(shortPayloadJSON), totalSats: 100
+            payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender
         )
 
         XCTAssertEqual(records.map(\.type), [7_629_169])

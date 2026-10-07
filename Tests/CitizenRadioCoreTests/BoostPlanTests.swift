@@ -126,4 +126,56 @@ final class BoostPlanTests: XCTestCase {
             .skip(.nothingToPay)
         )
     }
+
+    // MARK: - Manual boost
+
+    private func decideManual(track: TrackDisplay?, pairing: BoostPairing) -> BoostDecision {
+        BoostPlan.decideManual(amountSats: 100, track: track, pairing: pairing)
+    }
+
+    func testManualNoTrackSkips() {
+        XCTAssertEqual(decideManual(track: nil, pairing: pairing()), .skip(.noTrack))
+    }
+
+    func testManualNoPayloadSkips() {
+        XCTAssertEqual(decideManual(track: otherTrack, pairing: pairing()), .skip(.noPayload))
+    }
+
+    func testManualNoPartGivesNothingToPay() {
+        XCTAssertEqual(decideManual(track: track, pairing: feeOverPairing()), .skip(.nothingToPay))
+    }
+
+    func testManualPayGivesThePayloadAndTheParts() {
+        let pairing = pairing()
+        let payload = pairing.payload(for: track)!
+
+        XCTAssertEqual(
+            decideManual(track: track, pairing: pairing),
+            .pay(payload: payload, parts: [BoostPart(destination: payload.destinations[0], sats: 100)])
+        )
+    }
+
+    func testManualPaysWhereAutoBoostStopsForThePaidBlockAndTheDailyLimit() {
+        let pairing = pairing()
+        let payload = pairing.payload(for: track)!
+
+        // The same inputs stop an auto-boost.
+        XCTAssertEqual(
+            decide(track: track, pairing: pairing, paidBlocks: ["block-1"], limit: usedLimit),
+            .skip(.alreadyPaid)
+        )
+        XCTAssertEqual(decide(track: track, pairing: pairing, limit: usedLimit), .skip(.overDailyLimit(remainingSats: 50)))
+
+        XCTAssertEqual(
+            decideManual(track: track, pairing: pairing),
+            .pay(payload: payload, parts: [BoostPart(destination: payload.destinations[0], sats: 100)])
+        )
+    }
+
+    func testManualRuleOrder() {
+        // In each step, all subsequent rules also stop the boost. The first rule that stops it gives the result.
+        XCTAssertEqual(decideManual(track: nil, pairing: BoostPairing()), .skip(.noTrack))
+        XCTAssertEqual(decideManual(track: nil, pairing: feeOverPairing()), .skip(.noTrack))
+        XCTAssertEqual(decideManual(track: otherTrack, pairing: feeOverPairing()), .skip(.noPayload))
+    }
 }

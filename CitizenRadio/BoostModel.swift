@@ -115,7 +115,9 @@ final class BoostModel: ObservableObject {
             }
             let client = NWCClient(connection: connection, connector: connector, timeout: .seconds(30))
             let payer = BoostPayer(wallet: client, fetcher: fetcher)
-            let result = await payer.pay(parts: parts, payload: payload, amountSats: amountSats)
+            let result = await payer.pay(
+                parts: parts, payload: payload, amountSats: amountSats, sender: BoostSender(settings: BoostSettings())
+            )
 
             // ADR 0012 §The limits: a part with an unknown result can be paid, so it counts.
             let spent = result.paidSats + result.unknownSats

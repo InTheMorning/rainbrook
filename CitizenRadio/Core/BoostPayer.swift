@@ -8,7 +8,7 @@ public protocol WalletPaying: Sendable {
 }
 
 extension NWCClient: WalletPaying {
-    /// Sends the payments with the time limit of ADR 0012 §The payment for each request.
+    /// Sends the payments with the time limit of ADR 0013 §The payment for each request.
     public func pay(_ payments: [NWCPayment]) async throws -> [NWCPaymentOutcome] {
         try await pay(payments, requestTimeout: .seconds(30))
     }
@@ -23,22 +23,29 @@ public struct BoostResult: Equatable, Sendable {
     public let paidParts: Int
     public let unknownParts: Int
     public let totalParts: Int
+    /// One result for each part, in the part sequence. ADR 0013 §The history names the results.
+    public let parts: [BoostPartResult]
 
-    public init(paidSats: Int, unknownSats: Int, paidParts: Int, unknownParts: Int, totalParts: Int) {
-        self.paidSats = paidSats
-        self.unknownSats = unknownSats
-        self.paidParts = paidParts
-        self.unknownParts = unknownParts
-        self.totalParts = totalParts
+    /// A result with the part results. The counts come from the part results:
+    /// a confirmed part is paid, and an unknown part has an unknown result.
+    public init(parts: [BoostPartResult]) {
+        let paid = parts.filter { $0.result == .confirmed }
+        let unknown = parts.filter { $0.result == .unknown }
+        self.paidSats = paid.reduce(0) { $0 + $1.sats }
+        self.unknownSats = unknown.reduce(0) { $0 + $1.sats }
+        self.paidParts = paid.count
+        self.unknownParts = unknown.count
+        self.totalParts = parts.count
+        self.parts = parts
     }
 }
 
-/// Pays the parts of one boost. ADR 0012 §The payment names the sequence.
+/// Pays the parts of one boost. ADR 0013 §The payment names the sequence.
 ///
 /// The payer gets an invoice for each lightning address part, then sends all parts
 /// through the wallet in one call. The payer does not retry a failed part.
 /// The payer does not record the spending. The caller records `paidSats + unknownSats`
-/// in `SpendingLimitStore` (ADR 0012 §The limits).
+/// in `SpendingLimitStore` (ADR 0013 §The limits).
 public actor BoostPayer {
     private let wallet: any WalletPaying
     private let fetcher: any SnapshotFetching
@@ -49,69 +56,69 @@ public actor BoostPayer {
     }
 
     /// Never throws. A failed part counts as not paid.
-    public func pay(parts: [BoostPart], payload: LiveValuePayload, amountSats: Int) async -> BoostResult {
-        // The payments and the sats of each payment, in the part sequence, without the failed parts.
+    /// The result has one part result for each part, in the part sequence.
+    public func pay(
+        parts: [BoostPart], payload: LiveValuePayload, amountSats: Int, sender: BoostSender
+    ) async -> BoostResult {
+        // The payments, in the part sequence, without the parts that failed before the wallet.
         var payments: [NWCPayment] = []
-        var paymentSats: [Int] = []
+        // The index of the part of each payment.
+        var paymentParts: [Int] = []
+        // The result of each part. A part that is not sent stays failed.
+        var results = [BoostPaymentResult](repeating: .failed, count: parts.count)
 
-        for part in parts {
+        for (index, part) in parts.enumerated() {
             let amountMsat = Int64(part.sats) * 1000
             switch part.destination.kind {
             case .node(let pubkey):
-                let records = BoostRecord.tlvRecords(part: part, payload: payload, totalSats: amountSats)
+                let records = BoostRecord.tlvRecords(
+                    part: part, payload: payload, totalSats: amountSats, sender: sender
+                )
                 payments.append(.keysend(KeysendPayment(amountMsat: amountMsat, pubkey: pubkey, tlvRecords: records)))
-                paymentSats.append(part.sats)
+                paymentParts.append(index)
             case .lightningAddress(let name, let host):
-                guard let invoice = await invoice(name: name, host: host, amountMsat: amountMsat) else {
+                let comment = LightningAddress.comment(for: sender)
+                guard let invoice = await invoice(name: name, host: host, amountMsat: amountMsat, comment: comment) else {
                     continue
                 }
                 payments.append(.invoice(invoice))
-                paymentSats.append(part.sats)
+                paymentParts.append(index)
             }
         }
 
-        guard !payments.isEmpty else {
-            return BoostResult(paidSats: 0, unknownSats: 0, paidParts: 0, unknownParts: 0, totalParts: parts.count)
-        }
-
-        let outcomes: [NWCPaymentOutcome]
-        do {
-            outcomes = try await wallet.pay(payments)
-        } catch {
-            return BoostResult(paidSats: 0, unknownSats: 0, paidParts: 0, unknownParts: 0, totalParts: parts.count)
-        }
-
-        var paidSats = 0
-        var unknownSats = 0
-        var paidParts = 0
-        var unknownParts = 0
-        // A payment with no outcome counts as failed.
-        for (sats, outcome) in zip(paymentSats, outcomes) {
-            switch outcome {
-            case .paid:
-                paidSats += sats
-                paidParts += 1
-            case .timeout:
-                unknownSats += sats
-                unknownParts += 1
-            case .unsupported, .walletError, .invalidResponse, .notSent:
-                break
+        if !payments.isEmpty {
+            // A throw means that the wallet sent no payment, so each sent part stays failed.
+            if let outcomes = try? await wallet.pay(payments) {
+                // A payment with no outcome stays failed.
+                for (index, outcome) in zip(paymentParts, outcomes) {
+                    results[index] = BoostPaymentResult(outcome)
+                }
             }
         }
-        return BoostResult(
-            paidSats: paidSats, unknownSats: unknownSats,
-            paidParts: paidParts, unknownParts: unknownParts, totalParts: parts.count
-        )
+
+        return BoostResult(parts: zip(parts, results).map { part, result in
+            BoostPartResult(name: part.destination.name, kind: Self.kind(of: part), sats: part.sats, result: result)
+        })
+    }
+
+    /// The kind of the part result for a part.
+    private static func kind(of part: BoostPart) -> BoostPartResult.Kind {
+        switch part.destination.kind {
+        case .node:
+            return .keysend
+        case .lightningAddress:
+            return .lightningAddress
+        }
     }
 
     /// The LNURL-pay invoice for one lightning address part.
     /// Gives nil when a request fails, a status is not 200, or a check fails.
-    private func invoice(name: String, host: String, amountMsat: Int64) async -> String? {
+    private func invoice(name: String, host: String, amountMsat: Int64, comment: String) async -> String? {
         do {
             let first = try await fetcher.fetch(LightningAddress.wellKnownURL(name: name, host: host))
             guard first.status == 200 else { return nil }
             let request = try LightningAddress.decodePayRequest(first.body)
-            let callback = try LightningAddress.callbackURL(for: request, amountMsat: amountMsat)
+            let callback = try LightningAddress.callbackURL(for: request, amountMsat: amountMsat, comment: comment)
             let second = try await fetcher.fetch(callback)
             guard second.status == 200 else { return nil }
             return try LightningAddress.decodeInvoice(second.body, amountMsat: amountMsat)

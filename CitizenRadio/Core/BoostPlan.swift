@@ -12,7 +12,7 @@ public enum BoostDecision: Equatable, Sendable {
 }
 
 /// Decides if the app pays a boost for a completed track.
-/// ADR 0012 §The pairing, §The split and §The limits name the rules.
+/// ADR 0013 §The pairing, §The split, §Manual boost and §The limits name the rules.
 public enum BoostPlan {
     /// The decision. The rules apply in this sequence:
     /// disabled, noTrack, noPayload, alreadyPaid, overDailyLimit, nothingToPay.
@@ -27,6 +27,16 @@ public enum BoostPlan {
         guard limit.permits(amountSats, on: day) else {
             return .skip(.overDailyLimit(remainingSats: limit.remaining(on: day)))
         }
+        let parts = BoostSplit.parts(amountSats: amountSats, destinations: payload.destinations)
+        guard !parts.isEmpty else { return .skip(.nothingToPay) }
+        return .pay(payload: payload, parts: parts)
+    }
+
+    /// A manual boost: no enabled check, no paid block check and no daily limit check (ADR 0013 §The limits).
+    /// The rules apply in this sequence: noTrack, noPayload, nothingToPay.
+    public static func decideManual(amountSats: Int, track: TrackDisplay?, pairing: BoostPairing) -> BoostDecision {
+        guard let track else { return .skip(.noTrack) }
+        guard let payload = pairing.payload(for: track) else { return .skip(.noPayload) }
         let parts = BoostSplit.parts(amountSats: amountSats, destinations: payload.destinations)
         guard !parts.isEmpty else { return .skip(.nothingToPay) }
         return .pay(payload: payload, parts: parts)

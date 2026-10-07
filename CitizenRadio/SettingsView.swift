@@ -34,6 +34,7 @@ struct SettingsView: View {
         _draft = State(initialValue: StreamSettingsDraft(
             chimeEnabled: ChimeSetting().isEnabled,
             dailyLimitSats: SpendingLimitStore().limit.dailySats,
+            streamQuality: StreamQualitySetting().quality,
             boostEnabled: boostSettings.isEnabled,
             boostAmountText: String(boostSettings.amountSats),
             boostMessage: boostSettings.message,
@@ -51,8 +52,14 @@ struct SettingsView: View {
                 Section {
                     Toggle("Chime while connecting", isOn: $draft.chimeEnabled)
                         .accessibilityIdentifier("chimeToggle")
+                    Picker("Stream quality", selection: $draft.streamQuality) {
+                        ForEach(StreamQuality.allCases, id: \.self) { quality in
+                            Text(quality.label).tag(quality)
+                        }
+                    }
+                    .accessibilityIdentifier("streamQualityPicker")
                 } footer: {
-                    Text("The chime plays until the stream starts.")
+                    Text("The chime plays until the stream starts. Auto selects the bitrate for the network. Low uses less data. This applies to HLS streams.")
                 }
 
                 WalletSettingsView(
@@ -185,6 +192,9 @@ struct SettingsView: View {
     private func save() {
         ChimeSetting().isEnabled = draft.chimeEnabled
         SpendingLimitStore().setDailySats(draft.dailyLimitSats)
+        // ADR 0020 §Stream quality: a saved quality change applies to the current item.
+        StreamQualitySetting().quality = draft.streamQuality
+        player.setQuality(draft.streamQuality)
         let boostSettings = BoostSettings()
         boostSettings.isEnabled = draft.boostEnabled
         if let amount = BoostSettings.parseAmount(draft.boostAmountText) {

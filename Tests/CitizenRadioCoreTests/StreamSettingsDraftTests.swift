@@ -3,12 +3,12 @@ import XCTest
 
 final class StreamSettingsDraftTests: XCTestCase {
     private func makeDraft(
-        chimeEnabled: Bool, dailyLimitSats: Int = 1000,
+        chimeEnabled: Bool, dailyLimitSats: Int = 1000, streamQuality: StreamQuality = .auto,
         boostEnabled: Bool, boostAmountText: String = "100", boostMessage: String = "",
         boostSenderName: String = "", boostAppName: String = "", boostMinimumPlaySecondsText: String = "60"
     ) -> StreamSettingsDraft {
         StreamSettingsDraft(
-            chimeEnabled: chimeEnabled, dailyLimitSats: dailyLimitSats,
+            chimeEnabled: chimeEnabled, dailyLimitSats: dailyLimitSats, streamQuality: streamQuality,
             boostEnabled: boostEnabled, boostAmountText: boostAmountText,
             boostMessage: boostMessage, boostSenderName: boostSenderName, boostAppName: boostAppName,
             boostMinimumPlaySecondsText: boostMinimumPlaySecondsText
@@ -36,6 +36,19 @@ final class StreamSettingsDraftTests: XCTestCase {
         var draft = makeDraft(chimeEnabled: true, boostEnabled: false)
         draft.dailyLimitSats = 2500
         XCTAssertTrue(draft.canSave)
+    }
+
+    func testStreamQualityChangeAloneCanSave() {
+        var draft = makeDraft(chimeEnabled: true, boostEnabled: false)
+        draft.streamQuality = .low
+        XCTAssertTrue(draft.canSave)
+    }
+
+    func testStreamQualityChangeBackToSavedValueCannotSave() {
+        var draft = makeDraft(chimeEnabled: true, boostEnabled: false)
+        draft.streamQuality = .low
+        draft.streamQuality = .auto
+        XCTAssertFalse(draft.canSave)
     }
 
     func testBoostEnabledChangeAloneCanSave() {

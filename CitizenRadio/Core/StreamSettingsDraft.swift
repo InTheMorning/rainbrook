@@ -3,6 +3,8 @@ import Foundation
 public struct StreamSettingsDraft: Equatable, Sendable {
     public var chimeEnabled: Bool
     public var dailyLimitSats: Int
+    /// ADR 0020 §Stream quality: the Settings choice for the HLS bitrate maximum.
+    public var streamQuality: StreamQuality
     public var boostEnabled: Bool
     public var boostAmountText: String
     public var boostMessage: String
@@ -11,6 +13,7 @@ public struct StreamSettingsDraft: Equatable, Sendable {
     public var boostMinimumPlaySecondsText: String
     public let savedChimeEnabled: Bool
     public let savedDailyLimitSats: Int
+    public let savedStreamQuality: StreamQuality
     public let savedBoostEnabled: Bool
     public let savedBoostAmountText: String
     public let savedBoostMessage: String
@@ -19,12 +22,13 @@ public struct StreamSettingsDraft: Equatable, Sendable {
     public let savedBoostMinimumPlaySecondsText: String
 
     public init(
-        chimeEnabled: Bool, dailyLimitSats: Int,
+        chimeEnabled: Bool, dailyLimitSats: Int, streamQuality: StreamQuality,
         boostEnabled: Bool, boostAmountText: String, boostMessage: String,
         boostSenderName: String, boostAppName: String, boostMinimumPlaySecondsText: String
     ) {
         self.chimeEnabled = chimeEnabled
         self.dailyLimitSats = dailyLimitSats
+        self.streamQuality = streamQuality
         self.boostEnabled = boostEnabled
         self.boostAmountText = boostAmountText
         self.boostMessage = boostMessage
@@ -33,6 +37,7 @@ public struct StreamSettingsDraft: Equatable, Sendable {
         self.boostMinimumPlaySecondsText = boostMinimumPlaySecondsText
         self.savedChimeEnabled = chimeEnabled
         self.savedDailyLimitSats = dailyLimitSats
+        self.savedStreamQuality = streamQuality
         self.savedBoostEnabled = boostEnabled
         self.savedBoostAmountText = boostAmountText
         self.savedBoostMessage = boostMessage
@@ -42,7 +47,7 @@ public struct StreamSettingsDraft: Equatable, Sendable {
     }
 
     /// The value is no while the boost amount text, or the minimum play time text, is not correct.
-    /// Else a change of any boost value makes the value yes.
+    /// Else a change of any boost value, or the stream quality, makes the value yes.
     public var canSave: Bool {
         guard BoostSettings.parseAmount(boostAmountText) != nil,
               BoostSettings.parseMinimumPlaySeconds(boostMinimumPlaySecondsText) != nil else {
@@ -50,6 +55,7 @@ public struct StreamSettingsDraft: Equatable, Sendable {
         }
         return chimeEnabled != savedChimeEnabled
             || dailyLimitSats != savedDailyLimitSats
+            || streamQuality != savedStreamQuality
             || boostEnabled != savedBoostEnabled
             || boostAmountText != savedBoostAmountText
             || boostMessage != savedBoostMessage

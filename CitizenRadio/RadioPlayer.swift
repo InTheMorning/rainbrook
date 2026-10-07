@@ -106,6 +106,11 @@ final class RadioPlayer: ObservableObject {
         deactivateSession()
     }
 
+    /// ADR 0020 §Stream quality: a saved quality change applies to the item that plays, with no restart.
+    func setQuality(_ quality: StreamQuality) {
+        player?.currentItem?.preferredPeakBitRate = quality.peakBitRate
+    }
+
     /// Gives the seconds of loaded audio after the play position, or 0 without an item.
     func bufferedAheadSeconds() -> Double {
         guard let item = player?.currentItem else { return 0 }
@@ -192,6 +197,11 @@ final class RadioPlayer: ObservableObject {
 
     private func startPlayer(url: URL, expectedID: UUID) {
         let item = AVPlayerItem(url: url)
+        // ADR 0020 §Stream quality and §The HLS live offset: these three properties apply
+        // to the primary stream and to the alternate stream.
+        item.preferredPeakBitRate = StreamQualitySetting().quality.peakBitRate
+        item.configuredTimeOffsetFromLive = CMTime(seconds: 30, preferredTimescale: 1)
+        item.automaticallyPreservesTimeOffsetFromLive = true
         let newPlayer = AVPlayer(playerItem: item)
         newPlayer.automaticallyWaitsToMinimizeStalling = true
         player = newPlayer

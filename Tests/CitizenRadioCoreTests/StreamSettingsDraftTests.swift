@@ -8,12 +8,13 @@ final class StreamSettingsDraftTests: XCTestCase {
     private func makeDraft(
         savedURL: String, chimeEnabled: Bool, dailyLimitSats: Int = 1000, relayText: String,
         boostEnabled: Bool, boostAmountText: String = "100", boostMessage: String = "",
-        boostSenderName: String = "", boostAppName: String = ""
+        boostSenderName: String = "", boostAppName: String = "", boostMinimumPlaySecondsText: String = "60"
     ) -> StreamSettingsDraft {
         StreamSettingsDraft(
             savedURL: savedURL, chimeEnabled: chimeEnabled, dailyLimitSats: dailyLimitSats,
             relayText: relayText, boostEnabled: boostEnabled, boostAmountText: boostAmountText,
-            boostMessage: boostMessage, boostSenderName: boostSenderName, boostAppName: boostAppName
+            boostMessage: boostMessage, boostSenderName: boostSenderName, boostAppName: boostAppName,
+            boostMinimumPlaySecondsText: boostMinimumPlaySecondsText
         )
     }
 
@@ -104,6 +105,27 @@ final class StreamSettingsDraftTests: XCTestCase {
         draft.boostAppName = "My App"
         XCTAssertFalse(draft.urlChanged)
         XCTAssertTrue(draft.canSave)
+    }
+
+    func testMinimumPlaySecondsChangeAloneCanSave() {
+        var draft = makeDraft(savedURL: saved, chimeEnabled: true, relayText: "", boostEnabled: true)
+        draft.boostMinimumPlaySecondsText = "30"
+        XCTAssertFalse(draft.urlChanged)
+        XCTAssertTrue(draft.canSave)
+    }
+
+    func testInvalidMinimumPlaySecondsTextDisablesSave() {
+        var draft = makeDraft(savedURL: saved, chimeEnabled: true, relayText: "", boostEnabled: false)
+        draft.boostMinimumPlaySecondsText = "601"
+        XCTAssertFalse(draft.canSave)
+    }
+
+    func testInvalidMinimumPlaySecondsTextDisablesSaveWithOtherChanges() {
+        var draft = makeDraft(savedURL: saved, chimeEnabled: true, relayText: "", boostEnabled: false)
+        draft.boostMinimumPlaySecondsText = "abc"
+        draft.chimeEnabled = false
+        draft.boostEnabled = true
+        XCTAssertFalse(draft.canSave)
     }
 
     func testInvalidAmountTextDisablesSave() {

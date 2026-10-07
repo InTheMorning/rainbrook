@@ -370,8 +370,8 @@ final class TrackInfoModel: ObservableObject {
         guard let text else { return }
         let firstIcyText = !sync.hasIcy
         sync.receiveIcyText(text)
-        boost.icyText(text)
-        boost.selectedTrack(sync.relayTrack)
+        // ADR 0016 §The switch back: give the relay track that the sync selects for this text.
+        boost.icyText(text, track: sync.relayTrack)
         if firstIcyText {
             // ADR 0011 §The session: the first ICY text cancels the pending timed applies.
             cancelPendingApplies()

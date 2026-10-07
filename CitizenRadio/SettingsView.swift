@@ -36,7 +36,8 @@ struct SettingsView: View {
             boostAmountText: String(boostSettings.amountSats),
             boostMessage: boostSettings.message,
             boostSenderName: boostSettings.senderName,
-            boostAppName: boostSettings.appName
+            boostAppName: boostSettings.appName,
+            boostMinimumPlaySecondsText: String(boostSettings.minimumPlaySeconds)
         ))
     }
 
@@ -99,6 +100,7 @@ struct SettingsView: View {
                     boostMessage: $draft.boostMessage,
                     boostSenderName: $draft.boostSenderName,
                     boostAppName: $draft.boostAppName,
+                    boostMinimumPlaySecondsText: $draft.boostMinimumPlaySecondsText,
                     boostStatus: boostStatus,
                     boostHistory: boostHistory
                 )
@@ -146,6 +148,9 @@ struct SettingsView: View {
             boostSettings.isEnabled = draft.boostEnabled
             if let amount = BoostSettings.parseAmount(draft.boostAmountText) {
                 boostSettings.amountSats = amount
+            }
+            if let minimumPlaySeconds = BoostSettings.parseMinimumPlaySeconds(draft.boostMinimumPlaySecondsText) {
+                boostSettings.minimumPlaySeconds = minimumPlaySeconds
             }
             boostSettings.message = draft.boostMessage
             boostSettings.senderName = draft.boostSenderName

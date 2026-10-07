@@ -51,11 +51,13 @@ final class BoostPlanTests: XCTestCase {
 
     private func decide(
         enabled: Bool = true, amountSats: Int = 100, track: TrackDisplay?,
-        pairing: BoostPairing, paidBlocks: Set<String> = [], limit: SpendingLimit
+        pairing: BoostPairing, paidBlocks: Set<String> = [], limit: SpendingLimit,
+        playedSeconds: Double = 120, minimumPlaySeconds: Int = 0
     ) -> BoostDecision {
         BoostPlan.decide(
             enabled: enabled, amountSats: amountSats, track: track, pairing: pairing,
-            paidBlocks: paidBlocks, limit: limit, day: day
+            paidBlocks: paidBlocks, limit: limit, day: day,
+            playedSeconds: playedSeconds, minimumPlaySeconds: minimumPlaySeconds
         )
     }
 
@@ -96,6 +98,42 @@ final class BoostPlanTests: XCTestCase {
         XCTAssertEqual(
             decide(track: track, pairing: pairing, limit: openLimit),
             .pay(payload: payload, parts: [BoostPart(destination: payload.destinations[0], sats: 100)])
+        )
+    }
+
+    // MARK: - The minimum play time (ADR 0016 §The minimum play time)
+
+    func testPlayedSecondsBelowTheMinimumGivesTooShort() {
+        XCTAssertEqual(
+            decide(track: track, pairing: pairing(), limit: openLimit, playedSeconds: 59.5, minimumPlaySeconds: 60),
+            .skip(.tooShort(minimumSeconds: 60))
+        )
+    }
+
+    func testPlayedSecondsEqualToTheMinimumGivesPay() {
+        let pairing = pairing()
+        let payload = pairing.payload(for: track)!
+
+        XCTAssertEqual(
+            decide(track: track, pairing: pairing, limit: openLimit, playedSeconds: 60.0, minimumPlaySeconds: 60),
+            .pay(payload: payload, parts: [BoostPart(destination: payload.destinations[0], sats: 100)])
+        )
+    }
+
+    func testMinimumOfZeroGivesPayForAVeryShortPlay() {
+        let pairing = pairing()
+        let payload = pairing.payload(for: track)!
+
+        XCTAssertEqual(
+            decide(track: track, pairing: pairing, limit: openLimit, playedSeconds: 1, minimumPlaySeconds: 0),
+            .pay(payload: payload, parts: [BoostPart(destination: payload.destinations[0], sats: 100)])
+        )
+    }
+
+    func testNoPayloadSkipsBeforeTheMinimumPlayTimeCheck() {
+        XCTAssertEqual(
+            decide(track: otherTrack, pairing: pairing(), limit: openLimit, playedSeconds: 10, minimumPlaySeconds: 60),
+            .skip(.noPayload)
         )
     }
 

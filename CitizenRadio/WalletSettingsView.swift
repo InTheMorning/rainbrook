@@ -16,6 +16,8 @@ struct WalletSettingsView: View {
     @Binding var boostMessage: String
     @Binding var boostSenderName: String
     @Binding var boostAppName: String
+    /// ADR 0016 §The minimum play time: a track that plays for less than this does not boost.
+    @Binding var boostMinimumPlaySecondsText: String
     /// The result of the last boost, or nil.
     let boostStatus: String?
     /// The boost history, newest first.
@@ -61,6 +63,7 @@ struct WalletSettingsView: View {
                 Text("The wallet connection is saved at once. Save applies the daily limit.")
                 if isConnected {
                     Text("Auto-boost pays this amount when you hear a V4V track from its start to its end. A manual boost starts with this amount. The daily limit stops auto-boost, not a manual boost.")
+                    Text("Auto-boost pays only for a track that plays for this number of seconds or more. 0 turns off this check.")
                 }
             }
         }
@@ -129,6 +132,17 @@ struct WalletSettingsView: View {
         }
         if BoostSettings.parseAmount(boostAmountText) == nil {
             Text("Enter 1 to 100,000 sats.")
+                .foregroundStyle(.red)
+        }
+        HStack {
+            TextField("Minimum play time", text: $boostMinimumPlaySecondsText)
+                .keyboardType(.numberPad)
+                .accessibilityIdentifier("boostMinimumPlaySecondsField")
+            Text("seconds")
+                .foregroundStyle(.secondary)
+        }
+        if BoostSettings.parseMinimumPlaySeconds(boostMinimumPlaySecondsText) == nil {
+            Text("Enter 0 to 600 seconds.")
                 .foregroundStyle(.red)
         }
         TextField("Boost message", text: $boostMessage, axis: .vertical)

@@ -72,9 +72,12 @@ final class BoostModel: ObservableObject {
 
     // MARK: - Inputs
 
-    /// Gives an ICY text to the trigger. A completed track starts a boost.
-    func icyText(_ text: String) {
-        guard let completed = trigger.receiveIcyText(text) else { return }
+    /// Gives an ICY text and its relay track to the trigger. A completed track starts a boost.
+    /// ADR 0016 §The minimum play time: the time is the phone monotonic clock.
+    /// So the trigger can give the play time of the candidate that the text completes.
+    func icyText(_ text: String, track: TrackDisplay?) {
+        let time = ProcessInfo.processInfo.systemUptime
+        guard let completed = trigger.receiveIcyText(text, track: track, at: time) else { return }
         boost(completed)
     }
 
@@ -125,11 +128,15 @@ final class BoostModel: ObservableObject {
             pairing: pairing,
             paidBlocks: paidBlocks,
             limit: SpendingLimitStore().limit.recording(reservedSats, on: day),
-            day: day
+            day: day,
+            playedSeconds: completed.playedSeconds,
+            minimumPlaySeconds: settings.minimumPlaySeconds
         )
 
         switch decision {
         case .skip(let reason):
+            // ADR 0016 §The minimum play time: a tooShort skip adds no block to paidBlocks.
+            // So a later full play of the same block can still boost.
             Self.log.notice("Boost skipped: \(Self.reasonName(reason), privacy: .public)")
             if let text = BoostStatusText.text(for: reason) {
                 status = text
@@ -261,6 +268,7 @@ final class BoostModel: ObservableObject {
         case .noTrack: "noTrack"
         case .noPayload: "noPayload"
         case .alreadyPaid: "alreadyPaid"
+        case .tooShort: "tooShort"
         case .overDailyLimit: "overDailyLimit"
         case .nothingToPay: "nothingToPay"
         }

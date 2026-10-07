@@ -60,6 +60,13 @@ final class BoostStatusTextTests: XCTestCase {
         )
     }
 
+    func testTooShort() {
+        XCTAssertEqual(
+            BoostStatusText.text(for: .tooShort(minimumSeconds: 60)),
+            "No boost. The track played for less than 60 seconds."
+        )
+    }
+
     func testReasonsWithNoMessage() {
         XCTAssertNil(BoostStatusText.text(for: .disabled))
         XCTAssertNil(BoostStatusText.text(for: .noTrack))

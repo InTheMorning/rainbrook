@@ -128,4 +128,39 @@ final class BoostSettingsTests: XCTestCase {
         XCTAssertEqual(settings.appName, "MyRadio")
     }
 
+    // MARK: - Minimum play time (ADR 0016 §The minimum play time)
+
+    func testMinimumPlaySecondsDefaultIsSixty() {
+        let settings = BoostSettings(defaults: defaults)
+        XCTAssertEqual(settings.minimumPlaySeconds, 60)
+    }
+
+    func testMinimumPlaySecondsStoredValueIsSaved() {
+        let settings = BoostSettings(defaults: defaults)
+        settings.minimumPlaySeconds = 30
+
+        let read = BoostSettings(defaults: defaults)
+        XCTAssertEqual(read.minimumPlaySeconds, 30)
+    }
+
+    func testStoredMinimumPlaySecondsOverTheMaximumGivesSixty() {
+        defaults.set(601, forKey: "citizenRadio.autoBoost.minimumPlaySeconds")
+
+        let settings = BoostSettings(defaults: defaults)
+        XCTAssertEqual(settings.minimumPlaySeconds, BoostSettings.defaultMinimumPlaySeconds)
+    }
+
+    func testParseMinimumPlaySecondsGivesTheWholeNumber() {
+        XCTAssertEqual(BoostSettings.parseMinimumPlaySeconds("0"), 0)
+        XCTAssertEqual(BoostSettings.parseMinimumPlaySeconds("600"), 600)
+        XCTAssertEqual(BoostSettings.parseMinimumPlaySeconds(" 60 "), 60)
+    }
+
+    func testParseMinimumPlaySecondsGivesNilForAnInvalidText() {
+        XCTAssertNil(BoostSettings.parseMinimumPlaySeconds("601"))
+        XCTAssertNil(BoostSettings.parseMinimumPlaySeconds("-1"))
+        XCTAssertNil(BoostSettings.parseMinimumPlaySeconds("1.5"))
+        XCTAssertNil(BoostSettings.parseMinimumPlaySeconds("abc"))
+    }
+
 }

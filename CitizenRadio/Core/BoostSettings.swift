@@ -12,6 +12,10 @@ public struct BoostSettings {
     public static let maxNameLength = 64
     /// The default app name.
     public static let defaultAppName = "CitizenRadio"
+    /// The correct range of the minimum play time, in seconds. ADR 0016 §The minimum play time.
+    public static let minimumPlaySecondsRange = 0...600
+    /// The default minimum play time, in seconds. The value 0 turns off the check.
+    public static let defaultMinimumPlaySeconds = 60
 
     private let defaults: UserDefaults
     private let isEnabledKey = "citizenRadio.autoBoost.isEnabled"
@@ -19,6 +23,7 @@ public struct BoostSettings {
     private let messageKey = "citizenRadio.autoBoost.message"
     private let senderNameKey = "citizenRadio.autoBoost.senderName"
     private let appNameKey = "citizenRadio.autoBoost.appName"
+    private let minimumPlaySecondsKey = "citizenRadio.autoBoost.minimumPlaySeconds"
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -79,6 +84,29 @@ public struct BoostSettings {
     public static func parseAmount(_ text: String) -> Int? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let value = Int(trimmed), amountRange.contains(value) else {
+            return nil
+        }
+        return value
+    }
+
+    /// The minimum play time for an auto-boost, in seconds. The default is 60.
+    /// A stored value that is not in `minimumPlaySecondsRange` gives the default.
+    /// ADR 0016 §The minimum play time.
+    public var minimumPlaySeconds: Int {
+        get {
+            guard let stored = defaults.object(forKey: minimumPlaySecondsKey) as? Int,
+                  Self.minimumPlaySecondsRange.contains(stored) else {
+                return Self.defaultMinimumPlaySeconds
+            }
+            return stored
+        }
+        nonmutating set { defaults.set(newValue, forKey: minimumPlaySecondsKey) }
+    }
+
+    /// A whole number in `minimumPlaySecondsRange`, after trimming white space. Else nil.
+    public static func parseMinimumPlaySeconds(_ text: String) -> Int? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let value = Int(trimmed), minimumPlaySecondsRange.contains(value) else {
             return nil
         }
         return value

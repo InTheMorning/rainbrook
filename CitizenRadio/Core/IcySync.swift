@@ -56,6 +56,14 @@ public struct IcySync: Equatable, Sendable {
         select()
     }
 
+    /// ADR 0017 §The fallback: starts a new ICY session. After this call `hasIcy` is false,
+    /// there is no ICY text and no selection. The list of display states stays.
+    public mutating func resetIcy() {
+        hasIcy = false
+        icyText = nil
+        select()
+    }
+
     /// Selects the ICY track and the relay track from the list and the current ICY text.
     private mutating func select() {
         guard hasIcy, let icyText else {

@@ -244,6 +244,35 @@ final class IcySyncTests: XCTestCase {
         XCTAssertEqual(sync.lines, TrackLines(title: "So What", artist: "Miles Davis", artwork: nil))
     }
 
+    // MARK: - resetIcy (ADR 0017 §The fallback)
+
+    func testResetIcyClearsHasIcyAndTheRelayTrack() {
+        var sync = IcySync()
+        let track = TrackDisplay(artist: "Miles Davis", title: "So What", artwork: nil)
+        sync.receive(track)
+        sync.receiveIcyText("Miles Davis - So What")
+        XCTAssertEqual(sync.relayTrack, track)
+
+        sync.resetIcy()
+
+        XCTAssertFalse(sync.hasIcy)
+        XCTAssertNil(sync.relayTrack)
+        XCTAssertNil(sync.icyTrack)
+    }
+
+    func testResetIcyThenAMatchingIcyTextSelectsTheKeptState() {
+        var sync = IcySync()
+        let track = TrackDisplay(artist: "Miles Davis", title: "So What", artwork: nil)
+        sync.receive(track)
+        sync.receiveIcyText("Miles Davis - So What")
+
+        sync.resetIcy()
+        sync.receiveIcyText("Miles Davis - So What")
+
+        XCTAssertTrue(sync.hasIcy)
+        XCTAssertEqual(sync.relayTrack, track)
+    }
+
     // MARK: - normalize and key(of:), with literal expected strings
 
     func testNormalizeTrimsCollapsesWhitespaceAppliesNFCAndLowercases() {

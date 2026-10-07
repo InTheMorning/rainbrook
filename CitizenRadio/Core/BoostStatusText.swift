@@ -22,6 +22,11 @@ public enum BoostStatusText {
         return sentences.joined(separator: " ")
     }
 
+    /// The text after a retry of a boost: "Retry: " and the text of the result. ADR 0016 §The retry.
+    public static func retryText(for result: BoostResult) -> String {
+        "Retry: " + text(for: result)
+    }
+
     /// The text for a boost that did not occur. Gives nil when the reason needs no message.
     public static func text(for reason: BoostSkipReason) -> String? {
         switch reason {

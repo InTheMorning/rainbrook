@@ -20,8 +20,14 @@ final class BoostModel: ObservableObject {
     @Published private(set) var manualTarget: TrackDisplay?
     /// The boost history, newest first (ADR 0013 §The history).
     @Published private(set) var history: [BoostHistoryEntry] = []
+    /// The ids of the history entries with a retry that runs (ADR 0016 §The retry).
+    @Published private(set) var retryingEntries: Set<UUID> = []
 
     private static let log = Logger(subsystem: "org.citizenradio.CitizenRadio", category: "boost")
+
+    /// ADR 0016 §The retry: the first automatic retry occurs 60 seconds after the boost.
+    /// The second automatic retry occurs 600 seconds after the first retry.
+    private static let automaticRetryDelays: [Duration] = [.seconds(60), .seconds(600)]
 
     private let walletStore: WalletStore
     private let connector: any RelayConnecting
@@ -259,6 +265,113 @@ final class BoostModel: ObservableObject {
         history = updated.entries
         // The store actor writes the file off the main actor.
         _ = await historyStore.add(entry)
+        if entry.hasRetryableParts {
+            startAutomaticRetry(entryID: entry.id)
+        }
+    }
+
+    // MARK: - Retry
+
+    /// Sends the retryable parts of one history entry again. This is the manual retry (ADR 0016 §The retry).
+    /// It does nothing when the entry has no retryable part or when a retry of the entry runs.
+    func retry(entryID: UUID) async {
+        _ = await retryEntry(id: entryID, automaticAttempt: nil)
+    }
+
+    /// Starts the automatic retries of one entry (ADR 0016 §The retry).
+    ///
+    /// The task waits 60 seconds and sends the retryable parts again. If a part stays retryable,
+    /// it waits 600 seconds more and sends them again. Then it stops.
+    /// The end of a session does not cancel the task. The task stops when the app ends.
+    /// `Task.sleep` does not block the main actor.
+    private func startAutomaticRetry(entryID: UUID) {
+        Task { [weak self] in
+            for (index, delay) in Self.automaticRetryDelays.enumerated() {
+                try? await Task.sleep(for: delay)
+                guard let self else { return }
+                let continues = await self.retryEntry(id: entryID, automaticAttempt: index + 1)
+                guard continues else { return }
+            }
+        }
+    }
+
+    /// Sends the retryable parts of one entry again. The manual retry and the automatic retry use this path.
+    ///
+    /// `automaticAttempt` is the number of the automatic retry, or nil for a manual retry.
+    /// Gives false when the automatic retries of the entry must stop.
+    private func retryEntry(id: UUID, automaticAttempt: Int?) async -> Bool {
+        let attemptText = automaticAttempt.map { "automatic \($0)" } ?? "manual"
+        guard let entry = history.first(where: { $0.id == id }), entry.hasRetryableParts else { return false }
+        // Only one retry of an entry runs at a time. An automatic retry skips this attempt
+        // when a manual retry of the entry runs, and the next automatic retry can occur.
+        guard !retryingEntries.contains(id) else {
+            Self.log.notice("Boost retry skipped: \(attemptText, privacy: .public), a retry runs")
+            return true
+        }
+        retryingEntries.insert(id)
+        defer { retryingEntries.remove(id) }
+
+        let amountSats = entry.retryableSats
+        let day = SpendingLimit.dayKey(for: Date())
+        // ADR 0016 §The limits of a retry: the daily limit stops only an automatic retry of an auto-boost.
+        // The boosts that pay at this time count.
+        if automaticAttempt != nil, entry.kind == .auto {
+            let limit = SpendingLimitStore().limit.recording(reservedSats, on: day)
+            guard limit.permits(amountSats, on: day) else {
+                Self.log.notice("Boost retry stopped: \(attemptText, privacy: .public), over the daily limit")
+                status = BoostStatusText.text(for: .overDailyLimit(remainingSats: limit.remaining(on: day)))
+                return false
+            }
+        }
+
+        // An auto-boost at the same time counts this amount in its limit check.
+        reservedSats += amountSats
+        defer { reservedSats -= amountSats }
+
+        let connection: NWCConnection?
+        do {
+            connection = try await walletStore.connection()
+        } catch {
+            connection = nil
+        }
+        guard let connection else {
+            Self.log.notice("Boost retry not sent: \(attemptText, privacy: .public), no wallet")
+            status = BoostStatusText.noWallet
+            return false
+        }
+        let retryCount = entry.parts.filter(\.isRetryable).count
+        Self.log.notice(
+            "Boost retry started: \(attemptText, privacy: .public), \(retryCount, privacy: .public) parts, \(amountSats, privacy: .public) sats"
+        )
+        let client = NWCClient(connection: connection, connector: connector, timeout: .seconds(30))
+        let payer = BoostPayer(wallet: client, fetcher: fetcher)
+        let newParts = await payer.retry(parts: entry.parts)
+
+        // ADR 0016 §The limits of a retry: record only the parts that changed in this retry.
+        // A part that changed from failed to confirmed or unknown counts. An unknown part can be paid.
+        var spent = 0
+        for (old, new) in zip(entry.parts, newParts)
+        where old.result == .failed && (new.result == .confirmed || new.result == .unknown) {
+            spent += new.sats
+        }
+        if spent > 0 {
+            SpendingLimitStore().record(spent, on: SpendingLimit.dayKey(for: Date()))
+        }
+
+        // The retry updates the same entry. It adds no new entry.
+        let updatedEntry = entry.replacingParts(newParts)
+        var updated = BoostHistory(entries: history)
+        updated.update(updatedEntry)
+        history = updated.entries
+        // The store actor writes the file off the main actor.
+        _ = await historyStore.update(updatedEntry)
+
+        let result = BoostResult(parts: newParts)
+        Self.log.notice(
+            "Boost retry done: \(attemptText, privacy: .public), \(result.paidParts, privacy: .public) of \(result.totalParts, privacy: .public) parts paid, \(result.unknownParts, privacy: .public) unknown, \(spent, privacy: .public) sats recorded"
+        )
+        status = BoostStatusText.retryText(for: result)
+        return updatedEntry.hasRetryableParts
     }
 
     /// The name of a skip reason for the log. It contains no title and no key.

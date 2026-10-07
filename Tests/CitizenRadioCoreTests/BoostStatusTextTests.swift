@@ -44,6 +44,11 @@ final class BoostStatusTextTests: XCTestCase {
         XCTAssertEqual(BoostStatusText.text(for: result), "The boost failed. No payment was sent.")
     }
 
+    func testRetryText() {
+        let result = BoostResult(parts: [part(70, .confirmed), part(30, .failed)])
+        XCTAssertEqual(BoostStatusText.retryText(for: result), "Retry: Boosted 70 sats. 1 of 2 payments failed.")
+    }
+
     // MARK: - Skip reasons
 
     func testOverDailyLimit() {

@@ -10,7 +10,6 @@ struct SettingsView: View {
     @Binding var savedURL: String
     let relayStatus: EventStreamStatus?
     let boostStatus: String?
-    let boostHistory: [BoostHistoryEntry]
     @State private var draft: StreamSettingsDraft
     @State private var error: String?
     @State private var relayError: String?
@@ -18,14 +17,12 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     init(
-        player: RadioPlayer, savedURL: Binding<String>, relayStatus: EventStreamStatus?, boostStatus: String?,
-        boostHistory: [BoostHistoryEntry]
+        player: RadioPlayer, savedURL: Binding<String>, relayStatus: EventStreamStatus?, boostStatus: String?
     ) {
         self.player = player
         _savedURL = savedURL
         self.relayStatus = relayStatus
         self.boostStatus = boostStatus
-        self.boostHistory = boostHistory
         let boostSettings = BoostSettings()
         _draft = State(initialValue: StreamSettingsDraft(
             savedURL: savedURL.wrappedValue,
@@ -101,8 +98,7 @@ struct SettingsView: View {
                     boostSenderName: $draft.boostSenderName,
                     boostAppName: $draft.boostAppName,
                     boostMinimumPlaySecondsText: $draft.boostMinimumPlaySecondsText,
-                    boostStatus: boostStatus,
-                    boostHistory: boostHistory
+                    boostStatus: boostStatus
                 )
             }
             .navigationTitle("Settings")

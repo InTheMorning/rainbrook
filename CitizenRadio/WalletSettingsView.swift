@@ -20,8 +20,6 @@ struct WalletSettingsView: View {
     @Binding var boostMinimumPlaySecondsText: String
     /// The result of the last boost, or nil.
     let boostStatus: String?
-    /// The boost history, newest first.
-    let boostHistory: [BoostHistoryEntry]
     @State private var showingDisconnectConfirmation = false
     @State private var isShowingScanner = false
     @State private var cameraAccessMessage: String?
@@ -157,7 +155,7 @@ struct WalletSettingsView: View {
                 .accessibilityIdentifier("boostStatus")
         }
         NavigationLink("Boost history") {
-            BoostHistoryView(entries: boostHistory)
+            BoostHistoryView()
         }
         .accessibilityIdentifier("boostHistoryLink")
         Button("Disconnect", role: .destructive) {

@@ -57,9 +57,9 @@ struct PlayerView: View {
                     player: player,
                     savedURL: $savedURL,
                     relayStatus: trackInfo.relayStatus,
-                    boostStatus: trackInfo.boost.status,
-                    boostHistory: trackInfo.boost.history
+                    boostStatus: trackInfo.boost.status
                 )
+                .environmentObject(trackInfo.boost)
             }
         }
     }

@@ -9,7 +9,8 @@ import CitizenRadioCore
 struct PlayerView: View {
     @ObservedObject var player: RadioPlayer
     @StateObject private var trackInfo: TrackInfoModel
-    @State private var savedURL = StreamStore().savedURL
+    /// ADR 0017 §The station list: Play is active only with a selected station.
+    @State private var hasSelectedStation = StationStore().selected != nil
     @State private var showingSettings = false
     @State private var showingBoost = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -20,7 +21,7 @@ struct PlayerView: View {
     }
 
     private var model: PlayerScreenModel {
-        PlayerScreenModel(state: player.state, hasSavedStream: !savedURL.isEmpty)
+        PlayerScreenModel(state: player.state, hasSavedStream: hasSelectedStation)
     }
 
     var body: some View {
@@ -52,10 +53,12 @@ struct PlayerView: View {
                     .accessibilityIdentifier("settingsButton")
                 }
             }
-            .sheet(isPresented: $showingSettings, onDismiss: { trackInfo.reloadSettings() }) {
+            .sheet(isPresented: $showingSettings, onDismiss: {
+                hasSelectedStation = StationStore().selected != nil
+                trackInfo.reloadSettings()
+            }) {
                 SettingsView(
                     player: player,
-                    savedURL: $savedURL,
                     relayStatus: trackInfo.relayStatus,
                     boostStatus: trackInfo.boost.status
                 )
@@ -81,6 +84,13 @@ struct PlayerView: View {
                     .foregroundStyle(player.state.errorMessage == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
                     .multilineTextAlignment(.center)
                     .accessibilityIdentifier("playbackStatus")
+                // ADR 0017 §The fallback: show when the alternate stream plays.
+                if player.usingAlternateStream {
+                    Text("Alternate stream")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("alternateStream")
+                }
             }
 
             Button {

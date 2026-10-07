@@ -14,7 +14,7 @@ public struct PlayerScreenModel: Equatable, Sendable {
         if let message = state.errorMessage {
             status = message
         } else if !hasSavedStream && !state.canStop {
-            status = "Add a stream in Settings"
+            status = "Add a station in Settings"
         } else {
             status = state.title
         }

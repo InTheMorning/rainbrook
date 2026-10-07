@@ -64,7 +64,8 @@ final class TrackInfoModel: ObservableObject {
         self.monitor = monitor
         self.opener = opener
         self.fetcher = fetcher
-        self.event = RelayEventStore().event
+        // ADR 0017 §The station: the Track info of the selected station gives the event.
+        self.event = StationStore().selected?.event
 
         // The settings sheet shows the boost result. Send a change of this model when the result changes.
         boost.$status
@@ -95,6 +96,12 @@ final class TrackInfoModel: ObservableObject {
                 self?.icyTextChanged(text)
             }
             .store(in: &subscriptions)
+        player.$usingAlternateStream
+            .sink { [weak self] usingAlternate in
+                guard usingAlternate else { return }
+                self?.alternateStreamStarted()
+            }
+            .store(in: &subscriptions)
     }
 
     deinit {
@@ -116,7 +123,7 @@ final class TrackInfoModel: ObservableObject {
     /// Reads the Track info and Auto-boost settings again. If the event changed, the relay client starts again.
     /// If only the Auto-boost setting changed, the live value client starts or stops.
     func reloadSettings() {
-        let newEvent = RelayEventStore().event
+        let newEvent = StationStore().selected?.event
         guard newEvent != event else {
             updateValueClient()
             return
@@ -147,6 +154,14 @@ final class TrackInfoModel: ObservableObject {
             // ADR 0012 §The trigger: Stop and a playback error end the session.
             boost.sessionEnded()
         }
+    }
+
+    /// ADR 0017 §The fallback: the alternate stream starts a new ICY session and a new trigger session.
+    /// The list of display states, the relay client, the pairing and the paid blocks stay.
+    private func alternateStreamStarted() {
+        sync.resetIcy()
+        setRelayTrack(nil)
+        boost.streamChanged()
     }
 
     /// Starts one client for the configured event. It does nothing when a client exists.

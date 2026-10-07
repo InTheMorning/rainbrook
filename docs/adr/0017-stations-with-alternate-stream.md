@@ -43,7 +43,7 @@ If no station list exists, the app examines the old stream URL. If that URL is s
 - Settings has a **Stations** section with the list. A mark shows the selected station.
 - A tap on a station selects it and starts its playback.
 - **Add** opens an empty station editor. A tap on the info button of a row opens its editor. A swipe deletes a station.
-- The editor has **Save**. **Save** is not possible while a field is not correct.
+- The editor has **Save**. **Save** is not active while the stream field is empty. If a field is not correct, **Save** shows the error and does not save.
 - A delete of the selected station stops the playback, and no station is selected.
 - The App Intents and the `citizenradio://play` URL play the selected station.
 

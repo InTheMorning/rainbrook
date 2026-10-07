@@ -59,7 +59,7 @@
 		"000000000000000000000069" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
-			"path" = "Core/StreamStore.swift";
+			"path" = "Core/Station.swift";
 			"sourceTree" = "<group>";
 		};
 		"0000000000000000000000CD" = {
@@ -445,7 +445,7 @@
 		"00000000000000000000013C" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
-			"path" = "Core/RelayEventStore.swift";
+			"path" = "Core/StationStore.swift";
 			"sourceTree" = "<group>";
 		};
 		"00000000000000000000013D" = {
@@ -531,6 +531,16 @@
 		"00000000000000000000014D" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "00000000000000000000014C";
+		};
+		"00000000000000000000014E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "StationEditorView.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000014F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000014E";
 		};
 		"000000000000000000000122" = {
 			"isa" = "XCRemoteSwiftPackageReference";
@@ -639,6 +649,7 @@
 				"000000000000000000000148",
 				"00000000000000000000014A",
 				"00000000000000000000014C",
+				"00000000000000000000014E",
 			);
 			"path" = "CitizenRadio";
 			"sourceTree" = "<group>";
@@ -712,6 +723,7 @@
 				"000000000000000000000149",
 				"00000000000000000000014B",
 				"00000000000000000000014D",
+				"00000000000000000000014F",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};

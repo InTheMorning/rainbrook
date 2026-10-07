@@ -30,18 +30,4 @@ final class StreamAddressTests: XCTestCase {
             XCTAssertEqual(error as? StreamAddress.ValidationError, .fragment)
         }
     }
-
-    func testFailedSavePreservesPreviousStreamAcrossStoreInstances() throws {
-        let suite = "CitizenRadioTests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let store = StreamStore(defaults: defaults)
-        XCTAssertThrowsError(try store.address())
-        try store.save("  https://radio.example.org/live\n")
-        XCTAssertThrowsError(try store.save("invalid"))
-        let reloaded = StreamStore(defaults: defaults)
-        XCTAssertEqual(reloaded.savedURL, "https://radio.example.org/live")
-        XCTAssertEqual(try reloaded.address().url.absoluteString, reloaded.savedURL)
-    }
 }
-

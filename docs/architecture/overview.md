@@ -16,8 +16,8 @@ Car Bluetooth connection
   -> AVPlayer
   -> Current iOS audio output
 
-SettingsView -> StreamStore -> UserDefaults
-PlayRadioIntent -> StreamStore -> Saved stream URL
+SettingsView -> StationEditorView -> StationStore -> UserDefaults
+PlayRadioIntent -> RadioPlayer -> StationStore -> Selected station
 
 SettingsView -> WalletSettingsModel -> WalletStore -> KeychainSecretStore
 WalletSettingsModel -> NWCClient -> URLSessionRelayConnection -> relay
@@ -37,18 +37,20 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | --- | --- |
 | `CitizenRadioApp` | Creates the SwiftUI scene. |
 | `PlayerView` | Shows the artwork placeholder, status, Play or Stop, and the AirPlay button. |
-| `SettingsView` | Edits and saves the stream URL in a sheet. |
+| `SettingsView` | Shows the station list and the other settings in a sheet. |
+| `StationEditorView` | Adds a station or changes a station (ADR 0017). |
 | `PlaybackState` | Names the playback states and their status titles. |
 | `ChimeSetting` | Stores the chime setting and selects the states that play the chime. |
 | `LoadedAudio` | Measures the loaded audio ahead of the play position, for the display delay. |
 | `PlayerScreenModel` | Selects the status text and the Play or Stop control for the player screen. |
-| `StreamSettingsDraft` | Enables Save for a changed, non-empty URL, or a changed chime, daily limit or Track info setting. |
+| `StreamSettingsDraft` | Enables Save for a changed chime, daily limit or boost setting. |
 | `StreamAddress` | Validates the URL before storage or playback. |
-| `StreamStore` | Reads and writes the saved URL. |
+| `Station` | Holds and validates the name, the streams and the Track info of a station (ADR 0017). |
+| `StationStore` | Reads and writes the station list and the selected station in UserDefaults (ADR 0017). |
 | `PlaybackRequest` | Controls if playback can continue after an interruption. |
 | `RadioURLAction` | Accepts the Play and Stop control URLs. |
-| `RadioPlayer` | Owns AVPlayer, the audio session, observers, and remote controls. |
-| `PlayRadioIntent` | Starts the saved stream and waits for playback. |
+| `RadioPlayer` | Owns AVPlayer, the audio session, observers, and remote controls. It plays the alternate stream when the primary stream fails (ADR 0017). |
+| `PlayRadioIntent` | Starts the selected station and waits for playback. |
 | `StopRadioIntent` | Stops playback and cancels pending connection work. |
 | `RadioShortcuts` | Makes the Play and Stop actions discoverable. |
 | `NWCConnection` | Parses and validates a Nostr Wallet Connect connection URI. |
@@ -78,7 +80,6 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `IcySync` | Keeps the last display states, and selects the relay track that the ICY text names (ADR 0011). |
 | `ArtworkPolicy` | Accepts or rejects artwork data, and gives its cache key. |
 | `LRUCache` | Holds a fixed number of entries, and removes the oldest entry first. |
-| `RelayEventStore` | Reads and writes the relay event address in UserDefaults. |
 | `RelayStatusText` | Selects the relay status text for the Track info section of Settings. |
 | `NetworkPathSummary` | Holds one network path update, and tells if a reconnect is necessary. |
 | `URLSessionEventStream` | Opens the relay event stream and reads the relay snapshot with URLSession. |

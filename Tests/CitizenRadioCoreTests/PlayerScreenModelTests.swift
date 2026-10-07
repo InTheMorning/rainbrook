@@ -20,7 +20,7 @@ final class PlayerScreenModelTests: XCTestCase {
         let model = PlayerScreenModel(state: .stopped, hasSavedStream: false)
         XCTAssertEqual(model.control, .play)
         XCTAssertFalse(model.isControlEnabled)
-        XCTAssertEqual(model.status, "Add a stream in Settings")
+        XCTAssertEqual(model.status, "Add a station in Settings")
     }
 
     func testFailedStateShowsErrorMessage() {

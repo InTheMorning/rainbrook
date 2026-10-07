@@ -21,11 +21,21 @@ final class RadioPlayer: ObservableObject {
     }
     /// The raw ICY text from the stream. Nil means no ICY text in this session.
     @Published private(set) var icyText: String?
+    /// ADR 0017 §The fallback: true while the alternate stream plays. Stop and each new Play set it to false.
+    @Published private(set) var usingAlternateStream = false
 
     private let audioSession = AVAudioSession.sharedInstance()
     private var player: AVPlayer?
+    /// The station and its primary stream for the same-station check at the start of `play()`.
+    private var activeStationID: UUID?
     private var activeURL: URL?
+    /// ADR 0017 §The fallback: the streams of the station, and the index of the stream that plays.
+    private var streams: [URL] = []
+    private var streamIndex = 0
     private var request = PlaybackRequest()
+    /// Changes at each Play, Stop and interruption. `playAndWait()` waits on this value.
+    private var playbackID = UUID()
+    /// Changes at each new player item, also at a fallback. Each item callback examines this value.
     private var sessionID = UUID()
     private var itemObservation: NSKeyValueObservation?
     private var playbackObservation: NSKeyValueObservation?
@@ -68,14 +78,15 @@ final class RadioPlayer: ObservableObject {
             fail(error.localizedDescription)
             throw error
         }
-        let expectedID = sessionID
-        while sessionID == expectedID {
+        // ADR 0017 §The fallback: a fallback changes sessionID, so wait on playbackID.
+        let expectedID = playbackID
+        while playbackID == expectedID {
             if state == .playing { return }
             if let message = state.errorMessage { throw PlaybackError(message: message) }
             do {
                 try await Task.sleep(nanoseconds: 100_000_000)
             } catch {
-                if sessionID == expectedID { stop() }
+                if playbackID == expectedID { stop() }
                 throw error
             }
         }
@@ -87,6 +98,7 @@ final class RadioPlayer: ObservableObject {
         request.stop()
         interruptedOutputIDs.removeAll()
         releasePlayer()
+        usingAlternateStream = false
         state = .stopped
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         deactivateSession()
@@ -116,15 +128,28 @@ final class RadioPlayer: ObservableObject {
     }
 
     private func play() throws {
-        let address = try StreamStore().address()
-        if request.wantsPlayback, activeURL == address.url {
+        guard let station = StationStore().selected else {
+            throw PlaybackError(message: "Open CitizenRadio and add a station first.")
+        }
+        // ADR 0017 §The station list: a tap on a different station starts it.
+        if request.wantsPlayback, activeStationID == station.id, activeURL == station.stream {
             return
+        }
+        // A change from a playing station to a different station starts a new session
+        // for the track info and the boosts. After an interruption, no station is active.
+        if request.wantsPlayback, activeStationID != nil {
+            stop()
         }
 
         releasePlayer()
         request.stop()
         request.play()
-        activeURL = address.url
+        activeStationID = station.id
+        activeURL = station.stream
+        streams = station.streams
+        streamIndex = 0
+        usingAlternateStream = false
+        let url = station.stream
         sessionActive = false
         state = .connecting
         updateNowPlaying()
@@ -142,7 +167,7 @@ final class RadioPlayer: ObservableObject {
             guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
             self.sessionActive = true
             self.updateChime()
-            self.startPlayer(url: address.url, expectedID: expectedID)
+            self.startPlayer(url: url, expectedID: expectedID)
         }
     }
 
@@ -195,7 +220,7 @@ final class RadioPlayer: ObservableObject {
     private func refreshPlayback(expectedID: UUID) {
         guard sessionID == expectedID, request.wantsPlayback, let player else { return }
         if player.currentItem?.status == .failed {
-            fail("The stream could not play. Check the URL, network connection, and stream format.")
+            streamFailed("The stream could not play. Check the URL, network connection, and stream format.")
             return
         }
         if player.timeControlStatus == .playing {
@@ -221,7 +246,7 @@ final class RadioPlayer: ObservableObject {
             }
             guard let self, self.sessionID == expectedID,
                   self.request.wantsPlayback, self.state != .playing else { return }
-            self.fail("The stream did not respond within \(seconds) seconds. Check your connection, then tap Play.")
+            self.streamFailed("The stream did not respond within \(seconds) seconds. Check your connection, then tap Play.")
         }
     }
 
@@ -231,7 +256,7 @@ final class RadioPlayer: ObservableObject {
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] _ in
                     guard let self, self.sessionID == expectedID, self.request.wantsPlayback else { return }
-                    self.fail("The live stream ended. Tap Play to connect again.")
+                    self.streamFailed("The live stream ended. Tap Play to connect again.")
                 }
                 .store(in: &itemSubscriptions)
         }
@@ -310,7 +335,40 @@ final class RadioPlayer: ObservableObject {
         }
     }
 
+    /// ADR 0017 §The fallback: the one path for a failure of the stream that plays.
+    ///
+    /// The player item failed, the connection time limit ended, or the stream ended.
+    /// If the station has a next stream, this function starts it. Else it calls `fail`.
+    /// The fallback keeps the active audio session and the playback request.
+    private func streamFailed(_ message: String) {
+        let nextIndex = streamIndex + 1
+        // Before the audio session is active, the stream is not the cause of the failure.
+        guard sessionActive, request.wantsPlayback, nextIndex < streams.count else {
+            fail(message)
+            return
+        }
+        streamIndex = nextIndex
+        // releaseItem() sets a new session identifier. Then the callbacks of the previous item do nothing.
+        releaseItem()
+        usingAlternateStream = true
+        state = .connecting
+        updateNowPlaying()
+        startConnectionTimeout()
+        startPlayer(url: streams[nextIndex], expectedID: sessionID)
+    }
+
+    /// Releases the player, the item and the station of the session.
     private func releasePlayer() {
+        playbackID = UUID()
+        releaseItem()
+        activeStationID = nil
+        activeURL = nil
+        streams = []
+        streamIndex = 0
+    }
+
+    /// Releases the player and the item only. It sets a new session identifier.
+    private func releaseItem() {
         sessionID = UUID()
         connectionTimeout?.cancel()
         connectionTimeout = nil
@@ -322,7 +380,6 @@ final class RadioPlayer: ObservableObject {
         player?.pause()
         player?.replaceCurrentItem(with: nil)
         player = nil
-        activeURL = nil
         icyReader = nil
         icyText = nil
     }

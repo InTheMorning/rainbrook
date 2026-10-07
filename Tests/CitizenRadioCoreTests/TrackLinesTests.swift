@@ -75,4 +75,27 @@ final class TrackLinesTests: XCTestCase {
 
         XCTAssertEqual(lines.nowPlayingArtist, TrackLines.defaultNowPlayingArtist)
     }
+
+    // MARK: - album (ADR 0019)
+
+    func testSelectCopiesAlbumFromRelayTrack() {
+        let relay = TrackDisplay(
+            artist: "Relay Artist",
+            title: "Relay Title",
+            artwork: nil,
+            album: "Way to Go"
+        )
+
+        let result = TrackLines.select(relay: relay, icy: nil)
+
+        XCTAssertEqual(result.album, "Way to Go")
+    }
+
+    func testSelectGivesNilAlbumForICYTrack() {
+        let icy = IcyTrack(artist: "ICY Artist", title: "ICY Title")
+
+        let result = TrackLines.select(relay: nil, icy: icy)
+
+        XCTAssertNil(result.album)
+    }
 }

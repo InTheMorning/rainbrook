@@ -285,4 +285,89 @@ final class TrackDisplayTests: XCTestCase {
 
         XCTAssertNil(track?.value)
     }
+
+    // MARK: - album (ADR 0019)
+
+    func testDecodeReadsAlbum() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "album": "Way to Go"
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertEqual(track?.album, "Way to Go")
+    }
+
+    func testMissingAlbumGivesNil() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title"
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNil(track?.album)
+        XCTAssertEqual(track?.artist, "Artist")
+    }
+
+    func testNullAlbumGivesNil() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "album": null
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNil(track?.album)
+        XCTAssertEqual(track?.artist, "Artist")
+    }
+
+    func testEmptyAlbumGivesNil() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "album": ""
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNil(track?.album)
+        XCTAssertEqual(track?.artist, "Artist")
+    }
+
+    func testNonStringAlbumGivesNil() throws {
+        let json = """
+        {
+            "track": {
+                "artist": "Artist",
+                "title": "Title",
+                "album": 12
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let track = try TrackDisplay.decode(data)
+
+        XCTAssertNil(track?.album)
+        XCTAssertEqual(track?.artist, "Artist")
+    }
 }

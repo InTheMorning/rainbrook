@@ -84,7 +84,7 @@ The upstream changes are deployed. This phase can start.
 - The value client reads its snapshot from the instant `GET /metadata`, not from `GET /remoteValue`.
 - On connect, each client asks for the recent updates with `Last-Event-ID`. So the ICY sync list and the pairing hold the track that the listener hears, also after a connect near a track change. This applies to Icecast and to HLS.
 - Request to the relay: add the display `seq` to the body of `GET /display`. The display replay starts when the relay gives it.
-- Not in this phase: `album`. Relay ADR 0006 and publisher ADR 0013 are Proposed.
+- The album: relay ADR 0006 is Implemented and deployed, and publisher ADR 0013 is Accepted. [ADR 0019](../adr/0019-album-in-the-display.md) shows the album.
 
 ## Phase 3: after publisher ADR 0009
 

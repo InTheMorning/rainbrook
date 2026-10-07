@@ -77,7 +77,7 @@ What the code of this app can reuse:
 ## Consequences
 
 - The player can show and pay CurioHoster events, also with no musicindex relay.
-- The album name becomes available from `line[0]`. The musicindex relay display state has no album field on 2026-10-06.
+- The album name becomes available from `line[0]`. The musicindex relay display state has the optional key `album` (relay ADR 0006), so the two sources agree.
 - A stream with no ICY title has no release signal. The player then shows each state when it arrives, early by the stream delay.
 - The polling transport makes one request each poll interval. Each listener adds load on CurioHoster.
 

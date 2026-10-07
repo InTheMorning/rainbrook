@@ -26,12 +26,15 @@ public struct TrackDisplay: Equatable, Sendable {
     public let title: String
     public let artwork: Artwork?
     public let value: ValueIdentity?
+    /// ADR 0019: the optional album. Nil when the publisher sends no album.
+    public let album: String?
 
-    public init(artist: String, title: String, artwork: Artwork?, value: ValueIdentity? = nil) {
+    public init(artist: String, title: String, artwork: Artwork?, value: ValueIdentity? = nil, album: String? = nil) {
         self.artist = artist
         self.title = title
         self.artwork = artwork
         self.value = value
+        self.album = album
     }
 
     /// Decodes a relay display state. Gives nil for {"track": null}.
@@ -120,6 +123,15 @@ public struct TrackDisplay: Equatable, Sendable {
             value = ValueIdentity(eventGuid: eventGuid, blockGuid: blockGuid)
         }
 
-        return TrackDisplay(artist: artist, title: title, artwork: artwork, value: value)
+        // ADR 0019: a non-empty string gives the album. A missing key, null, an empty
+        // string or a non-string value gives nil. The album decode does not throw.
+        let album: String?
+        if let albumStr = track["album"] as? String, !albumStr.isEmpty {
+            album = albumStr
+        } else {
+            album = nil
+        }
+
+        return TrackDisplay(artist: artist, title: title, artwork: artwork, value: value, album: album)
     }
 }

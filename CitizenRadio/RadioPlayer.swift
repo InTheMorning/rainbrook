@@ -54,6 +54,8 @@ final class RadioPlayer: ObservableObject {
     private var sessionActive = false
     private var nowPlayingTitle = TrackLines.defaultTitle
     private var nowPlayingArtist = TrackLines.defaultNowPlayingArtist
+    /// ADR 0019: the album for Now Playing, or nil when the track has no album.
+    private var nowPlayingAlbum: String?
     private var nowPlayingImage: UIImage?
 
     private init() {
@@ -116,12 +118,14 @@ final class RadioPlayer: ObservableObject {
     }
 
     /// Stores the track for Now Playing. ADR 0008 §Player screen and Now Playing.
+    /// ADR 0019: `album` is nil when the track has no album.
     ///
     /// Now Playing changes only while playback is active. `stop()` clears Now Playing,
     /// and a track change after that must not show it again.
-    func setNowPlayingTrack(title: String, artist: String, image: UIImage?) {
+    func setNowPlayingTrack(title: String, artist: String, album: String?, image: UIImage?) {
         nowPlayingTitle = title
         nowPlayingArtist = artist
+        nowPlayingAlbum = album
         nowPlayingImage = image
         guard state.canStop else { return }
         updateNowPlaying()
@@ -424,6 +428,11 @@ final class RadioPlayer: ObservableObject {
         ]
         if let nowPlayingImage {
             info[MPMediaItemPropertyArtwork] = Self.makeArtwork(nowPlayingImage)
+        }
+        // ADR 0019: set the album title when there is one. A new dictionary with no
+        // key removes it when there is none, because this call replaces the full dictionary.
+        if let nowPlayingAlbum {
+            info[MPMediaItemPropertyAlbumTitle] = nowPlayingAlbum
         }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }

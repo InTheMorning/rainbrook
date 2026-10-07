@@ -448,7 +448,13 @@ final class TrackInfoModel: ObservableObject {
 
     private func updateNowPlaying() {
         // ADR 0015 §Display: Now Playing gets the first frame of an animated image.
-        player.setNowPlayingTrack(title: lines.title, artist: lines.nowPlayingArtist, image: image?.images?.first ?? image)
+        // ADR 0019: Now Playing gets the album of the lines, or nil when there is no album.
+        player.setNowPlayingTrack(
+            title: lines.title,
+            artist: lines.nowPlayingArtist,
+            album: lines.album,
+            image: image?.images?.first ?? image
+        )
     }
 }
 #endif

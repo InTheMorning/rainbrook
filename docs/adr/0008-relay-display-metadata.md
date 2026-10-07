@@ -54,6 +54,7 @@ The research note compares the two transports for a phone in a moving car.
 
 - `TrackDisplay` in `CitizenRadioCore` decodes the display state: no track, or artist, title and artwork.
   Artwork is a relay image (`sha256` and `mime`), an external `http` or `https` URL, or none.
+  [ADR 0019](0019-album-in-the-display.md) adds the optional album.
 - Display delay: the app applies each streamed display state when the audio has played the buffered time.
   That time is the audio that AVPlayer holds ahead of the play position when the state arrives (`LoadedAudio.bufferedAhead`).
   A snapshot read after a connect applies at once.

@@ -79,6 +79,13 @@ struct PlayerView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
+                // ADR 0019: show the album below the artist. No line when there is no album.
+                if let album = trackInfo.lines.album {
+                    Text(album)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
                 Text(model.status)
                     .font(.body)
                     .foregroundStyle(player.state.errorMessage == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))

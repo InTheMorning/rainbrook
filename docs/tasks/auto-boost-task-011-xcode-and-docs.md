@@ -1,19 +1,19 @@
 # Auto-boost task 011: Xcode project and documents
 
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md), wave D. Model: Sonnet.
-- Decision: [ADR 0013](../adr/0013-boosts.md), [ADR 0014](../adr/0014-player-screen-with-boost-button.md).
-- Depends on: task 010.
+- Decision: [ADR 0013](../adr/0013-boosts.md), [ADR 0014](../adr/0014-player-screen-with-boost-button.md). Also [ADR 0015](../adr/0015-artwork-from-url-and-animated-gif.md), [ADR 0016](../adr/0016-boost-switch-back-play-time-and-retry.md) and [ADR 0017](../adr/0017-stations-with-alternate-stream.md), added 2026-10-06.
+- Depends on: task 014 and stations task 002.
 
 ## Goal
 
-Add the new Swift files to the Xcode project. Document boosts in the architecture overview, the README and the runbook.
+Add the new Swift files to the Xcode project. Document boosts, the URL artwork and the stations in the architecture overview, the README and the runbook.
 
 ## Files to inspect
 
 - `CitizenRadio.xcodeproj/project.pbxproj`
 - `docs/tasks/relay-display-task-009-xcode-and-docs.md` (the same work, with the ID check)
 - `docs/architecture/overview.md`, `README.md`, `docs/runbooks/iphone-setup.md`
-- `docs/adr/0013-boosts.md`, `docs/adr/0014-player-screen-with-boost-button.md`, `docs/plans/auto-boost-plan.md`
+- `docs/adr/0013-boosts.md`, `docs/adr/0014-player-screen-with-boost-button.md`, `docs/adr/0015-artwork-from-url-and-animated-gif.md`, `docs/adr/0016-boost-switch-back-play-time-and-retry.md`, `docs/adr/0017-stations-with-alternate-stream.md`, `docs/plans/auto-boost-plan.md`
 
 ## Files likely to change
 
@@ -45,6 +45,10 @@ Documents:
   - A "Send a boost" procedure: tap **Boost**, change the amount, write a message, tap **Send**.
   - A "See the boost history" procedure.
   - The ADR 0013 and ADR 0014 visual criteria as rows in the device checks table.
+- ADR 0015, ADR 0016 and ADR 0017:
+  - Overview: rows for `ArtworkFrames`, `Station`, `StationStore` and `StationEditorView`. A sentence each for the URL artwork limits, the retry and the fallback. Remove each entry for a type that no longer exists.
+  - README: a bullet for stations with an alternate stream, and a bullet for animated GIF artwork. Replace each step that saves one stream URL or one **Track info** URL with the station steps.
+  - Runbook: an "Add a station" procedure (**Settings**, **Add Station**, the four fields, **Save**, then a tap on the station). Add **Minimum play time** to "Configure boosts". Add **Payment details**, the split and **Retry** to the boost procedures. Add the visual criteria of ADR 0015, ADR 0016 and ADR 0017 as rows in the device checks table.
 - Plan status line: "Status: implemented, <date>. The visual checks are open."
 - Prose in ASD-STE100. Run the STE checker on each changed document.
 
@@ -102,7 +106,7 @@ Read:
 - docs/architecture/overview.md, README.md, docs/runbooks/iphone-setup.md
 
 Goal:
-- Register the new Swift files in the Xcode project, and document boosts.
+- Register each Swift file in the Xcode project, and document boosts, the URL artwork and the stations.
 
 Constraints:
 - Follow the project file rules in the task file. New unique 24-character IDs in the quoted style.

@@ -57,36 +57,38 @@ The current package declares an iOS 17 deployment target.
 8. Enable Developer Mode if iOS requests it.
 9. Build and run CitizenRadio.
 
-## Configure playback
+## Add a station
 
 1. Open CitizenRadio on the iPhone.
 2. Tap **Settings**.
-3. Enter the stream URL in **Stream URL**.
-4. Set **Chime while connecting** on or off.
+3. In the **Stations** section, tap **Add Station**.
+4. Enter the **Name**, the **Stream**, the **Alternate stream**, and the **Track info**. Only the **Stream** is necessary.
 5. Tap **Save**.
-6. Tap **Play**.
+6. Tap the new station to select it and start playback.
 
-If the chime is on, it plays in a loop until the stream starts.
-The expected status is **Playing live**.
-Tap the AirPlay button to select the output device.
-The iPhone must play the stream before you configure the automation.
-For a local stream server, allow local network access when iOS requests it.
-
-## Configure track info
-
-1. Open CitizenRadio on the iPhone.
-2. Tap **Settings**.
-3. Paste the station relay address into **Track info**.
-4. Tap **Save**.
-5. Tap **Play**.
-
-With a relay address, the player screen and Now Playing show the relay track, its artist and its artwork.
-Without a relay address, or without a relay track, they show the stream title.
-The Track info section of Settings shows a status message in these cases:
+With a Track info address, the player screen and Now Playing show the relay track, its artist and its artwork.
+Without a Track info address, or without a relay track, they show the stream title.
+The Stations section shows a status message in these cases:
 
 - The relay does not know the event.
 - The event is not reserved.
 - The relay client waits to connect again.
+
+With an alternate stream, the app plays it if the stream fails (ADR 0017). The player screen shows "Alternate stream" while it plays.
+
+## Configure playback
+
+1. Open CitizenRadio on the iPhone.
+2. Tap **Settings**.
+3. Set **Chime while connecting** on or off.
+4. Tap **Save**.
+5. Tap a station in the **Stations** section to play it.
+
+If the chime is on, it plays in a loop until the stream starts.
+The expected status is **Playing live**.
+Tap the AirPlay button to select the output device.
+The iPhone must play a station before you configure the automation.
+For a local stream server, allow local network access when iOS requests it.
 
 ## Connect a wallet
 
@@ -143,6 +145,41 @@ The app removes the stored connection at once.
 After a restart of the app, the wallet stays removed.
 The app does not show the secret again after it saves a connection.
 Without a wallet connection, the app plays as before.
+
+## Configure boosts
+
+Connect a wallet before you configure boosts.
+
+1. Open CitizenRadio on the iPhone.
+2. Tap **Settings**.
+3. In the **Wallet** section, set **Auto-boost** on.
+4. Enter the **Boost amount**, in sats.
+5. Enter the **Boost message**, the **From** name and the **App name**. Each field can stay empty.
+6. Enter the **Minimum play time**, in seconds.
+7. Examine the **Daily limit** value.
+8. Tap **Save**.
+
+With **Auto-boost** on, the app pays one boost for a V4V track heard from its start to its end.
+The track must play for the minimum play time or more.
+
+## Send a boost
+
+The **Boost** button is active only while a V4V track plays.
+
+1. Tap **Boost**.
+2. Change the amount, if you want a different value.
+3. Write a message, if you want one.
+4. Examine the split for each recipient.
+5. Tap **Send**.
+6. Tap **Payment details** to see the result, or tap **Close**.
+
+## See the boost history
+
+1. Open CitizenRadio on the iPhone.
+2. Tap **Settings**.
+3. In the **Wallet** section, tap **Boost history**.
+4. Tap an entry to see its message and the result of each part.
+5. If a part can retry, tap **Retry** to send it again.
 
 ## Configure Shortcuts
 
@@ -204,7 +241,7 @@ Complete these checks before normal use of the automation.
 | Drive through a dead zone with a relay event configured. | The display is correct within 40 seconds after the audio returns. |
 | Play with an empty **Track info** field. | The title and the artist come from the stream title, and the artwork area shows the placeholder. |
 | Tap **Stop**, then **Play**, with a relay event configured. | The display is correct again. |
-| Open the app before a URL is saved. | The status shows **Add a stream in Settings** and Play is disabled. |
+| Open the app before a station is saved. | The status shows **Add a station in Settings** and Play is disabled. |
 | Run a Play action before a URL is saved. | The app reports missing settings. The Play CitizenRadio action also reports an error to Shortcuts. |
 | Lock the screen during playback. | Audio continues and Now Playing controls remain available. |
 | Run Play CitizenRadio while locked. | Playback starts without opening the app. |
@@ -221,7 +258,7 @@ Complete these checks before normal use of the automation.
 | Stop playback during a call. | Playback remains stopped after the call. |
 | Remove network access during playback. | Buffering recovers or shows an error after its timeout. |
 | Stop during buffering. | Playback remains stopped when network access returns. |
-| Change and save the stream URL. | Current playback stops. The next Play uses the new URL. |
+| While a station plays, tap a different station. | The first station stops. The new station plays. |
 | Use the car's pause and play controls. | Pause stops the stream. Play reconnects to live audio. |
 | Enable VoiceOver and large text. | Labels remain clear and all controls remain accessible. |
 | Use **Paste** with a URI from Alby Hub. | The app saves the connection, and the secret does not show. |
@@ -230,6 +267,32 @@ Complete these checks before normal use of the automation.
 | Tap Test Connection. | The wallet methods show within 10 seconds. |
 | Tap Disconnect, then restart the app. | The wallet stays removed after the restart. |
 | Restart the phone and unlock it one time. | A background test can read the stored connection while the phone is locked. |
+| Turn on **Auto-boost** and play a V4V track to its end. | The app pays one boost. The wallet shows the payment, and the history shows the entry. |
+| Join a V4V track already playing, in the middle. | No auto-boost occurs. |
+| Play a track that is not V4V. | No auto-boost occurs, and the **Boost** button is not active. |
+| Turn off **Auto-boost** and play a V4V track to its end. | No auto-boost occurs. |
+| Play a V4V track with Auto-boost over the remaining daily limit. | No auto-boost occurs, and the result names the reason. |
+| Lock the screen during an auto-boost. | The auto-boost still occurs. |
+| Send a manual boost with a message. | The app pays the track that plays. The recipient sees the message and the sender name. |
+| Examine the history after a boost. | Each recipient shows confirmed, failed or unknown. |
+| Change the amount in the boost sheet. | The split changes for the new amount. |
+| Tap **Payment details** after a manual boost. | The history entry of that boost opens. |
+| Play a V4V track and look at the player screen. | The **Boost** button is active, and it opens the boost sheet. |
+| Play "Nowhere Anywhere". | Its artwork shows. |
+| Play "How Bout You?". | Its GIF shows and moves. |
+| Play "Disco Swag". | Its GIF shows and moves. |
+| Lock the screen during a GIF track. | The lock screen shows the first frame of the GIF. |
+| Play a track with a relay image. | Its artwork shows as before. |
+| Set **Minimum play time** to 60 and play a V4V track for 20 seconds. | No auto-boost occurs, and the result names the reason. |
+| Set "Track duplicate distance" to 0 in Mixxx, then switch back to a V4V track. | An auto-boost occurs if the track plays for the minimum play time. |
+| Examine a failed part in the history. | Its reason shows. |
+| Wait about 1 minute after a failed keysend part. | The app sends the part again, and the history entry shows the new result. |
+| Tap **Retry** in a history entry. | The app sends the failed parts again. |
+| Open the app after the update, with an old stream saved. | The old stream and Track info show as one selected station. |
+| Tap a station in the list. | The station plays. Its artwork and its title show. |
+| Give a station a primary stream that does not work. | The station plays the alternate stream after a maximum of 20 seconds. The player screen shows "Alternate stream". |
+| Play a station with an HLS stream. | The title and the artwork of the track show. |
+| Say "Play CitizenRadio" with more than one station saved. | The selected station plays. |
 
 Also test the locked automation after you restart and unlock the iPhone.
 Record the actual behavior after force-quitting the app, because iOS can prevent background launches.

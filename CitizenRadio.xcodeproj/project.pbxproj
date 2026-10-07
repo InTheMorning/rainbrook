@@ -542,6 +542,176 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "00000000000000000000014E";
 		};
+		"000000000000000000000150" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/ArtworkFrames.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000151" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000150";
+		};
+		"000000000000000000000152" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/Bolt11.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000153" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000152";
+		};
+		"000000000000000000000154" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostHistory.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000155" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000154";
+		};
+		"000000000000000000000156" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostPairing.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000157" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000156";
+		};
+		"000000000000000000000158" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostPayer.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000159" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000158";
+		};
+		"00000000000000000000015A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostPlan.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000015B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000015A";
+		};
+		"00000000000000000000015C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostRecord.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000015D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000015C";
+		};
+		"00000000000000000000015E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostSettings.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000015F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000015E";
+		};
+		"000000000000000000000160" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostSplit.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000161" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000160";
+		};
+		"000000000000000000000162" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostStatusText.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000163" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000162";
+		};
+		"000000000000000000000164" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostTrigger.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000165" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000164";
+		};
+		"000000000000000000000166" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/LightningAddress.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000167" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000166";
+		};
+		"000000000000000000000168" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/LiveValue.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000169" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000168";
+		};
+		"00000000000000000000016A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NWCPayment.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000016B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000016A";
+		};
+		"00000000000000000000016C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "BoostHistoryView.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000016D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000016C";
+		};
+		"00000000000000000000016E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "BoostModel.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000016F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000016E";
+		};
+		"000000000000000000000170" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "BoostSheet.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000171" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000170";
+		};
 		"000000000000000000000122" = {
 			"isa" = "XCRemoteSwiftPackageReference";
 			"repositoryURL" = "https://github.com/21-DOT-DEV/swift-secp256k1";
@@ -650,6 +820,23 @@
 				"00000000000000000000014A",
 				"00000000000000000000014C",
 				"00000000000000000000014E",
+				"000000000000000000000150",
+				"000000000000000000000152",
+				"000000000000000000000154",
+				"000000000000000000000156",
+				"000000000000000000000158",
+				"00000000000000000000015A",
+				"00000000000000000000015C",
+				"00000000000000000000015E",
+				"000000000000000000000160",
+				"000000000000000000000162",
+				"000000000000000000000164",
+				"000000000000000000000166",
+				"000000000000000000000168",
+				"00000000000000000000016A",
+				"00000000000000000000016C",
+				"00000000000000000000016E",
+				"000000000000000000000170",
 			);
 			"path" = "CitizenRadio";
 			"sourceTree" = "<group>";
@@ -724,6 +911,23 @@
 				"00000000000000000000014B",
 				"00000000000000000000014D",
 				"00000000000000000000014F",
+				"000000000000000000000151",
+				"000000000000000000000153",
+				"000000000000000000000155",
+				"000000000000000000000157",
+				"000000000000000000000159",
+				"00000000000000000000015B",
+				"00000000000000000000015D",
+				"00000000000000000000015F",
+				"000000000000000000000161",
+				"000000000000000000000163",
+				"000000000000000000000165",
+				"000000000000000000000167",
+				"000000000000000000000169",
+				"00000000000000000000016B",
+				"00000000000000000000016D",
+				"00000000000000000000016F",
+				"000000000000000000000171",
 			);
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};

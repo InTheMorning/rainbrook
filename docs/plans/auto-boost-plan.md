@@ -1,6 +1,7 @@
 # Auto-boost: phase plan
 
-- Status: active, 2026-10-06. This plan does not make rules. [ADR 0013](../adr/0013-boosts.md) owns them. [ADR 0016](../adr/0016-boost-switch-back-play-time-and-retry.md) owns the rules of tasks 012 to 014. Tasks 001 to 006 implemented the archived [ADR 0012](../archive/adr/0012-auto-boost.md).
+- Status: implemented, 2026-10-06. The visual checks are open.
+- Decision: this plan does not make rules. [ADR 0013](../adr/0013-boosts.md) owns them. [ADR 0016](../adr/0016-boost-switch-back-play-time-and-retry.md) owns the rules of tasks 012 to 014. Tasks 001 to 006 implemented the archived [ADR 0012](../archive/adr/0012-auto-boost.md).
 - Review: [auto-boost review checklist](../reviews/auto-boost-review-checklist.md).
 
 ## Goal

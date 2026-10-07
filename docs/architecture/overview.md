@@ -24,6 +24,10 @@ WalletSettingsModel -> NWCClient -> URLSessionRelayConnection -> relay
 
 relay /display/events -> EventStreamClient -> TrackInfoModel -> PlayerView and Now Playing
 AVPlayer ICY metadata -> IcyMetadataReader -> RadioPlayer.icyText -> IcySync in TrackInfoModel
+
+relay /events (remoteValue) -> EventStreamClient -> BoostModel (BoostPairing)
+ICY text -> TrackInfoModel -> BoostModel (BoostTrigger) -> BoostPlan -> BoostPayer -> NWCClient and LNURL -> BoostHistory
+Boost button -> BoostSheet -> BoostModel.sendManualBoost -> BoostPayer -> BoostHistory
 ```
 
 Shortcuts owns the Bluetooth trigger.
@@ -36,7 +40,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | Component | Responsibility |
 | --- | --- |
 | `CitizenRadioApp` | Creates the SwiftUI scene. |
-| `PlayerView` | Shows the artwork placeholder, status, Play or Stop, and the AirPlay button. |
+| `PlayerView` | Shows the artwork placeholder, status, Play or Stop, the AirPlay button, and the Boost button (ADR 0014). |
 | `SettingsView` | Shows the station list and the other settings in a sheet. |
 | `StationEditorView` | Adds a station or changes a station (ADR 0017). |
 | `PlaybackState` | Names the playback states and their status titles. |
@@ -79,6 +83,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `TrackLines` | Selects the title, the artist and the artwork to display, with the relay track as the priority. |
 | `IcySync` | Keeps the last display states, and selects the relay track that the ICY text names (ADR 0011). |
 | `ArtworkPolicy` | Accepts or rejects artwork data, and gives its cache key. |
+| `ArtworkFrames` | Selects the frames and the delays of an animated image, in the URL artwork limits (ADR 0015). |
 | `LRUCache` | Holds a fixed number of entries, and removes the oldest entry first. |
 | `RelayStatusText` | Selects the relay status text for the Track info section of Settings. |
 | `NetworkPathSummary` | Holds one network path update, and tells if a reconnect is necessary. |
@@ -87,8 +92,24 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `ArtworkLoader` | Downloads and decodes track artwork off the main thread, with a memory cache. |
 | `IcyMetadataReader` | Reads the Icecast stream title from the playing item, off the main thread. |
 | `TrackInfoModel` | Runs the relay client while playback is connecting or playing, and selects the track and the artwork for the player screen and Now Playing. |
+| `LiveValue` | Holds a live value payload and its payable destinations (ADR 0013). |
+| `BoostPairing` | Selects the live value payload that pays a completed relay track (ADR 0013). |
+| `BoostTrigger` | Decides when the listener heard a track from its start to its end, and tells a switch back from a repeat (ADR 0013, ADR 0016). |
+| `BoostSettings` | Stores the auto-boost settings and the minimum play time (ADR 0013, ADR 0016). |
+| `BoostPlan` | Decides if the app pays a boost, and gives its parts or its skip reason (ADR 0013, ADR 0016). |
+| `BoostSplit` | Divides a boost amount among the payable destinations (ADR 0013). |
+| `BoostRecord` | Holds the message, the sender name and the app name of a boost (ADR 0013). |
+| `NWCPayment` | Holds the keysend and the lightning address data for one NWC payment. |
+| `Bolt11` | Reads the amount of a BOLT11 invoice. |
+| `LightningAddress` | Makes the LNURL-pay request and checks its answer for a lightning address payment (ADR 0013). |
+| `BoostPayer` | Pays the parts of a boost through NWC and LNURL, and retries failed parts (ADR 0013, ADR 0016). |
+| `BoostStatusText` | Selects the boost result text for the Wallet section of Settings. |
+| `BoostHistory` | Keeps the last 200 boosts, newest first, in a file (ADR 0013, ADR 0016). |
+| `BoostModel` | Decides and pays the auto-boosts and the manual boosts of a session, and keeps the history (ADR 0013, ADR 0016). |
+| `BoostSheet` | Shows the split of a manual boost, sends it, and shows the payment details (ADR 0013 §Manual boost). |
+| `BoostHistoryView` | Shows the boost history, and a Retry button for a failed part (ADR 0013, ADR 0016). |
 
-The Xcode target compiles all forty-nine Swift source files into the app.
+The Xcode target compiles all sixty-seven Swift source files into the app.
 The Swift package exposes the `CitizenRadio` app library and an internal `CitizenRadioCore` target.
 The app target depends on the core target.
 Its four UI and playback files use an iOS compilation condition so host tests do not need Apple frameworks.

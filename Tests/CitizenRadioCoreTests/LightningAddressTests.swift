@@ -267,4 +267,137 @@ final class LightningAddressTests: XCTestCase {
             try LightningAddress.decodeInvoice(Data(#"{ "pr": 42 }"#.utf8), amountMsat: 1000)
         }
     }
+
+    // MARK: keysendURL and decodeKeysend (ADR 0023)
+
+    /// The Alby keysend answer of 2026-10-07.
+    private let albyKeysend = """
+    {"status":"OK","tag":"keysend",
+     "pubkey":"02babb6a65ccd4c11caac12edbaa77659826c12a9b7fba6bdc00da6dd8b5b5cc01",
+     "customData":[{"customKey":"696969","customValue":"1"}]}
+    """
+
+    func testKeysendURL() {
+        XCTAssertEqual(
+            LightningAddress.keysendURL(name: "caringquiescence333577", host: "getalby.com").absoluteString,
+            "https://getalby.com/.well-known/keysend/caringquiescence333577"
+        )
+    }
+
+    func testDecodeKeysendOfTheAlbyAnswer() throws {
+        let target = try LightningAddress.decodeKeysend(Data(albyKeysend.utf8))
+
+        XCTAssertEqual(target.pubkey, "02babb6a65ccd4c11caac12edbaa77659826c12a9b7fba6bdc00da6dd8b5b5cc01")
+        XCTAssertEqual(target.records, [TLVRecord(type: 696_969, value: "31")])
+    }
+
+    func testDecodeKeysendGivesALowercasePubkey() throws {
+        let target = try LightningAddress.decodeKeysend(Data("""
+        {"tag":"keysend","pubkey":"02BABB6A65CCD4C11CAAC12EDBAA77659826C12A9B7FBA6BDC00DA6DD8B5B5CC01"}
+        """.utf8))
+
+        XCTAssertEqual(target.pubkey, "02babb6a65ccd4c11caac12edbaa77659826c12a9b7fba6bdc00da6dd8b5b5cc01")
+        XCTAssertEqual(target.records, [])
+    }
+
+    func testDecodeKeysendWithAWrongTagThrows() {
+        assertFailure(.notKeysend) {
+            try LightningAddress.decodeKeysend(Data("""
+            {"tag":"payRequest","pubkey":"02babb6a65ccd4c11caac12edbaa77659826c12a9b7fba6bdc00da6dd8b5b5cc01"}
+            """.utf8))
+        }
+    }
+
+    func testDecodeKeysendWithAShortPubkeyThrows() {
+        assertFailure(.invalidResponse) {
+            try LightningAddress.decodeKeysend(Data("""
+            {"tag":"keysend","pubkey":"02babb6a65ccd4c11caac12edbaa77659826c12a9b7fba6bdc00da6dd8b5b5cc"}
+            """.utf8))
+        }
+    }
+
+    func testDecodeKeysendWithANonHexPubkeyThrows() {
+        assertFailure(.invalidResponse) {
+            try LightningAddress.decodeKeysend(Data("""
+            {"tag":"keysend","pubkey":"02babb6a65ccd4c11caac12edbaa77659826c12a9b7fba6bdc00da6dd8b5b5czz"}
+            """.utf8))
+        }
+    }
+
+    func testDecodeKeysendWithStatusErrorThrows() {
+        assertFailure(.serviceError("no user")) {
+            try LightningAddress.decodeKeysend(Data(#"{"status":"ERROR","reason":"no user"}"#.utf8))
+        }
+    }
+
+    func testDecodeKeysendOfAnHTMLBodyThrows() {
+        assertFailure(.invalidResponse) {
+            try LightningAddress.decodeKeysend(Data("<!DOCTYPE html><html><body>Not found</body></html>".utf8))
+        }
+    }
+
+    func testDecodeKeysendSkipsACustomKeyThatIsNotADecimalNumber() throws {
+        let target = try LightningAddress.decodeKeysend(Data("""
+        {"tag":"keysend","pubkey":"02babb6a65ccd4c11caac12edbaa77659826c12a9b7fba6bdc00da6dd8b5b5cc01",
+         "customData":[{"customKey":"abc","customValue":"x"},{"customKey":"-5","customValue":"y"},
+                       {"customKey":"696969","customValue":"abc"}]}
+        """.utf8))
+
+        XCTAssertEqual(target.records, [TLVRecord(type: 696_969, value: "616263")])
+    }
+
+    // MARK: payerdata (ADR 0023)
+
+    func testDecodePayRequestReadsPayerDataName() throws {
+        let withName = try payRequest("""
+        { "tag": "payRequest", "callback": "https://getalby.com/cb", "minSendable": 1000, "maxSendable": 5000,
+          "payerData": {"name":{"mandatory":false},"email":{"mandatory":false},"pubkey":{"mandatory":false}} }
+        """)
+        let withoutName = try payRequest("""
+        { "tag": "payRequest", "callback": "https://getalby.com/cb", "minSendable": 1000, "maxSendable": 5000,
+          "payerData": {"email":{"mandatory":false}} }
+        """)
+        let without = try payRequest("""
+        { "tag": "payRequest", "callback": "https://getalby.com/cb", "minSendable": 1000, "maxSendable": 5000 }
+        """)
+
+        XCTAssertTrue(withName.acceptsPayerName)
+        XCTAssertFalse(withoutName.acceptsPayerName)
+        XCTAssertFalse(without.acceptsPayerName)
+    }
+
+    private func payerDataValue(_ url: URL) -> String? {
+        URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "payerdata" }?.value
+    }
+
+    func testCallbackURLWithPayerNameAndAcceptsPayerNameHasPayerData() throws {
+        let request = LightningAddress.PayRequest(
+            callback: URL(string: "https://getalby.com/cb")!, minSendable: 1000, maxSendable: 5000,
+            commentAllowed: 0, acceptsPayerName: true
+        )
+
+        let url = try LightningAddress.callbackURL(for: request, amountMsat: 1000, comment: "x", payerName: "Maik")
+
+        XCTAssertEqual(payerDataValue(url), #"{"name":"Maik"}"#)
+        XCTAssertEqual(url.absoluteString, "https://getalby.com/cb?amount=1000&payerdata=%7B%22name%22:%22Maik%22%7D")
+    }
+
+    func testCallbackURLWithoutAcceptsPayerNameOrWithoutANameHasNoPayerData() throws {
+        let accepts = LightningAddress.PayRequest(
+            callback: URL(string: "https://getalby.com/cb")!, minSendable: 1000, maxSendable: 5000,
+            commentAllowed: 0, acceptsPayerName: true
+        )
+        let declines = LightningAddress.PayRequest(
+            callback: URL(string: "https://getalby.com/cb")!, minSendable: 1000, maxSendable: 5000,
+            commentAllowed: 0, acceptsPayerName: false
+        )
+
+        let noName = try LightningAddress.callbackURL(for: accepts, amountMsat: 1000, comment: "x", payerName: nil)
+        let emptyName = try LightningAddress.callbackURL(for: accepts, amountMsat: 1000, comment: "x", payerName: "")
+        let notAccepted = try LightningAddress.callbackURL(for: declines, amountMsat: 1000, comment: "x", payerName: "Maik")
+
+        XCTAssertEqual(noName.absoluteString, "https://getalby.com/cb?amount=1000")
+        XCTAssertEqual(emptyName.absoluteString, "https://getalby.com/cb?amount=1000")
+        XCTAssertEqual(notAccepted.absoluteString, "https://getalby.com/cb?amount=1000")
+    }
 }

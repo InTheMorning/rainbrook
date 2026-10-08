@@ -75,6 +75,32 @@ final class BoostPayerTests: XCTestCase {
     /// A sender with no message and no sender name.
     private let plainSender = BoostSender(message: nil, senderName: nil, appName: "CitizenRadio")
 
+    /// A manual boost with a fixed UUID and no station name.
+    private let context = BoostContext(
+        action: .boost, uuid: UUID(uuidString: "6F1B2C3D-4E5F-4A6B-8C7D-9E0F1A2B3C4D")!, stationName: nil
+    )
+
+    /// The keysend address of alice. The fake fetcher throws for it unless a test gives an answer.
+    private let keysendAlice = "https://pay.io/.well-known/keysend/alice"
+
+    /// The boost record of a part, as `pay` makes it with the fixed context.
+    private func records(_ part: BoostPart, totalSats: Int, sender: BoostSender) -> [TLVRecord] {
+        BoostRecord.tlvRecords(part: part, payload: payload, totalSats: totalSats, sender: sender, context: context)
+    }
+
+    /// The retry data of a lightning address part that `pay` made with the fixed context.
+    private func addressRetry(
+        _ part: BoostPart, totalSats: Int, sender: BoostSender, comment: String
+    ) -> BoostRetryPayment {
+        guard case .lightningAddress(let name, let host) = part.destination.kind else {
+            preconditionFailure("The part must be a lightning address part.")
+        }
+        return .lightningAddress(
+            name: name, host: host, amountMsat: Int64(part.sats) * 1000, comment: comment,
+            tlvRecords: records(part, totalSats: totalSats, sender: sender), payerName: sender.senderName
+        )
+    }
+
     private func address(_ name: String, sats: Int, label: String? = nil) -> BoostPart {
         BoostPart(
             destination: LiveValueDestination(
@@ -123,7 +149,7 @@ final class BoostPayerTests: XCTestCase {
             node(pubkeyB, sats: 40, name: nil)
         ]
 
-        let result = await payer.pay(parts: parts, payload: payload, amountSats: 100, sender: plainSender)
+        let result = await payer.pay(parts: parts, payload: payload, amountSats: 100, sender: plainSender, context: context)
 
         let calls = await wallet.calls
         XCTAssertEqual(calls.count, 1)
@@ -139,7 +165,7 @@ final class BoostPayerTests: XCTestCase {
         XCTAssertEqual(
             text(ofHex: first.tlvRecords[0].value),
             #"{"action":"boost","app_name":"CitizenRadio","block_guid":"b","episode":"T","event_guid":"e","#
-                + #""name":"Alice","value_msat":60000,"value_msat_total":100000}"#
+                + #""name":"Alice","uuid":"6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d","value_msat":60000,"value_msat_total":100000}"#
         )
         XCTAssertEqual(first.tlvRecords[1].value, "616263")
 
@@ -149,7 +175,7 @@ final class BoostPayerTests: XCTestCase {
         XCTAssertEqual(
             text(ofHex: second.tlvRecords[0].value),
             #"{"action":"boost","app_name":"CitizenRadio","block_guid":"b","episode":"T","event_guid":"e","#
-                + #""value_msat":40000,"value_msat_total":100000}"#
+                + #""uuid":"6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d","value_msat":40000,"value_msat_total":100000}"#
         )
 
         XCTAssertEqual(result.parts, [
@@ -167,14 +193,14 @@ final class BoostPayerTests: XCTestCase {
         ])
         let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
 
-        let result = await payer.pay(parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: plainSender)
+        let result = await payer.pay(parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: plainSender, context: context)
 
         let requests = await fetcher.requests
-        XCTAssertEqual(requests, [wellKnown, callback100])
+        XCTAssertEqual(requests, [keysendAlice, wellKnown, callback100])
         let calls = await wallet.calls
         XCTAssertEqual(calls, [[.invoice(invoice100)]])
         XCTAssertEqual(result.parts, [
-            BoostPartResult(name: nil, kind: .lightningAddress, sats: 100, result: .confirmed)
+            BoostPartResult(name: nil, kind: .lightningAddress, sats: 100, result: .confirmed, path: .invoice)
         ])
         assertCounts(result, paidSats: 100, unknownSats: 0, paidParts: 1, unknownParts: 0, totalParts: 1)
     }
@@ -188,7 +214,7 @@ final class BoostPayerTests: XCTestCase {
         let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
         let parts = [address("alice", sats: 100), node(pubkeyA, sats: 30, name: nil)]
 
-        let result = await payer.pay(parts: parts, payload: payload, amountSats: 130, sender: plainSender)
+        let result = await payer.pay(parts: parts, payload: payload, amountSats: 130, sender: plainSender, context: context)
 
         let calls = await wallet.calls
         XCTAssertEqual(calls.count, 1)
@@ -200,7 +226,10 @@ final class BoostPayerTests: XCTestCase {
         XCTAssertEqual(result.parts, [
             BoostPartResult(
                 name: nil, kind: .lightningAddress, sats: 100, result: .failed, failure: .lightningAddress,
-                retry: .lightningAddress(name: "alice", host: "pay.io", amountMsat: 100_000, comment: "Boost from CitizenRadio")
+                retry: addressRetry(
+                    address("alice", sats: 100), totalSats: 130, sender: plainSender, comment: "Boost from CitizenRadio"
+                ),
+                path: .invoice
             ),
             BoostPartResult(name: nil, kind: .keysend, sats: 30, result: .confirmed)
         ])
@@ -220,10 +249,13 @@ final class BoostPayerTests: XCTestCase {
             node(pubkeyA, sats: 20, name: "Host")
         ]
 
-        let result = await payer.pay(parts: parts, payload: payload, amountSats: 170, sender: plainSender)
+        let result = await payer.pay(parts: parts, payload: payload, amountSats: 170, sender: plainSender, context: context)
 
         let requests = await fetcher.requests
-        XCTAssertEqual(requests, ["https://pay.io/.well-known/lnurlp/bob", wellKnown, callback100])
+        XCTAssertEqual(requests, [
+            "https://pay.io/.well-known/keysend/bob", "https://pay.io/.well-known/lnurlp/bob",
+            keysendAlice, wellKnown, callback100
+        ])
         let calls = await wallet.calls
         XCTAssertEqual(calls.count, 1)
         XCTAssertEqual(calls.first?.count, 2)
@@ -231,9 +263,13 @@ final class BoostPayerTests: XCTestCase {
         XCTAssertEqual(result.parts, [
             BoostPartResult(
                 name: "Bob", kind: .lightningAddress, sats: 50, result: .failed, failure: .lightningAddress,
-                retry: .lightningAddress(name: "bob", host: "pay.io", amountMsat: 50_000, comment: "Boost from CitizenRadio")
+                retry: addressRetry(
+                    address("bob", sats: 50, label: "Bob"), totalSats: 170, sender: plainSender,
+                    comment: "Boost from CitizenRadio"
+                ),
+                path: .invoice
             ),
-            BoostPartResult(name: "Alice", kind: .lightningAddress, sats: 100, result: .confirmed),
+            BoostPartResult(name: "Alice", kind: .lightningAddress, sats: 100, result: .confirmed, path: .invoice),
             BoostPartResult(name: "Host", kind: .keysend, sats: 20, result: .confirmed)
         ])
         assertCounts(result, paidSats: 120, unknownSats: 0, paidParts: 2, unknownParts: 0, totalParts: 3)
@@ -246,7 +282,7 @@ final class BoostPayerTests: XCTestCase {
         let payer = BoostPayer(wallet: wallet, fetcher: FakeLNURLFetcher([:]))
         let parts = [node(pubkeyA, sats: 50, name: nil), node(pubkeyB, sats: 30, name: nil), node(pubkeyA, sats: 20, name: nil)]
 
-        let result = await payer.pay(parts: parts, payload: payload, amountSats: 100, sender: plainSender)
+        let result = await payer.pay(parts: parts, payload: payload, amountSats: 100, sender: plainSender, context: context)
 
         XCTAssertEqual(result.parts.map(\.result), [.confirmed, .failed, .confirmed])
         XCTAssertEqual(result.parts.map(\.sats), [50, 30, 20])
@@ -258,7 +294,7 @@ final class BoostPayerTests: XCTestCase {
         let payer = BoostPayer(wallet: wallet, fetcher: FakeLNURLFetcher([:]))
         let parts = [node(pubkeyA, sats: 50, name: nil), node(pubkeyB, sats: 30, name: nil), node(pubkeyA, sats: 20, name: nil)]
 
-        let result = await payer.pay(parts: parts, payload: payload, amountSats: 100, sender: plainSender)
+        let result = await payer.pay(parts: parts, payload: payload, amountSats: 100, sender: plainSender, context: context)
 
         let calls = await wallet.calls
         let sentRecords = try XCTUnwrap(keysendRecords(calls.first?[2]))
@@ -278,7 +314,7 @@ final class BoostPayerTests: XCTestCase {
         let payer = BoostPayer(wallet: wallet, fetcher: FakeLNURLFetcher([:]))
         let parts = [node(pubkeyA, sats: 60, name: "Alice"), node(pubkeyB, sats: 40, name: nil)]
 
-        let result = await payer.pay(parts: parts, payload: payload, amountSats: 100, sender: plainSender)
+        let result = await payer.pay(parts: parts, payload: payload, amountSats: 100, sender: plainSender, context: context)
 
         let calls = await wallet.calls
         XCTAssertEqual(calls.count, 1)
@@ -302,14 +338,17 @@ final class BoostPayerTests: XCTestCase {
         let fetcher = FakeLNURLFetcher(["https://pay.io/.well-known/lnurlp/bob": (404, "")])
         let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
 
-        let result = await payer.pay(parts: [address("bob", sats: 100)], payload: payload, amountSats: 100, sender: plainSender)
+        let result = await payer.pay(parts: [address("bob", sats: 100)], payload: payload, amountSats: 100, sender: plainSender, context: context)
 
         let calls = await wallet.calls
         XCTAssertEqual(calls.count, 0)
         XCTAssertEqual(result.parts, [
             BoostPartResult(
                 name: nil, kind: .lightningAddress, sats: 100, result: .failed, failure: .lightningAddress,
-                retry: .lightningAddress(name: "bob", host: "pay.io", amountMsat: 100_000, comment: "Boost from CitizenRadio")
+                retry: addressRetry(
+                    address("bob", sats: 100), totalSats: 100, sender: plainSender, comment: "Boost from CitizenRadio"
+                ),
+                path: .invoice
             )
         ])
         assertCounts(result, paidSats: 0, unknownSats: 0, paidParts: 0, unknownParts: 0, totalParts: 1)
@@ -331,11 +370,11 @@ final class BoostPayerTests: XCTestCase {
 
         let result = await payer.pay(
             parts: [node(pubkeyA, sats: 30, name: nil), address("alice", sats: 100)],
-            payload: payload, amountSats: 130, sender: sender
+            payload: payload, amountSats: 130, sender: sender, context: context
         )
 
         let requests = await fetcher.requests
-        XCTAssertEqual(requests, [wellKnown, "https://pay.io/cb?amount=100000&comment=Great%20set"])
+        XCTAssertEqual(requests, [keysendAlice, wellKnown, "https://pay.io/cb?amount=100000&comment=Great%20set"])
         let calls = await wallet.calls
         XCTAssertEqual(calls.count, 1)
         let payments = try XCTUnwrap(calls.first)
@@ -346,7 +385,7 @@ final class BoostPayerTests: XCTestCase {
         XCTAssertEqual(
             text(ofHex: keysend.tlvRecords[0].value),
             #"{"action":"boost","app_name":"MyApp","block_guid":"b","episode":"T","event_guid":"e","#
-                + #""message":"Great set","sender_name":"Maik","value_msat":30000,"value_msat_total":130000}"#
+                + #""message":"Great set","sender_name":"Maik","uuid":"6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d","value_msat":30000,"value_msat_total":130000}"#
         )
         XCTAssertEqual(payments[1], .invoice(invoice100))
         XCTAssertEqual(result.parts.map(\.result), [.confirmed, .confirmed])
@@ -365,10 +404,10 @@ final class BoostPayerTests: XCTestCase {
         let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
         let sender = BoostSender(message: nil, senderName: nil, appName: "MyApp")
 
-        _ = await payer.pay(parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: sender)
+        _ = await payer.pay(parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: sender, context: context)
 
         let requests = await fetcher.requests
-        XCTAssertEqual(requests, [wellKnown, callback])
+        XCTAssertEqual(requests, [keysendAlice, wellKnown, callback])
     }
 
     // MARK: - Failure reason and retry data
@@ -379,7 +418,7 @@ final class BoostPayerTests: XCTestCase {
 
         let result = await payer.pay(
             parts: [node(pubkeyA, sats: 70, name: "Main", customKey: "696969", customValue: "abc")],
-            payload: payload, amountSats: 100, sender: plainSender
+            payload: payload, amountSats: 100, sender: plainSender, context: context
         )
 
         let calls = await wallet.calls
@@ -397,7 +436,7 @@ final class BoostPayerTests: XCTestCase {
         let wallet = FakeWallet(outcomes: [.unsupported])
         let payer = BoostPayer(wallet: wallet, fetcher: FakeLNURLFetcher([:]))
 
-        let result = await payer.pay(parts: [node(pubkeyA, sats: 70, name: nil)], payload: payload, amountSats: 70, sender: plainSender)
+        let result = await payer.pay(parts: [node(pubkeyA, sats: 70, name: nil)], payload: payload, amountSats: 70, sender: plainSender, context: context)
 
         let part = try XCTUnwrap(result.parts.first)
         XCTAssertEqual(part.result, .failed)
@@ -410,7 +449,7 @@ final class BoostPayerTests: XCTestCase {
         let wallet = FakeWallet(outcomes: [.timeout])
         let payer = BoostPayer(wallet: wallet, fetcher: FakeLNURLFetcher([:]))
 
-        let result = await payer.pay(parts: [node(pubkeyA, sats: 70, name: nil)], payload: payload, amountSats: 70, sender: plainSender)
+        let result = await payer.pay(parts: [node(pubkeyA, sats: 70, name: nil)], payload: payload, amountSats: 70, sender: plainSender, context: context)
 
         let part = try XCTUnwrap(result.parts.first)
         XCTAssertEqual(part.result, .unknown)
@@ -425,13 +464,13 @@ final class BoostPayerTests: XCTestCase {
         let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
         let sender = BoostSender(message: "Great set", senderName: nil, appName: "MyApp")
 
-        let result = await payer.pay(parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: sender)
+        let result = await payer.pay(parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: sender, context: context)
 
         let part = try XCTUnwrap(result.parts.first)
         XCTAssertEqual(part.result, .failed)
         XCTAssertEqual(part.failure, .lightningAddress)
         XCTAssertEqual(
-            part.retry, .lightningAddress(name: "alice", host: "pay.io", amountMsat: 100_000, comment: "Great set")
+            part.retry, addressRetry(address("alice", sats: 100), totalSats: 100, sender: sender, comment: "Great set")
         )
         XCTAssertEqual(part.attempts, 1)
     }
@@ -495,7 +534,7 @@ final class BoostPayerTests: XCTestCase {
         XCTAssertEqual(parts, [unknown, unsupported])
     }
 
-    func testRetryOfALightningAddressPartFetchesANewInvoice() async {
+    func testRetryOfALightningAddressPartWithNoRecordFetchesOnlyANewInvoice() async {
         let wallet = FakeWallet(outcomes: [.paid])
         let callback = "https://pay.io/cb?amount=100000&comment=Great%20set"
         let fetcher = FakeLNURLFetcher([
@@ -506,6 +545,7 @@ final class BoostPayerTests: XCTestCase {
             callback: (200, #"{"pr":"\#(invoice100)"}"#)
         ])
         let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+        // The retry data of the history file of ADR 0016 has no boost record. The retry gets only an invoice.
         let failed = BoostPartResult(
             name: "Alice", kind: .lightningAddress, sats: 100, result: .failed, failure: .lightningAddress,
             retry: .lightningAddress(name: "alice", host: "pay.io", amountMsat: 100_000, comment: "Great set")
@@ -518,7 +558,7 @@ final class BoostPayerTests: XCTestCase {
         let calls = await wallet.calls
         XCTAssertEqual(calls, [[.invoice(invoice100)]])
         XCTAssertEqual(parts, [
-            BoostPartResult(name: "Alice", kind: .lightningAddress, sats: 100, result: .confirmed, attempts: 2)
+            BoostPartResult(name: "Alice", kind: .lightningAddress, sats: 100, result: .confirmed, attempts: 2, path: .invoice)
         ])
     }
 
@@ -534,5 +574,246 @@ final class BoostPayerTests: XCTestCase {
                 retry: .keysend(pubkey: pubkeyA, amountMsat: 70_000, tlvRecords: storedRecords), attempts: 3
             )
         ])
+    }
+
+    // MARK: - Keysend first (ADR 0023)
+
+    private let albyPubkey = "02babb6a65ccd4c11caac12edbaa77659826c12a9b7fba6bdc00da6dd8b5b5cc01"
+    /// The Alby keysend answer of 2026-10-07.
+    private var albyKeysend: String {
+        #"{"status":"OK","tag":"keysend","pubkey":"\#(albyPubkey)","#
+            + #""customData":[{"customKey":"696969","customValue":"1"}]}"#
+    }
+
+    func testAnAddressWithAKeysendAnswerIsPaidByKeysendWithTheRecordAndThe696969Record() async throws {
+        let wallet = FakeWallet(outcomes: [.paid])
+        let fetcher = FakeLNURLFetcher([keysendAlice: (200, albyKeysend)])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+        let part = address("alice", sats: 100, label: "Alice")
+
+        let result = await payer.pay(parts: [part], payload: payload, amountSats: 100, sender: plainSender, context: context)
+
+        let requests = await fetcher.requests
+        XCTAssertEqual(requests, [keysendAlice])
+        let calls = await wallet.calls
+        let expectedRecords = records(part, totalSats: 100, sender: plainSender) + [TLVRecord(type: 696_969, value: "31")]
+        XCTAssertEqual(calls, [[.keysend(KeysendPayment(amountMsat: 100_000, pubkey: albyPubkey, tlvRecords: expectedRecords))]])
+        XCTAssertEqual(expectedRecords.map(\.type), [7_629_169, 696_969])
+        XCTAssertEqual(result.parts, [
+            BoostPartResult(name: "Alice", kind: .lightningAddress, sats: 100, result: .confirmed, path: .keysend)
+        ])
+    }
+
+    func testAnAddressWithNoKeysendAnswerIsPaidByInvoice() async {
+        let wallet = FakeWallet(outcomes: [.paid])
+        let fetcher = FakeLNURLFetcher([
+            keysendAlice: (404, "<!DOCTYPE html><html><body>Not found</body></html>"),
+            wellKnown: (200, payRequest),
+            callback100: (200, #"{"pr":"\#(invoice100)"}"#)
+        ])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+
+        let result = await payer.pay(
+            parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: plainSender, context: context
+        )
+
+        let requests = await fetcher.requests
+        XCTAssertEqual(requests, [keysendAlice, wellKnown, callback100])
+        let calls = await wallet.calls
+        XCTAssertEqual(calls, [[.invoice(invoice100)]])
+        XCTAssertEqual(result.parts.map(\.path), [.invoice])
+        XCTAssertEqual(result.parts.map(\.result), [.confirmed])
+    }
+
+    func testAnHTMLKeysendAnswerWithStatus200GivesAnInvoice() async {
+        let wallet = FakeWallet(outcomes: [.paid])
+        let fetcher = FakeLNURLFetcher([
+            keysendAlice: (200, "<html><body>Lightning address</body></html>"),
+            wellKnown: (200, payRequest),
+            callback100: (200, #"{"pr":"\#(invoice100)"}"#)
+        ])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+
+        let result = await payer.pay(
+            parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: plainSender, context: context
+        )
+
+        let calls = await wallet.calls
+        XCTAssertEqual(calls, [[.invoice(invoice100)]])
+        XCTAssertEqual(result.parts.map(\.path), [.invoice])
+    }
+
+    func testAKeysendWithAWalletErrorIsPaidByInvoiceInASecondCall() async throws {
+        let wallet = SequenceWallet([[.walletError(code: "PAYMENT_FAILED", message: "No route"), .paid], [.paid]])
+        let fetcher = FakeLNURLFetcher([
+            keysendAlice: (200, albyKeysend),
+            wellKnown: (200, payRequest),
+            callback100: (200, #"{"pr":"\#(invoice100)"}"#)
+        ])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+
+        let result = await payer.pay(
+            parts: [address("alice", sats: 100), node(pubkeyB, sats: 30, name: nil)],
+            payload: payload, amountSats: 130, sender: plainSender, context: context
+        )
+
+        let requests = await fetcher.requests
+        XCTAssertEqual(requests, [keysendAlice, wellKnown, callback100])
+        let calls = await wallet.calls
+        XCTAssertEqual(calls.count, 2)
+        XCTAssertEqual(calls.first?.count, 2)
+        guard case .keysend(let first) = calls.first?.first else {
+            return XCTFail("The first payment must be the keysend payment of the address.")
+        }
+        XCTAssertEqual(first.pubkey, albyPubkey)
+        XCTAssertEqual(calls.last, [.invoice(invoice100)])
+        XCTAssertEqual(result.parts, [
+            BoostPartResult(name: nil, kind: .lightningAddress, sats: 100, result: .confirmed, path: .invoice),
+            BoostPartResult(name: nil, kind: .keysend, sats: 30, result: .confirmed)
+        ])
+    }
+
+    func testAKeysendThatIsNotSupportedIsPaidByInvoice() async {
+        let wallet = SequenceWallet([[.unsupported], [.paid]])
+        let fetcher = FakeLNURLFetcher([
+            keysendAlice: (200, albyKeysend),
+            wellKnown: (200, payRequest),
+            callback100: (200, #"{"pr":"\#(invoice100)"}"#)
+        ])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+
+        let result = await payer.pay(
+            parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: plainSender, context: context
+        )
+
+        let calls = await wallet.calls
+        XCTAssertEqual(calls.count, 2)
+        XCTAssertEqual(calls.last, [.invoice(invoice100)])
+        XCTAssertEqual(result.parts.map(\.result), [.confirmed])
+        XCTAssertEqual(result.parts.map(\.path), [.invoice])
+    }
+
+    func testAKeysendWithATimeoutGetsNoInvoice() async {
+        let wallet = SequenceWallet([[.timeout], [.paid]])
+        let fetcher = FakeLNURLFetcher([
+            keysendAlice: (200, albyKeysend),
+            wellKnown: (200, payRequest),
+            callback100: (200, #"{"pr":"\#(invoice100)"}"#)
+        ])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+
+        let result = await payer.pay(
+            parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: plainSender, context: context
+        )
+
+        let requests = await fetcher.requests
+        XCTAssertEqual(requests, [keysendAlice])
+        let calls = await wallet.calls
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertEqual(result.parts, [
+            BoostPartResult(name: nil, kind: .lightningAddress, sats: 100, result: .unknown, path: .keysend)
+        ])
+    }
+
+    func testAKeysendThatIsPaidOrInvalidGetsNoInvoice() async {
+        let wallet = SequenceWallet([[.paid, .invalidResponse], [.paid]])
+        let fetcher = FakeLNURLFetcher([
+            keysendAlice: (200, albyKeysend),
+            "https://pay.io/.well-known/keysend/bob": (200, albyKeysend)
+        ])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+
+        let result = await payer.pay(
+            parts: [address("alice", sats: 50), address("bob", sats: 50)],
+            payload: payload, amountSats: 100, sender: plainSender, context: context
+        )
+
+        let calls = await wallet.calls
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertEqual(result.parts.map(\.result), [.confirmed, .failed])
+        XCTAssertEqual(result.parts.map(\.failure), [nil, .invalidResponse])
+        XCTAssertEqual(result.parts.map(\.path), [.keysend, .keysend])
+    }
+
+    func testAKeysendWithAWalletErrorAndAFailedInvoiceRequestKeepsTheRetryData() async {
+        let wallet = SequenceWallet([[.walletError(code: "PAYMENT_FAILED", message: "No route")]])
+        let fetcher = FakeLNURLFetcher([keysendAlice: (200, albyKeysend), wellKnown: (500, "")])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+        let part = address("alice", sats: 100)
+
+        let result = await payer.pay(parts: [part], payload: payload, amountSats: 100, sender: plainSender, context: context)
+
+        let calls = await wallet.calls
+        XCTAssertEqual(calls.count, 1)
+        XCTAssertEqual(result.parts, [
+            BoostPartResult(
+                name: nil, kind: .lightningAddress, sats: 100, result: .failed, failure: .lightningAddress,
+                retry: addressRetry(part, totalSats: 100, sender: plainSender, comment: "Boost from CitizenRadio"),
+                path: .invoice
+            )
+        ])
+    }
+
+    func testTheInvoiceSendsThePayerNameWhenThePayRequestListsIt() async {
+        let wallet = FakeWallet(outcomes: [.paid])
+        let callback = "https://pay.io/cb?amount=100000&payerdata=%7B%22name%22:%22Maik%22%7D"
+        let fetcher = FakeLNURLFetcher([
+            wellKnown: (200, """
+            {"tag":"payRequest","callback":"https://pay.io/cb","minSendable":1000,"maxSendable":1000000000,
+             "payerData":{"name":{"mandatory":false}}}
+            """),
+            callback: (200, #"{"pr":"\#(invoice100)"}"#)
+        ])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+        let sender = BoostSender(message: nil, senderName: "Maik", appName: "CitizenRadio")
+
+        let result = await payer.pay(
+            parts: [address("alice", sats: 100)], payload: payload, amountSats: 100, sender: sender, context: context
+        )
+
+        let requests = await fetcher.requests
+        XCTAssertEqual(requests, [keysendAlice, wellKnown, callback])
+        XCTAssertEqual(result.parts.map(\.result), [.confirmed])
+    }
+
+    func testRetryOfALightningAddressPartWithARecordTriesTheKeysendAgainWithTheSameRecord() async {
+        let wallet = FakeWallet(outcomes: [.paid])
+        let fetcher = FakeLNURLFetcher([keysendAlice: (200, albyKeysend)])
+        let payer = BoostPayer(wallet: wallet, fetcher: fetcher)
+        let stored = [TLVRecord(type: 7_629_169, value: "7b7d")]
+        let failed = BoostPartResult(
+            name: "Alice", kind: .lightningAddress, sats: 100, result: .failed, failure: .notSent,
+            retry: .lightningAddress(
+                name: "alice", host: "pay.io", amountMsat: 100_000, comment: "Great set",
+                tlvRecords: stored, payerName: nil
+            ),
+            path: .keysend
+        )
+
+        let parts = await payer.retry(parts: [failed])
+
+        let calls = await wallet.calls
+        XCTAssertEqual(calls, [[.keysend(KeysendPayment(
+            amountMsat: 100_000, pubkey: albyPubkey, tlvRecords: stored + [TLVRecord(type: 696_969, value: "31")]
+        ))]])
+        XCTAssertEqual(parts, [
+            BoostPartResult(name: "Alice", kind: .lightningAddress, sats: 100, result: .confirmed, attempts: 2, path: .keysend)
+        ])
+    }
+}
+
+/// A wallet that gives the next list of outcomes for each call, and records each call.
+private actor SequenceWallet: WalletPaying {
+    private var outcomes: [[NWCPaymentOutcome]]
+    private(set) var calls: [[NWCPayment]] = []
+
+    init(_ outcomes: [[NWCPaymentOutcome]]) {
+        self.outcomes = outcomes
+    }
+
+    func pay(_ payments: [NWCPayment]) async throws -> [NWCPaymentOutcome] {
+        calls.append(payments)
+        guard !outcomes.isEmpty else { throw FakeError() }
+        return outcomes.removeFirst()
     }
 }

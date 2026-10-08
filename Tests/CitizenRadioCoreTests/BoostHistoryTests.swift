@@ -247,6 +247,56 @@ final class BoostHistoryTests: XCTestCase {
         )])
     }
 
+    func testTheHistoryFileOfADR0016WithALightningAddressPartAndItsRetryDataDecodesWithNoPath() throws {
+        let json = """
+        [{"id":"33333333-3333-3333-3333-333333333333","date":"2023-11-14T22:13:20Z","kind":"manual",
+          "title":"Track","amountSats":100,"message":"Great set",
+          "parts":[{"name":"Alice","kind":"lightningAddress","sats":100,"result":"failed",
+                    "failure":{"lightningAddress":{}},"attempts":2,
+                    "retry":{"lightningAddress":{"name":"alice","host":"pay.io","amountMsat":100000,"comment":"Great set"}}}]}]
+        """
+
+        let history = try BoostHistory.decode(Data(json.utf8))
+
+        let part = try XCTUnwrap(history.entries.first?.parts.first)
+        XCTAssertNil(part.path)
+        XCTAssertEqual(part.failure, .lightningAddress)
+        XCTAssertEqual(part.attempts, 2)
+        XCTAssertEqual(
+            part.retry,
+            .lightningAddress(
+                name: "alice", host: "pay.io", amountMsat: 100_000, comment: "Great set", tlvRecords: nil, payerName: nil
+            )
+        )
+        XCTAssertTrue(part.isRetryable)
+    }
+
+    func testEncodedThenDecodeKeepsThePathAndTheNewRetryData() throws {
+        var history = BoostHistory()
+        history.add(entry(sats: 100, parts: [
+            BoostPartResult(
+                name: "Alice", kind: .lightningAddress, sats: 100, result: .failed, failure: .notSent,
+                retry: .lightningAddress(
+                    name: "alice", host: "pay.io", amountMsat: 100_000, comment: "Great set",
+                    tlvRecords: [TLVRecord(type: 7_629_169, value: "7b7d")], payerName: "Maik"
+                ),
+                path: .keysend
+            )
+        ]))
+
+        let decoded = try BoostHistory.decode(try history.encoded())
+
+        XCTAssertEqual(decoded, history)
+        XCTAssertEqual(decoded.entries.first?.parts.first?.path, .keysend)
+    }
+
+    func testAKeysendPartAlwaysHasThePathKeysend() {
+        XCTAssertEqual(BoostPartResult(name: nil, kind: .keysend, sats: 1, result: .confirmed).path, .keysend)
+        XCTAssertEqual(
+            BoostPartResult(name: nil, kind: .keysend, sats: 1, result: .confirmed, path: .invoice).path, .keysend
+        )
+    }
+
     // MARK: - BoostHistoryFileStore
 
     func testLoadOfAMissingFileIsEmpty() async {
@@ -349,6 +399,25 @@ final class BoostHistoryTests: XCTestCase {
         XCTAssertEqual(BoostHistoryText.label(for: .confirmed), "Confirmed")
         XCTAssertEqual(BoostHistoryText.label(for: .failed), "Failed")
         XCTAssertEqual(BoostHistoryText.label(for: .unknown), "Unknown")
+    }
+
+    // MARK: - BoostHistoryText.path
+
+    func testPathTextForALightningAddressPart() {
+        XCTAssertEqual(
+            BoostHistoryText.path(for: BoostPartResult(
+                name: nil, kind: .lightningAddress, sats: 1, result: .confirmed, path: .keysend
+            )),
+            "Keysend"
+        )
+        XCTAssertEqual(
+            BoostHistoryText.path(for: BoostPartResult(
+                name: nil, kind: .lightningAddress, sats: 1, result: .confirmed, path: .invoice
+            )),
+            "Invoice"
+        )
+        XCTAssertNil(BoostHistoryText.path(for: BoostPartResult(name: nil, kind: .lightningAddress, sats: 1, result: .confirmed)))
+        XCTAssertNil(BoostHistoryText.path(for: BoostPartResult(name: nil, kind: .keysend, sats: 1, result: .confirmed)))
     }
 
     // MARK: - BoostHistoryText.reason

@@ -42,6 +42,9 @@ public struct LiveValuePayload: Equatable, Sendable {
     public let itemGuid: String?
     /// Only the payable destinations, in payload order.
     public let destinations: [LiveValueDestination]
+    /// The podcast name of the payload. Nil when the payload has no non-empty `podcastName` text.
+    /// ADR 0023 §The boost record uses it for the `podcast` key.
+    public let podcastName: String?
 
     /// False for the placeholder title, and when no destination is payable.
     public var isPayable: Bool {
@@ -89,6 +92,10 @@ public struct LiveValuePayload: Equatable, Sendable {
 
         let feedGuid = dict["feedGuid"] as? String
         let itemGuid = dict["itemGuid"] as? String
+        var podcastName: String?
+        if let text = dict["podcastName"] as? String, !text.isEmpty {
+            podcastName = text
+        }
 
         var destinations: [LiveValueDestination] = []
         if let value = dict["value"] as? [String: Any],
@@ -102,7 +109,8 @@ public struct LiveValuePayload: Equatable, Sendable {
             blockGuid: blockGuid,
             feedGuid: feedGuid,
             itemGuid: itemGuid,
-            destinations: destinations
+            destinations: destinations,
+            podcastName: podcastName
         )
     }
 

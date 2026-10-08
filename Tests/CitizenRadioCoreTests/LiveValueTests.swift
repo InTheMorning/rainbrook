@@ -171,6 +171,26 @@ final class LiveValueTests: XCTestCase {
         XCTAssertEqual(payload?.destinations.last?.fee, true)
     }
 
+    func testPodcastNameIsReadAndAnEmptyOrMissingPodcastNameGivesNil() throws {
+        let named = try LiveValuePayload.decode(Data("""
+        { "title": "T", "eventGuid": "e", "blockGuid": "b", "podcastName": "Jazz Hour" }
+        """.utf8))
+        let empty = try LiveValuePayload.decode(Data("""
+        { "title": "T", "eventGuid": "e", "blockGuid": "b", "podcastName": "" }
+        """.utf8))
+        let number = try LiveValuePayload.decode(Data("""
+        { "title": "T", "eventGuid": "e", "blockGuid": "b", "podcastName": 7 }
+        """.utf8))
+        let missing = try LiveValuePayload.decode(Data("""
+        { "title": "T", "eventGuid": "e", "blockGuid": "b" }
+        """.utf8))
+
+        XCTAssertEqual(named?.podcastName, "Jazz Hour")
+        XCTAssertNil(empty?.podcastName)
+        XCTAssertNil(number?.podcastName)
+        XCTAssertNil(missing?.podcastName)
+    }
+
     func testEmptyObjectGivesNil() throws {
         let data = Data("{}".utf8)
         let payload = try LiveValuePayload.decode(data)

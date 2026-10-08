@@ -1,7 +1,8 @@
 import Foundation
 
-/// The LNURL-pay rules for a lightning address (LUD-06, LUD-12 and LUD-16).
-/// ADR 0013 §The payment names the checks. This type makes no request.
+/// The LNURL-pay rules for a lightning address (LUD-06, LUD-12, LUD-16 and LUD-18),
+/// and the rules of the keysend answer of a lightning address.
+/// ADR 0013 §The payment and ADR 0023 §A lightning address part name the checks. This type makes no request.
 public enum LightningAddress {
     /// The fields of a LUD-06 payRequest response that the app uses.
     public struct PayRequest: Equatable, Sendable {
@@ -9,10 +10,32 @@ public enum LightningAddress {
         public let minSendable: Int64
         public let maxSendable: Int64
         public let commentAllowed: Int
+        /// True when the response lists `payerData.name` as an object (LUD-18). ADR 0023 §The LNURL invoice.
+        public let acceptsPayerName: Bool
+
+        public init(
+            callback: URL, minSendable: Int64, maxSendable: Int64, commentAllowed: Int, acceptsPayerName: Bool = false
+        ) {
+            self.callback = callback
+            self.minSendable = minSendable
+            self.maxSendable = maxSendable
+            self.commentAllowed = commentAllowed
+            self.acceptsPayerName = acceptsPayerName
+        }
+    }
+
+    /// The keysend destination of a lightning address. ADR 0023 §A lightning address part.
+    public struct KeysendTarget: Equatable, Sendable {
+        /// The node pubkey: 66 lowercase hexadecimal characters.
+        public let pubkey: String
+        /// One TLV record for each `customData` entry with a decimal `customKey`, in the answer sequence.
+        public let records: [TLVRecord]
     }
 
     public enum Failure: Error, Equatable {
         case invalidResponse, notPayRequest, insecureCallback, amountOutOfRange, invoiceAmountMismatch
+        /// The keysend answer does not have `tag` equal to `keysend`.
+        case notKeysend
         case serviceError(String)
     }
 
@@ -30,6 +53,50 @@ public enum LightningAddress {
         // The fallback uses a reserved host, so a request to it cannot pay.
         return URL(string: "https://\(safeHost)/.well-known/lnurlp/\(safeName)")
             ?? URL(string: "https://invalid.invalid")!
+    }
+
+    /// The keysend address of a lightning address: https://{host}/.well-known/keysend/{name}.
+    /// ADR 0023 §A lightning address part. The encoding is the same as in `wellKnownURL(name:host:)`.
+    public static func keysendURL(name: String, host: String) -> URL {
+        let safeHost = host.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? host
+        let safeName = name.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? name
+        // The percent encoding makes a correct URL from each name and host.
+        // The fallback uses a reserved host, so a request to it cannot pay.
+        return URL(string: "https://\(safeHost)/.well-known/keysend/\(safeName)")
+            ?? URL(string: "https://invalid.invalid")!
+    }
+
+    /// Decodes the keysend answer of a lightning address. ADR 0023 §A lightning address part.
+    ///
+    /// A correct answer has `tag` equal to `keysend` and a `pubkey` of 66 hexadecimal characters.
+    /// A `status` of `ERROR` throws serviceError. A body that is not a JSON object throws invalidResponse.
+    /// The decoder skips a `customData` entry when its `customKey` is not a decimal number.
+    /// It also skips an entry with no `customValue` text.
+    public static func decodeKeysend(_ data: Data) throws -> KeysendTarget {
+        let object = try decodeObject(data)
+
+        guard object["tag"] as? String == "keysend" else {
+            throw Failure.notKeysend
+        }
+        guard let rawPubkey = object["pubkey"] as? String,
+              rawPubkey.utf8.count == 66,
+              rawPubkey.unicodeScalars.allSatisfy(isHexDigit) else {
+            throw Failure.invalidResponse
+        }
+
+        var records: [TLVRecord] = []
+        if let entries = object["customData"] as? [Any] {
+            for case let entry as [String: Any] in entries {
+                guard let key = entry["customKey"] as? String,
+                      !key.isEmpty, key.unicodeScalars.allSatisfy(isDecimalDigit),
+                      let type = UInt64(key),
+                      let value = entry["customValue"] as? String else {
+                    continue
+                }
+                records.append(TLVRecord(type: type, value: BoostRecord.hex(Data(value.utf8))))
+            }
+        }
+        return KeysendTarget(pubkey: rawPubkey.lowercased(), records: records)
     }
 
     /// Decodes a LUD-06 payRequest response.
@@ -63,15 +130,24 @@ public enum LightningAddress {
             commentAllowed = count
         }
 
+        let payerData = object["payerData"] as? [String: Any]
+        let acceptsPayerName = payerData?["name"] is [String: Any]
+
         return PayRequest(
             callback: callback, minSendable: minSendable,
-            maxSendable: maxSendable, commentAllowed: commentAllowed
+            maxSendable: maxSendable, commentAllowed: commentAllowed,
+            acceptsPayerName: acceptsPayerName
         )
     }
 
     /// The callback URL with the amount and, if the service permits it, the comment.
     /// The comment is cut to `commentAllowed` characters. A `commentAllowed` of 0 gives no comment.
-    public static func callbackURL(for request: PayRequest, amountMsat: Int64, comment: String) throws -> URL {
+    ///
+    /// ADR 0023 §The LNURL invoice: the URL gets `payerdata` with the JSON `{"name":"<name>"}`
+    /// only when `acceptsPayerName` is true and the payer name is not empty.
+    public static func callbackURL(
+        for request: PayRequest, amountMsat: Int64, comment: String, payerName: String? = nil
+    ) throws -> URL {
         guard amountMsat >= request.minSendable, amountMsat <= request.maxSendable else {
             throw Failure.amountOutOfRange
         }
@@ -82,6 +158,12 @@ public enum LightningAddress {
         items.append(URLQueryItem(name: "amount", value: String(amountMsat)))
         if request.commentAllowed > 0 {
             items.append(URLQueryItem(name: "comment", value: String(comment.prefix(request.commentAllowed))))
+        }
+        if request.acceptsPayerName, let payerName, !payerName.isEmpty {
+            let payerData = try JSONSerialization.data(
+                withJSONObject: ["name": payerName], options: [.withoutEscapingSlashes]
+            )
+            items.append(URLQueryItem(name: "payerdata", value: String(decoding: payerData, as: UTF8.self)))
         }
         components.queryItems = items
         guard let url = components.url else {
@@ -113,6 +195,21 @@ public enum LightningAddress {
             throw Failure.serviceError(object["reason"] as? String ?? "")
         }
         return object
+    }
+
+    /// True for a lowercase or uppercase hexadecimal digit.
+    private static func isHexDigit(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar {
+        case "0"..."9", "a"..."f", "A"..."F":
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// True for a decimal digit 0 to 9.
+    private static func isDecimalDigit(_ scalar: Unicode.Scalar) -> Bool {
+        ("0"..."9").contains(scalar)
     }
 
     /// Reads a JSON number that is an integer. Gives nil for a JSON boolean and for all other shapes.

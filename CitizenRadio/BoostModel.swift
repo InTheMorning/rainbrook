@@ -169,7 +169,10 @@ final class BoostModel: ObservableObject {
     /// Two boosts can run at the same time. Each boost has its own payer.
     private func payAutoBoost(parts: [BoostPart], payload: LiveValuePayload, amountSats: Int, track: TrackDisplay?) async {
         let sender = BoostSender(settings: BoostSettings())
-        guard let result = await pay(parts: parts, payload: payload, amountSats: amountSats, sender: sender) else {
+        let context = Self.context(action: .auto)
+        guard let result = await pay(
+            parts: parts, payload: payload, amountSats: amountSats, sender: sender, context: context
+        ) else {
             status = BoostStatusText.noWallet
             return
         }
@@ -218,7 +221,10 @@ final class BoostModel: ObservableObject {
             // An auto-boost at the same time counts this amount in its limit check.
             reservedSats += amountSats
             Self.log.notice("Manual boost started: \(amountSats, privacy: .public) sats, \(parts.count, privacy: .public) parts")
-            guard let result = await pay(parts: parts, payload: payload, amountSats: amountSats, sender: sender) else {
+            let context = Self.context(action: .boost)
+            guard let result = await pay(
+                parts: parts, payload: payload, amountSats: amountSats, sender: sender, context: context
+            ) else {
                 status = BoostStatusText.noWallet
                 return ManualBoostOutcome(text: BoostStatusText.noWallet, entryID: nil)
             }
@@ -234,12 +240,18 @@ final class BoostModel: ObservableObject {
 
     // MARK: - Payment and history
 
+    /// The record data of one boost: the action, a new UUID and the name of the selected station.
+    /// ADR 0023 §The boost record. Each split of the boost gets this value.
+    private static func context(action: BoostAction) -> BoostContext {
+        BoostContext(action: action, uuid: UUID(), stationName: StationStore().selected?.name)
+    }
+
     /// Pays the parts of one boost. The auto-boost and the manual boost use this path.
     ///
     /// The caller adds `amountSats` to `reservedSats` before this call. This method removes it on each path.
     /// Gives nil when no wallet is connected. Then no payment starts.
     private func pay(
-        parts: [BoostPart], payload: LiveValuePayload, amountSats: Int, sender: BoostSender
+        parts: [BoostPart], payload: LiveValuePayload, amountSats: Int, sender: BoostSender, context: BoostContext
     ) async -> BoostResult? {
         defer { reservedSats -= amountSats }
         let connection: NWCConnection?
@@ -254,7 +266,9 @@ final class BoostModel: ObservableObject {
         }
         let client = NWCClient(connection: connection, connector: connector, timeout: .seconds(30))
         let payer = BoostPayer(wallet: client, fetcher: fetcher)
-        let result = await payer.pay(parts: parts, payload: payload, amountSats: amountSats, sender: sender)
+        let result = await payer.pay(
+            parts: parts, payload: payload, amountSats: amountSats, sender: sender, context: context
+        )
 
         // ADR 0013 §The limits: a part with an unknown result can be paid, so it counts.
         let spent = result.paidSats + result.unknownSats
@@ -263,6 +277,13 @@ final class BoostModel: ObservableObject {
         }
         Self.log.notice(
             "Boost done: \(result.paidParts, privacy: .public) of \(result.totalParts, privacy: .public) parts paid, \(result.unknownParts, privacy: .public) unknown, \(result.paidSats, privacy: .public) sats paid"
+        )
+        // ADR 0023: the log gives only the number of lightning address parts on each path.
+        let addressParts = result.parts.filter { $0.kind == .lightningAddress }
+        let keysendCount = addressParts.filter { $0.path == .keysend }.count
+        let invoiceCount = addressParts.filter { $0.path == .invoice }.count
+        Self.log.notice(
+            "Boost lightning address paths: \(keysendCount, privacy: .public) keysend, \(invoiceCount, privacy: .public) invoice"
         )
         return result
     }

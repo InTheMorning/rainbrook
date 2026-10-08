@@ -35,6 +35,14 @@ final class BoostRecordTests: XCTestCase {
     /// A sender with no message and no sender name.
     private let plainSender = BoostSender(message: nil, senderName: nil, appName: "CitizenRadio")
 
+    /// A fixed boost UUID. The record has it in lowercase.
+    private let fixedUUID = UUID(uuidString: "6F1B2C3D-4E5F-4A6B-8C7D-9E0F1A2B3C4D")!
+
+    /// A manual boost with the fixed UUID and no station name.
+    private var context: BoostContext {
+        BoostContext(action: .boost, uuid: fixedUUID, stationName: nil)
+    }
+
     func testConstants() {
         XCTAssertEqual(BoostRecord.recordType, 7_629_169)
     }
@@ -92,60 +100,62 @@ final class BoostRecordTests: XCTestCase {
     func testJSONWithAllOptionalKeys() {
         let data = BoostRecord.json(
             part: part(name: "Miles", sats: 85), payload: payload(fullPayloadJSON), totalSats: 100,
-            sender: plainSender
+            sender: plainSender, context: context
         )
 
         XCTAssertEqual(
             String(decoding: data, as: UTF8.self),
             #"{"action":"boost","app_name":"CitizenRadio","block_guid":"block-1","episode":"Pharaoh's Dance","#
                 + #""episode_guid":"item-1","event_guid":"event-1","guid":"feed-1","name":"Miles","#
-                + #""value_msat":85000,"value_msat_total":100000}"#
+                + #""uuid":"6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d","value_msat":85000,"value_msat_total":100000}"#
         )
     }
 
     func testJSONWithoutOptionalKeys() {
         let data = BoostRecord.json(
             part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100,
-            sender: plainSender
+            sender: plainSender, context: context
         )
 
         XCTAssertEqual(
             String(decoding: data, as: UTF8.self),
             #"{"action":"boost","app_name":"CitizenRadio","block_guid":"b","episode":"T","event_guid":"e","#
-                + #""value_msat":5000,"value_msat_total":100000}"#
+                + #""uuid":"6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d","value_msat":5000,"value_msat_total":100000}"#
         )
     }
 
     func testJSONWithMessageAndSenderName() {
         let data = BoostRecord.json(
             part: part(name: "Miles", sats: 85), payload: payload(fullPayloadJSON), totalSats: 100,
-            sender: BoostSender(message: "Great set!", senderName: "Maik", appName: "MyApp")
+            sender: BoostSender(message: "Great set!", senderName: "Maik", appName: "MyApp"), context: context
         )
 
         XCTAssertEqual(
             String(decoding: data, as: UTF8.self),
             #"{"action":"boost","app_name":"MyApp","block_guid":"block-1","episode":"Pharaoh's Dance","#
                 + #""episode_guid":"item-1","event_guid":"event-1","guid":"feed-1","message":"Great set!","#
-                + #""name":"Miles","sender_name":"Maik","value_msat":85000,"value_msat_total":100000}"#
+                + #""name":"Miles","sender_name":"Maik","uuid":"6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d","#
+                + #""value_msat":85000,"value_msat_total":100000}"#
         )
     }
 
     func testJSONWithoutMessageAndSenderNameUsesTheSenderAppName() {
         let data = BoostRecord.json(
             part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100,
-            sender: BoostSender(message: "", senderName: nil, appName: "MyApp")
+            sender: BoostSender(message: "", senderName: nil, appName: "MyApp"), context: context
         )
 
         XCTAssertEqual(
             String(decoding: data, as: UTF8.self),
             #"{"action":"boost","app_name":"MyApp","block_guid":"b","episode":"T","event_guid":"e","#
-                + #""value_msat":5000,"value_msat_total":100000}"#
+                + #""uuid":"6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d","value_msat":5000,"value_msat_total":100000}"#
         )
     }
 
     func testBoostRecordHexOfShortJSON() {
         let records = BoostRecord.tlvRecords(
-            part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender
+            part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100,
+            sender: plainSender, context: context
         )
 
         XCTAssertEqual(records, [
@@ -153,8 +163,9 @@ final class BoostRecordTests: XCTestCase {
                 type: 7_629_169,
                 value: "7b22616374696f6e223a22626f6f7374222c226170705f6e616d65223a22436974697a656e526164696f222c"
                     + "22626c6f636b5f67756964223a2262222c22657069736f6465223a2254222c226576656e745f67756964223a"
-                    + "2265222c2276616c75655f6d736174223a353030302c2276616c75655f6d7361745f746f74616c223a3130"
-                    + "303030307d"
+                    + "2265222c2275756964223a2236663162326333642d346535662d346136622d386337642d3965306631613262"
+                    + "33633464222c2276616c75655f6d736174223a353030302c2276616c75655f6d7361745f746f74616c223a31"
+                    + "30303030307d"
             )
         ])
     }
@@ -162,7 +173,7 @@ final class BoostRecordTests: XCTestCase {
     func testCustomRecordFollowsTheBoostRecord() {
         let records = BoostRecord.tlvRecords(
             part: part(name: nil, sats: 5, customKey: "696969", customValue: "abc"),
-            payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender
+            payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender, context: context
         )
 
         XCTAssertEqual(records.count, 2)
@@ -173,7 +184,7 @@ final class BoostRecordTests: XCTestCase {
     func testNonNumericCustomKeyGivesNoCustomRecord() {
         let records = BoostRecord.tlvRecords(
             part: part(name: nil, sats: 5, customKey: "x", customValue: "abc"),
-            payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender
+            payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender, context: context
         )
 
         XCTAssertEqual(records.map(\.type), [7_629_169])
@@ -182,9 +193,79 @@ final class BoostRecordTests: XCTestCase {
     func testCustomKeyWithoutValueGivesNoCustomRecord() {
         let records = BoostRecord.tlvRecords(
             part: part(name: nil, sats: 5, customKey: "696969", customValue: nil),
-            payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender
+            payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender, context: context
         )
 
         XCTAssertEqual(records.map(\.type), [7_629_169])
+    }
+
+    // MARK: - ADR 0023 keys
+
+    /// The JSON object of a record. A test uses it to examine one key.
+    private func object(_ data: Data) throws -> [String: Any] {
+        try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+
+    private let podcastPayloadJSON = """
+    { "title": "T", "eventGuid": "e", "blockGuid": "b", "podcastName": "Jazz Hour",
+      "value": { "destinations": [] } }
+    """
+
+    func testPodcastIsThePodcastNameOfThePayload() throws {
+        let data = BoostRecord.json(
+            part: part(name: nil, sats: 5), payload: payload(podcastPayloadJSON), totalSats: 100, sender: plainSender,
+            context: BoostContext(action: .boost, uuid: fixedUUID, stationName: "Radio One")
+        )
+
+        XCTAssertEqual(try object(data)["podcast"] as? String, "Jazz Hour")
+    }
+
+    func testPodcastIsTheStationNameWhenThePayloadHasNoPodcastName() throws {
+        let data = BoostRecord.json(
+            part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender,
+            context: BoostContext(action: .boost, uuid: fixedUUID, stationName: "Radio One")
+        )
+
+        XCTAssertEqual(try object(data)["podcast"] as? String, "Radio One")
+    }
+
+    func testNoPodcastNameAndNoStationNameGiveNoPodcastKey() throws {
+        let emptyName = payload("""
+        { "title": "T", "eventGuid": "e", "blockGuid": "b", "podcastName": "", "value": { "destinations": [] } }
+        """)
+        let data = BoostRecord.json(
+            part: part(name: nil, sats: 5), payload: emptyName, totalSats: 100, sender: plainSender,
+            context: BoostContext(action: .boost, uuid: fixedUUID, stationName: nil)
+        )
+
+        XCTAssertNil(try object(data)["podcast"])
+    }
+
+    func testOneUUIDGivesTheSameLowercaseUUIDInTwoSplits() throws {
+        let first = BoostRecord.json(
+            part: part(name: "Miles", sats: 85), payload: payload(fullPayloadJSON), totalSats: 100,
+            sender: plainSender, context: context
+        )
+        let second = BoostRecord.json(
+            part: part(name: "Bill", sats: 15), payload: payload(fullPayloadJSON), totalSats: 100,
+            sender: plainSender, context: context
+        )
+
+        XCTAssertEqual(try object(first)["uuid"] as? String, "6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
+        XCTAssertEqual(try object(second)["uuid"] as? String, "6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
+    }
+
+    func testActionIsAutoForAnAutoBoostAndBoostForAManualBoost() throws {
+        let auto = BoostRecord.json(
+            part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender,
+            context: BoostContext(action: .auto, uuid: fixedUUID, stationName: nil)
+        )
+        let manual = BoostRecord.json(
+            part: part(name: nil, sats: 5), payload: payload(shortPayloadJSON), totalSats: 100, sender: plainSender,
+            context: BoostContext(action: .boost, uuid: fixedUUID, stationName: nil)
+        )
+
+        XCTAssertEqual(try object(auto)["action"] as? String, "auto")
+        XCTAssertEqual(try object(manual)["action"] as? String, "boost")
     }
 }

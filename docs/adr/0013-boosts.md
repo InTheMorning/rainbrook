@@ -104,6 +104,7 @@ The app pays each part in sequence over one NWC connection:
 - **Keysend:** NWC `pay_keysend` with `amount` in millisats, `pubkey` equal to the address, and `tlv_records`:
   - Type `7629169`: the boost record, a JSON object in UTF-8 with `action: "boost"`, `app_name` (the **App name** setting), `value_msat_total`, `value_msat`, `name` (the destination name), `episode` (the payload title), `guid` (`feedGuid`), `episode_guid` (`itemGuid`), `event_guid`, `block_guid`, `message` and `sender_name`. A key with no value or an empty text is left out.
   - The destination `customKey` with its `customValue` in UTF-8, if both are present and the key is a decimal number.
+- [ADR 0023](0023-boost-metadata-for-each-recipient.md) adds `podcast`, `uuid` and the action `auto` to the boost record. It pays a lightning address by keysend first, and adds the LUD-18 name to an LNURL invoice.
 - **Lightning address:** LNURL-pay (LUD-16 and LUD-06):
   1. `GET https://host/.well-known/lnurlp/name`. Only `https`.
   2. The answer must have `tag: "payRequest"`, and the amount must be between `minSendable` and `maxSendable`.

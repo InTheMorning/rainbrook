@@ -68,6 +68,13 @@ struct BoostHistoryDetailView: View {
         }
     }
 
+    /// The payment type of a part. ADR 0023: a lightning address part with a path also shows the path.
+    private static func kindText(for part: BoostPartResult) -> String {
+        guard part.kind == .lightningAddress else { return "Keysend" }
+        guard let path = BoostHistoryText.path(for: part) else { return "Lightning address" }
+        return "Lightning address, \(path.lowercased())"
+    }
+
     private func details(of entry: BoostHistoryEntry) -> some View {
         List {
             Section {
@@ -87,7 +94,7 @@ struct BoostHistoryDetailView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(part.name ?? "Recipient")
                             .font(.headline)
-                        Text(part.kind == .keysend ? "Keysend" : "Lightning address")
+                        Text(Self.kindText(for: part))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Text("\(part.sats) sats")

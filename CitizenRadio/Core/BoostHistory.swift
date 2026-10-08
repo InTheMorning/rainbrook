@@ -70,8 +70,20 @@ public enum BoostFailure: Codable, Equatable, Sendable {
 public enum BoostRetryPayment: Codable, Equatable, Sendable {
     /// A keysend part. A retry sends the same TLV records.
     case keysend(pubkey: String, amountMsat: Int64, tlvRecords: [TLVRecord])
-    /// A lightning address part. A retry gets a new invoice with the same comment.
-    case lightningAddress(name: String, host: String, amountMsat: Int64, comment: String)
+    /// A lightning address part. A retry does the keysend-first steps of ADR 0023 §A lightning address part again.
+    ///
+    /// `tlvRecords` holds the boost record. A keysend sends it again. `payerName` is the LUD-18 name of the invoice.
+    /// The two keys are optional, because the history file of ADR 0016 does not have them.
+    /// With no `tlvRecords`, the retry gets only a new invoice.
+    case lightningAddress(
+        name: String, host: String, amountMsat: Int64, comment: String,
+        tlvRecords: [TLVRecord]? = nil, payerName: String? = nil
+    )
+}
+
+/// The path that paid a lightning address part, or that failed last. ADR 0023 §A lightning address part.
+public enum BoostPaymentPath: String, Codable, Sendable {
+    case keysend, invoice
 }
 
 /// The result of one part of a boost.
@@ -91,15 +103,20 @@ public struct BoostPartResult: Codable, Equatable, Sendable {
     public let retry: BoostRetryPayment?
     /// The number of payments of this part. It is 1 after the first payment.
     public let attempts: Int
+    /// The path that paid the part, or that failed last (ADR 0023). It is keysend for a keysend part.
+    /// Nil for a lightning address part of a history file that has no path.
+    public let path: BoostPaymentPath?
 
     /// True when the result is failed and the part has retry data.
     public var isRetryable: Bool { result == .failed && retry != nil }
 
     /// Removes a failure from a part that did not fail.
     /// Removes the retry data from a part that is not retryable (ADR 0016 §The retry).
+    /// A keysend part always gets the path keysend (ADR 0023).
     public init(
         name: String?, kind: Kind, sats: Int, result: BoostPaymentResult,
-        failure: BoostFailure? = nil, retry: BoostRetryPayment? = nil, attempts: Int = 1
+        failure: BoostFailure? = nil, retry: BoostRetryPayment? = nil, attempts: Int = 1,
+        path: BoostPaymentPath? = nil
     ) {
         let keptFailure = result == .failed ? failure : nil
         self.name = name
@@ -109,10 +126,12 @@ public struct BoostPartResult: Codable, Equatable, Sendable {
         self.failure = keptFailure
         self.retry = keptFailure?.isRetryable == true ? retry : nil
         self.attempts = attempts
+        self.path = kind == .keysend ? .keysend : path
     }
 
     /// Decodes a part result. The keys `failure`, `retry` and `attempts` are optional,
     /// because the history file of ADR 0013 does not have them. A missing `attempts` gives 1.
+    /// The key `path` is optional, because the history file of ADR 0016 does not have it (ADR 0023).
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.init(
@@ -122,7 +141,8 @@ public struct BoostPartResult: Codable, Equatable, Sendable {
             result: try container.decode(BoostPaymentResult.self, forKey: .result),
             failure: try container.decodeIfPresent(BoostFailure.self, forKey: .failure),
             retry: try container.decodeIfPresent(BoostRetryPayment.self, forKey: .retry),
-            attempts: try container.decodeIfPresent(Int.self, forKey: .attempts) ?? 1
+            attempts: try container.decodeIfPresent(Int.self, forKey: .attempts) ?? 1,
+            path: try container.decodeIfPresent(BoostPaymentPath.self, forKey: .path)
         )
     }
 }
@@ -317,6 +337,20 @@ public enum BoostHistoryText {
             return "Failed"
         case .unknown:
             return "Unknown"
+        }
+    }
+
+    /// The path text of a lightning address part: "Keysend" or "Invoice" (ADR 0023).
+    /// Nil for a keysend part and for a part with no path.
+    public static func path(for part: BoostPartResult) -> String? {
+        guard part.kind == .lightningAddress else { return nil }
+        switch part.path {
+        case .keysend:
+            return "Keysend"
+        case .invoice:
+            return "Invoice"
+        case nil:
+            return nil
         }
     }
 

@@ -31,15 +31,42 @@ public struct BoostSender: Equatable, Sendable {
     }
 }
 
+/// The action of a boost record. ADR 0023 §The boost record.
+public enum BoostAction: String, Codable, Sendable {
+    /// A manual boost.
+    case boost
+    /// An auto-boost.
+    case auto
+}
+
+/// The data that is the same in each split of one boost. ADR 0023 §The boost record.
+public struct BoostContext: Equatable, Sendable {
+    public let action: BoostAction
+    /// One UUID for each boost. Each split of the boost has the same value.
+    public let uuid: UUID
+    /// The station name. `podcast` uses it when the payload has no podcastName.
+    public let stationName: String?
+
+    public init(action: BoostAction, uuid: UUID, stationName: String?) {
+        self.action = action
+        self.uuid = uuid
+        self.stationName = stationName
+    }
+}
+
 /// The TLV records of a keysend boost part.
-/// ADR 0013 §The payment names the keys of the boost record.
+/// ADR 0013 §The payment and ADR 0023 §The boost record name the keys of the boost record.
 public enum BoostRecord {
     public static let recordType: UInt64 = 7_629_169
 
     /// The boost record JSON, with sorted keys, in UTF-8.
-    public static func json(part: BoostPart, payload: LiveValuePayload, totalSats: Int, sender: BoostSender) -> Data {
+    /// A key with no value is not in the JSON.
+    public static func json(
+        part: BoostPart, payload: LiveValuePayload, totalSats: Int, sender: BoostSender, context: BoostContext
+    ) -> Data {
         var object: [String: Any] = [
-            "action": "boost",
+            "action": context.action.rawValue,
+            "uuid": context.uuid.uuidString.lowercased(),
             "app_name": sender.appName,
             "value_msat_total": Int64(totalSats) * 1000,
             "value_msat": Int64(part.sats) * 1000,
@@ -49,6 +76,9 @@ public enum BoostRecord {
         ]
         if let name = part.destination.name {
             object["name"] = name
+        }
+        if let podcast = payload.podcastName ?? context.stationName, !podcast.isEmpty {
+            object["podcast"] = podcast
         }
         if let feedGuid = payload.feedGuid {
             object["guid"] = feedGuid
@@ -68,9 +98,9 @@ public enum BoostRecord {
 
     /// The boost record, then the custom record if the destination has one.
     public static func tlvRecords(
-        part: BoostPart, payload: LiveValuePayload, totalSats: Int, sender: BoostSender
+        part: BoostPart, payload: LiveValuePayload, totalSats: Int, sender: BoostSender, context: BoostContext
     ) -> [TLVRecord] {
-        let record = json(part: part, payload: payload, totalSats: totalSats, sender: sender)
+        let record = json(part: part, payload: payload, totalSats: totalSats, sender: sender, context: context)
         var records = [TLVRecord(type: recordType, value: hex(record))]
         if let key = part.destination.customKey,
            let value = part.destination.customValue,
@@ -81,7 +111,7 @@ public enum BoostRecord {
     }
 
     /// The bytes as lowercase hexadecimal text.
-    private static func hex(_ data: Data) -> String {
+    static func hex(_ data: Data) -> String {
         let digits = Array("0123456789abcdef")
         var text = ""
         text.reserveCapacity(data.count * 2)

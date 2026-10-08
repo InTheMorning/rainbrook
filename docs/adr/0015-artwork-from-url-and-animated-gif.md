@@ -51,6 +51,7 @@ The app decodes with ImageIO, in `ArtworkLoader`, off the main thread.
 ### Display
 
 - The player screen animates an animated image, and shows a still image as before.
+- The animated view plays the frames with `animationImages`. It never puts an animated `UIImage` in `image`. Added 2026-10-07: with an animated `image`, a layout change from the keyboard made UIKit stop the app (`-[UIImageView _setImageViewContentsForAnimatedImage:]`, a nil frame).
 - Now Playing gets the first frame, because the lock screen and the car show a still image.
 
 ### Cache
@@ -78,6 +79,7 @@ These rules apply while this decision is current.
 - The format and size rules for each source. `ArtworkPolicyTests` enforces them.
 - The frame selection, the delay rules and the memory limit. `ArtworkFramesTests` enforces them.
 - The download stops at the limit, and the decode runs off the main actor. Manual check: examine `ArtworkLoader`.
+- The animated view uses `animationImages`, not an animated `image`. Manual check: examine `AnimatedArtwork` in `PlayerView`. A test on Linux cannot examine UIKit.
 
 ## Acceptance criteria
 

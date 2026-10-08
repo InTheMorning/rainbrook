@@ -188,10 +188,37 @@ private struct AnimatedArtwork: UIViewRepresentable {
         return view
     }
 
+    /// Keeps the animated image that the view shows, so an update with the same image changes nothing.
+    final class Coordinator {
+        var shownImage: UIImage?
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    /// The view plays the frames with `animationImages`, not with an animated `UIImage` in `image`.
+    /// With an animated `image`, UIKit makes the frames again at each size change. On 2026-10-07 a
+    /// layout change from the keyboard made one frame nil, and UIKit stopped the app
+    /// (`-[UIImageView _setImageViewContentsForAnimatedImage:]`). The frames of `animationImages`
+    /// stay as decoded.
     func updateUIView(_ uiView: UIImageView, context: Context) {
-        if uiView.image !== image {
-            uiView.image = image
+        guard context.coordinator.shownImage !== image else { return }
+        context.coordinator.shownImage = image
+        let frames = (image.images ?? []).filter { $0.cgImage != nil }
+        uiView.stopAnimating()
+        uiView.image = frames.first
+        uiView.animationImages = frames.count >= 2 ? frames : nil
+        uiView.animationDuration = image.duration
+        uiView.animationRepeatCount = 0
+        if frames.count >= 2 {
+            uiView.startAnimating()
         }
+    }
+
+    static func dismantleUIView(_ uiView: UIImageView, coordinator: Coordinator) {
+        uiView.stopAnimating()
+        uiView.animationImages = nil
     }
 }
 

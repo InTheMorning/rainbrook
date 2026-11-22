@@ -9,9 +9,9 @@ public struct RelayEvent: Equatable, Sendable {
         public var errorDescription: String? {
             switch self {
             case .scheme:
-                return "The track info address must start with https."
+                return "The live value address must start with https."
             case .path:
-                return "This is not a relay event address."
+                return "This is not a live value address."
             case .eventID:
                 return "The relay event identifier is not correct."
             }

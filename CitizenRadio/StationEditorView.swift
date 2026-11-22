@@ -56,12 +56,12 @@ struct StationEditorView: View {
                 }
 
                 Section {
-                    urlField("Track info", text: $trackInfoText, prompt: "Optional")
+                    urlField("Live value address", text: $trackInfoText, prompt: "Optional")
                         .accessibilityIdentifier("stationTrackInfo")
                 } header: {
-                    Text("Track info")
+                    Text("Live value address")
                 } footer: {
-                    Text("Paste the relay event address from the stream producer. Leave it empty to use the stream title only.")
+                    Text("Paste the live value address from the stream producer. Leave it empty to use the stream title only.")
                 }
 
                 if let error {

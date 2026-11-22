@@ -49,7 +49,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `PlayerScreenModel` | Selects the status text and the Play or Stop control for the player screen. |
 | `StreamSettingsDraft` | Enables Save for a changed chime, daily limit or boost setting. |
 | `StreamAddress` | Validates the URL before storage or playback. |
-| `Station` | Holds and validates the name, the streams and the Track info of a station (ADR 0017). |
+| `Station` | Holds and validates the name, the streams and the live value address of a station (ADR 0017). |
 | `StationStore` | Reads and writes the station list and the selected station in UserDefaults (ADR 0017). |
 | `PlaybackRequest` | Controls if playback can continue after an interruption. |
 | `RadioURLAction` | Accepts the Play and Stop control URLs. |
@@ -74,18 +74,18 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `WalletSettingsModel` | Selects the state and controls for the Wallet section of Settings. |
 | `WalletSettingsView` | Shows the paste, scan, test and disconnect controls for the wallet. |
 | `QRScannerView` | Scans a QR code and returns the wallet connection text. |
-| `RelayEvent` | Parses and validates the relay event address for the Track info setting. |
+| `RelayEvent` | Parses and validates the relay event address for the Live value address setting. |
 | `EventStreamParser` | Parses server-sent event lines into named events. |
 | `EventStreamClient` | Reads the relay snapshot, opens the event stream, and applies the reconnect and backoff rules. |
 | `TrackDisplay` | Decodes the relay display state into a track with an artist, a title and artwork. |
 | `IcyTitle` | Parses the Icecast StreamTitle text into an artist and a title. |
 | `DisplayTiming` | Computes the wait before the app applies a streamed display state. |
 | `TrackLines` | Selects the title, the artist and the artwork to display, with the relay track as the priority. |
-| `IcySync` | Keeps the last display states, and selects the relay track that the ICY text names (ADR 0011). |
+| `IcySync` | Keeps the last display states, and selects the relay track that the ICY text names (ADR 0011, ADR 0024). |
 | `ArtworkPolicy` | Accepts or rejects artwork data, and gives its cache key. |
 | `ArtworkFrames` | Selects the frames and the delays of an animated image, in the URL artwork limits (ADR 0015). |
 | `LRUCache` | Holds a fixed number of entries, and removes the oldest entry first. |
-| `RelayStatusText` | Selects the relay status text for the Track info section of Settings. |
+| `RelayStatusText` | Selects the relay status text for the Live value address section of Settings. |
 | `NetworkPathSummary` | Holds one network path update, and tells if a reconnect is necessary. |
 | `URLSessionEventStream` | Opens the relay event stream and reads the relay snapshot with URLSession. |
 | `NetworkPathMonitor` | Watches the network path with NWPathMonitor. |

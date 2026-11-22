@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-04
+- Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
 - Class: situational. Supersede this record when the relay display path changes, or when the app gets track data from a different source.
 - Research: [musicindex relay metadata](../research/musicindex-relay-metadata.md)
 - Related:
@@ -26,7 +27,7 @@ The research note compares the two transports for a phone in a moving car.
 
 ### Configuration
 
-- Settings gets a **Track info** field for the relay event URI. `RelayEvent` in `CitizenRadioCore` accepts two forms:
+- Settings gets a **Live value address** field for the relay event URI. `RelayEvent` in `CitizenRadioCore` accepts two forms:
   - the relay event URL: `https://<host>/v1/liveitems/<id>`. The stream producer gives this form.
   - the `podcast:liveValue` URI: `https://<host>/event?event_id=<id>`. The relay README recommends it for RSS.
 - `RelayEvent` parses the URI into the origin and the event identifier. It accepts `https` only, and an event identifier that is not empty.
@@ -87,7 +88,7 @@ The research note compares the two transports for a phone in a moving car.
   Without " - ", the full text is the title. An empty text gives no track.
 - AVPlayer delivers the ICY title at its play position, so it needs no display delay.
 - The app shows the ICY title when it has no relay track. These conditions give no relay track:
-  - The **Track info** field is empty.
+  - The **Live value address** field is empty.
   - The relay display is `{"track": null}`.
   - The relay client is in backoff or stopped.
     With ICY in the session, backoff keeps the relay track (ADR 0011).
@@ -126,7 +127,7 @@ The research note compares the two transports for a phone in a moving car.
 These rules apply while this decision is current.
 
 - No network call, image download or image decode runs on the main thread.
-- The app opens no relay connection when the **Track info** field is empty, or while playback is stopped.
+- The app opens no relay connection when the **Live value address** field is empty, or while playback is stopped.
 - A relay track has priority over the ICY title.
 - The `AVPlayerItemMetadataOutput` delegate does not run on the main thread.
 - The client reconnects after 35 seconds without a byte.
@@ -161,7 +162,7 @@ A person must examine these items on an iPhone. Report each item as open until t
 - With a configured relay, the artwork, title and artist change when the listener hears the new track.
 - The lock screen and the car show the track title and artist.
 - After a drive through a dead zone, the display is correct within 40 seconds after the audio returns.
-- With an empty **Track info** field, the title and artist come from the ICY title, and the artwork area shows the placeholder.
+- With an empty **Live value address** field, the title and artist come from the ICY title, and the artwork area shows the placeholder.
 
 ## Changes at implementation
 

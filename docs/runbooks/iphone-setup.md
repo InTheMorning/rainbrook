@@ -62,12 +62,12 @@ The current package declares an iOS 17 deployment target.
 1. Open CitizenRadio on the iPhone.
 2. Tap **Settings**.
 3. In the **Stations** section, tap **Add Station**.
-4. Enter the **Name**, the **Stream**, the **Alternate stream**, and the **Track info**. Only the **Stream** is necessary.
+4. Enter the **Name**, the **Stream**, the **Alternate stream**, and the **Live value address**. Only the **Stream** is necessary.
 5. Tap **Save**.
 6. Tap the new station to select it and start playback.
 
-With a Track info address, the player screen and Now Playing show the relay track, its artist and its artwork.
-Without a Track info address, or without a relay track, they show the stream title.
+With a live value address, the player screen and Now Playing show the relay track, its artist and its artwork.
+Without a live value address, or without a relay track, they show the stream title.
 The Stations section shows a status message in these cases:
 
 - The relay does not know the event.
@@ -233,13 +233,13 @@ Complete these checks before normal use of the automation.
 | Tap Stop while the chime plays. | The chime stops. |
 | Tap Play with the chime off. | No chime plays. |
 | Tap Play. | Playback starts as soon as AVPlayer is ready, with no added wait. |
-| Configure a relay event in **Track info** and play. | The artwork, the title and the artist change when the listener hears the new track. |
+| Enter a live value address in **Live value address** and play. | The artwork, the title and the artist change when the listener hears the new track. |
 | Pause Mixxx during playback with a relay event configured. | The display clears when the listener hears the end of the track, not before. |
 | Play "Pharaoh's Dance" with a relay event configured. | The player screen shows its artwork. |
-| Play with an empty **Track info** field, and change the track in Mixxx. | The stream title changes when the listener hears the new track. |
+| Play with an empty **Live value address** field, and change the track in Mixxx. | The stream title changes when the listener hears the new track. |
 | Lock the screen or connect the car with a relay event configured. | The lock screen and the car show the track title, the artist and the artwork. |
 | Drive through a dead zone with a relay event configured. | The display is correct within 40 seconds after the audio returns. |
-| Play with an empty **Track info** field. | The title and the artist come from the stream title, and the artwork area shows the placeholder. |
+| Play with an empty **Live value address** field. | The title and the artist come from the stream title, and the artwork area shows the placeholder. |
 | Tap **Stop**, then **Play**, with a relay event configured. | The display is correct again. |
 | Open the app before a station is saved. | The status shows **Add a station in Settings** and Play is disabled. |
 | Run a Play action before a URL is saved. | The app reports missing settings. The Play CitizenRadio action also reports an error to Shortcuts. |
@@ -288,7 +288,7 @@ Complete these checks before normal use of the automation.
 | Examine a failed part in the history. | Its reason shows. |
 | Wait about 1 minute after a failed keysend part. | The app sends the part again, and the history entry shows the new result. |
 | Tap **Retry** in a history entry. | The app sends the failed parts again. |
-| Open the app after the update, with an old stream saved. | The old stream and Track info show as one selected station. |
+| Open the app after the update, with an old stream saved. | The old stream and the live value address show as one selected station. |
 | Tap a station in the list. | The station plays. Its artwork and its title show. |
 | Give a station a primary stream that does not work. | The station plays the alternate stream after a maximum of 20 seconds. The player screen shows "Alternate stream". |
 | Play a station with an HLS stream. | The title and the artwork of the track show. |

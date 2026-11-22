@@ -28,13 +28,19 @@ public struct TrackDisplay: Equatable, Sendable {
     public let value: ValueIdentity?
     /// ADR 0019: the optional album. Nil when the publisher sends no album.
     public let album: String?
+    /// ADR 0024: the ICY `StreamTitle` line of this state (relay key `songLine`). Nil when the relay sends none.
+    public let songLine: String?
 
-    public init(artist: String, title: String, artwork: Artwork?, value: ValueIdentity? = nil, album: String? = nil) {
+    public init(
+        artist: String, title: String, artwork: Artwork?, value: ValueIdentity? = nil, album: String? = nil,
+        songLine: String? = nil
+    ) {
         self.artist = artist
         self.title = title
         self.artwork = artwork
         self.value = value
         self.album = album
+        self.songLine = songLine
     }
 
     /// Decodes a relay display state. Gives nil for {"track": null}.
@@ -132,6 +138,17 @@ public struct TrackDisplay: Equatable, Sendable {
             album = nil
         }
 
-        return TrackDisplay(artist: artist, title: title, artwork: artwork, value: value, album: album)
+        // ADR 0024: a non-empty string gives the song line. A missing key, null, an empty
+        // string or a non-string value gives nil. The song line decode does not throw.
+        let songLine: String?
+        if let songLineStr = track["songLine"] as? String, !songLineStr.isEmpty {
+            songLine = songLineStr
+        } else {
+            songLine = nil
+        }
+
+        return TrackDisplay(
+            artist: artist, title: title, artwork: artwork, value: value, album: album, songLine: songLine
+        )
     }
 }

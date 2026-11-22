@@ -33,7 +33,7 @@ public enum BoostStatusText {
         case .overDailyLimit(let remainingSats):
             return "No boost. Only \(remainingSats) sats of the daily limit remain."
         case .nothingToPay:
-            return "No boost. The track has no payment destination."
+            return "No boost. The track has no recipient."
         case .tooShort(let seconds):
             return "No boost. The track played for less than \(seconds) seconds."
         case .disabled, .noTrack, .noPayload, .alreadyPaid:

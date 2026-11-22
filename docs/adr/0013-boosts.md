@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-06
+- Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
 - Class: situational. Supersede this record when the app pays by a different trigger, by a different method, or from a different value source.
 - Supersedes: [ADR 0012](../archive/adr/0012-auto-boost.md)
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md)
@@ -56,7 +57,7 @@ The Wallet section of the settings sheet has these boost items. They are active 
 3. While a candidate runs, the trigger keeps the newest relay track that ICY sync selected for T.
 4. A change of the ICY text from T to a text that is not T and not P completes the candidate. An empty text also completes it.
 5. A change of the ICY text from T back to P drops the candidate. This is the reconnect repeat of ADR 0014: the listener hears the end of P again. [ADR 0016](0016-boost-switch-back-play-time-and-retry.md) §The switch back replaces this rule.
-6. The end of the session drops the candidate: Stop, a playback error, or a change of the **Track info** event.
+6. The end of the session drops the candidate: Stop, a playback error, or a change of the **Live value address**.
 7. A stall or a reconnect with no change of the ICY text does not change the candidate.
 
 ### Manual boost

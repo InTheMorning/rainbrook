@@ -67,7 +67,7 @@ final class TrackInfoModel: ObservableObject {
         self.monitor = monitor
         self.opener = opener
         self.fetcher = fetcher
-        // ADR 0017 §The station: the Track info of the selected station gives the event.
+        // ADR 0017 §The station: the live value address of the selected station gives the event.
         self.event = StationStore().selected?.event
 
         // The settings sheet shows the boost result. Send a change of this model when the result changes.
@@ -123,7 +123,7 @@ final class TrackInfoModel: ObservableObject {
         }
     }
 
-    /// Reads the Track info and Auto-boost settings again. If the event changed, the relay client starts again.
+    /// Reads the live value address and Auto-boost settings again. If the event changed, the relay client starts again.
     /// If only the Auto-boost setting changed, the live value client starts or stops.
     func reloadSettings() {
         let newEvent = StationStore().selected?.event
@@ -136,7 +136,7 @@ final class TrackInfoModel: ObservableObject {
         relayStatus = nil
         sync.clearStates()
         setRelayTrack(nil)
-        // ADR 0012 §The trigger: a change of the Track info event ends the session.
+        // ADR 0012 §The trigger: a change of the live value address ends the session.
         boost.sessionEnded()
         if playbackActive {
             startRelay()

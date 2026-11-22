@@ -85,7 +85,7 @@ public struct StationStore {
     /// ADR 0017 §The first start after the update.
     ///
     /// This rule runs one time, only while the stations key is missing. It reads
-    /// the old stream URL and the old Track info URL, makes one station from
+    /// the old stream URL and the old live value address, makes one station from
     /// them, and removes the two old keys.
     private static func runFirstStart(defaults: UserDefaults) {
         defer {
@@ -95,7 +95,7 @@ public struct StationStore {
 
         let oldStreamText = defaults.string(forKey: oldStreamURLKey) ?? ""
         let oldRelayText = defaults.string(forKey: oldRelayEventURIKey) ?? ""
-        // The old relay text becomes Track info only when it still parses.
+        // The old relay text becomes the live value address only when it still parses.
         let trackInfoText = (try? RelayEvent(uri: oldRelayText)) != nil ? oldRelayText : ""
 
         guard let station = try? Station(

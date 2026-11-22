@@ -72,7 +72,7 @@ public struct Station: Codable, Equatable, Sendable, Identifiable {
         return alternateAddress.url
     }
 
-    /// Checks the Track info text. An empty text gives nil.
+    /// Checks the live value address text. An empty text gives nil.
     private static func validatedTrackInfo(_ text: String) throws -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
@@ -108,7 +108,7 @@ public enum StationError: LocalizedError, Equatable {
         case .sameStreams:
             return "The alternate stream must be different from the stream."
         case .trackInfo:
-            return "Enter a correct relay event address, or leave Track info empty."
+            return "Enter a correct live value address, or leave the live value address empty."
         case .listFull:
             return "Delete a station first. The list already has \(StationStore.maximumCount) stations."
         }

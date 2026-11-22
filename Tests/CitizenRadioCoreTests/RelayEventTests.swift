@@ -36,7 +36,7 @@ final class RelayEventTests: XCTestCase {
         XCTAssertThrowsError(try RelayEvent(uri: uri)) { error in
             XCTAssertEqual(error as? RelayEvent.ParseError, .scheme)
             let message = (error as? RelayEvent.ParseError)?.errorDescription ?? ""
-            XCTAssertEqual(message, "The track info address must start with https.")
+            XCTAssertEqual(message, "The live value address must start with https.")
         }
     }
 

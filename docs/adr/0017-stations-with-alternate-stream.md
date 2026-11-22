@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-06
+- Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
 - Class: situational. Supersede this record when the station data, the fallback rule or the place of the station list changes.
 - Related:
   - [ADR 0011](0011-icy-sync-of-the-relay-display.md): a fallback starts a new ICY session.
@@ -12,9 +13,9 @@
 
 ## Context
 
-The app keeps one stream URL and one **Track info** URL.
+The app keeps one stream URL and one **Live value address**.
 
-On 2026-10-06 the operator asked to keep more than one URL. Each entry has an HLS stream, an Icecast stream as its alternate, and a **Track info** URL. The operator selects an entry from a list in Settings.
+On 2026-10-06 the operator asked to keep more than one URL. Each entry has an HLS stream, an Icecast stream as its alternate, and a **Live value address**. The operator selects an entry from a list in Settings.
 
 The station has these streams:
 
@@ -30,13 +31,13 @@ A station has:
 - **Name**: 1 to 40 characters. An empty name gives the host of the primary stream.
 - **Stream**: the primary stream URL. It is necessary. The rules of `StreamAddress` apply.
 - **Alternate stream**: an optional second stream URL, with the same rules. It must not be equal to the primary stream.
-- **Track info**: an optional relay event URL, with the rules of `RelayEvent`.
+- **Live value address**: an optional relay event URL, with the rules of `RelayEvent`.
 
 The app keeps a maximum of 20 stations, and the identifier of the selected station. The list is JSON in `UserDefaults`.
 
 ### The first start after the update
 
-If no station list exists, the app examines the old stream URL. If that URL is saved, the app makes one station from it and from the old **Track info** URL, and selects that station. Then the app removes the old keys. With no old stream URL, the list is empty.
+If no station list exists, the app examines the old stream URL. If that URL is saved, the app makes one station from it and from the old **Live value address**, and selects that station. Then the app removes the old keys. With no old stream URL, the list is empty.
 
 ### The station list
 
@@ -65,7 +66,7 @@ If no station list exists, the app examines the old stream URL. If that URL is s
 
 ## Alternatives considered
 
-- **A list of stream URLs only.** The **Track info** URL then does not follow the station.
+- **A list of stream URLs only.** The **Live value address** then does not follow the station.
 - **Go back to the primary stream after a time.** Each change between HLS and Icecast repeats or misses audio, because the two streams have different delays. One change in a session is enough.
 - **Keep the ICY session across a fallback.** The two streams have different delays, so the trigger can see a change back as a repeat or as a new track. A new session can miss one auto-boost, but it never pays twice.
 - **A station menu on the player screen.** The operator selected the list in Settings.
@@ -75,7 +76,7 @@ If no station list exists, the app examines the old stream URL. If that URL is s
 - The operator can keep HLS and Icecast in one station, and more stations for tests.
 - A failure of the primary stream costs a maximum of 20 seconds before the alternate stream starts.
 - After a fallback, the display shows the default text until the first title of the alternate stream arrives.
-- The old stream URL and **Track info** settings move into the first station.
+- The old stream URL and **Live value address** settings move into the first station.
 
 ## Invariants
 
@@ -96,7 +97,7 @@ These rules apply while this decision is current.
 
 A person must examine these items on an iPhone. Report each item as open until a person completes that check.
 
-- After the update, the old stream and **Track info** show as one selected station.
+- After the update, the old stream and **Live value address** show as one selected station.
 - A tap on a station plays it. The artwork and the title of that station show.
 - Give a station a primary stream that does not work. The station plays the alternate stream after a maximum of 20 seconds, and the player screen shows "Alternate stream".
 - The HLS stream shows the title and the artwork of the track.

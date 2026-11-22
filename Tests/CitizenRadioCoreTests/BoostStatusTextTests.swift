@@ -61,7 +61,7 @@ final class BoostStatusTextTests: XCTestCase {
     func testNothingToPay() {
         XCTAssertEqual(
             BoostStatusText.text(for: .nothingToPay),
-            "No boost. The track has no payment destination."
+            "No boost. The track has no recipient."
         )
     }
 

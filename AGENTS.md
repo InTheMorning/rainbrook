@@ -13,14 +13,18 @@ The app is also the base and the example for a client app of the suite. Write co
 
 ## The Present Work
 
-- `docs/adr/` holds the current decisions of this app. `docs/archive/adr/` holds the superseded decisions.
+- `docs/adr/README.md` is the index of the current decisions of this app. `docs/archive/adr/` holds the superseded
+  decisions.
 - The app reads relay events and ICY titles (`CitizenRadio/Core/LiveValue.swift`, `TrackDisplay.swift`,
   `IcyTitle.swift`). It reads no feed and no file tags.
 - The app reads the relay `fee` as a JSON boolean (`LiveValue.swift:146`).
 - ADR 0007 and ADR 0014 have open visual acceptance criteria.
-- `docs/reviews/2026-11-22-shown-words-and-the-glossary.md` lists the shown words and their glossary rows. Its four
-  conflicts and its words with no row wait for the operator and the website session. Its last section names a risk
-  for a station that plays an episode file with chapters. No test examines that risk.
+- `~/build/musicindex/docs/glossary.md` has each word that the app shows, as a row or in its section "Shown Words
+  With No Row". The app shows "track" for each item that plays, because the relay event gives no medium (musicindex ADR 0087 R-WORD-11
+  item 5).
+- With an ICY text, the app selects a display state by its `songLine` when the state has one (ADR 0024). Thus the
+  app shows each chapter song of an episode file. ADR 0024 has two open points about the auto-boost of an episode
+  file.
 
 ## The Design Rules
 
@@ -43,8 +47,10 @@ The app is also the base and the example for a client app of the suite. Write co
 
 - Load the `project-baseline` skill before a change. It gives the commit rules and the documentation rules.
 - Write prose in Simplified Technical English (`~/.agents/skills/asd-ste100/SKILL.md`).
-- The gate is `scripts/check.sh` (ADR 0005). It must pass before a commit. It needs `swift`, `xtool` and `llvm-nm`
-  on the `PATH`.
+- The gate is `scripts/check.sh` (ADR 0005). It must pass before a commit. It needs `python3`, `swift`, `xtool` and
+  `llvm-nm` on the `PATH`.
+- The gate runs `check_adr_links.py` of the `project-baseline` skill with `--bar-from 0024`. Each new ADR has a
+  `- Bar:` line. A new ADR also gets a row in `docs/adr/README.md`.
 - After a change to `CitizenRadio/RadioIntents.swift`, run `scripts/generate-app-intents-metadata.sh` on a Mac with
   Xcode, and commit the result (ADR 0003).
 - Do not add a license file. The operator chose no license on 2026-11-22 (`project-baseline` skill).

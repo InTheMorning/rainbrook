@@ -285,4 +285,66 @@ final class IcySyncTests: XCTestCase {
         let track = TrackDisplay(artist: "Miles Davis", title: "So What", artwork: nil)
         XCTAssertEqual(IcySync.key(of: track), "miles davis - so what")
     }
+
+    // MARK: - The song line (ADR 0024)
+
+    /// Three chapter states of one episode file. Each has its own artist and title, and the same song line.
+    private func chapterState(_ index: Int) -> TrackDisplay {
+        TrackDisplay(
+            artist: "Chapter Artist \(index)", title: "Chapter Song \(index)", artwork: nil,
+            value: TrackDisplay.ValueIdentity(eventGuid: "event", blockGuid: "block-\(index)"),
+            songLine: "Show Host - Episode 12"
+        )
+    }
+
+    func testThreeChapterStatesWithOneSongLineSelectTheNewest() {
+        var sync = IcySync()
+        sync.receiveIcyText("Show Host - Episode 12")
+
+        sync.receive(chapterState(1))
+        XCTAssertEqual(sync.relayTrack, chapterState(1))
+        sync.receive(chapterState(2))
+        XCTAssertEqual(sync.relayTrack, chapterState(2))
+        sync.receive(chapterState(3))
+
+        XCTAssertEqual(sync.relayTrack, chapterState(3))
+        XCTAssertEqual(sync.lines.title, "Chapter Song 3")
+        XCTAssertEqual(sync.lines.artist, "Chapter Artist 3")
+    }
+
+    func testChapterStatesBeforeTheIcyTextWaitAndTheNewestShows() {
+        var sync = IcySync()
+        sync.receive(chapterState(1))
+        sync.receive(chapterState(2))
+        sync.receive(chapterState(3))
+        XCTAssertNil(sync.relayTrack)
+
+        sync.receiveIcyText("show host - episode 12")
+
+        XCTAssertEqual(sync.relayTrack, chapterState(3))
+    }
+
+    func testStateWithSongLineDoesNotMatchByArtistAndTitle() {
+        var sync = IcySync()
+        sync.receive(chapterState(1))
+
+        sync.receiveIcyText("Chapter Artist 1 - Chapter Song 1")
+
+        XCTAssertNil(sync.relayTrack)
+    }
+
+    func testStateWithoutSongLineStillMatchesByArtistAndTitle() {
+        var sync = IcySync()
+        let plain = TrackDisplay(artist: "Miles Davis", title: "So What", artwork: nil)
+        sync.receive(plain)
+        sync.receive(chapterState(1))
+
+        sync.receiveIcyText("Miles Davis - So What")
+
+        XCTAssertEqual(sync.relayTrack, plain)
+    }
+
+    func testKeyOfTrackWithSongLineIsTheNormalizedSongLine() {
+        XCTAssertEqual(IcySync.key(of: chapterState(1)), "show host - episode 12")
+    }
 }

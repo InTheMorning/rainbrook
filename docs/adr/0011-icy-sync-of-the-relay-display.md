@@ -2,7 +2,9 @@
 
 - Status: accepted
 - Date: 2026-10-05
-- Class: situational. Supersede this record when the app gets the time of a track change from a different signal. Also supersede it when the display state carries the song line.
+- Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
+- Changed by: [ADR 0024](0024-song-line-is-the-icy-key.md)
+- Class: situational. Supersede this record when the app gets the time of a track change from a different signal.
 - Plan: [ICY sync phase plan](../plans/icy-sync-plan.md)
 - Related:
   - [ADR 0008](0008-relay-display-metadata.md): this record replaces its display delay rule and its backoff fallback for a session with ICY. See §Changes at implementation.
@@ -35,7 +37,7 @@ Display states are early. The ICY title releases them.
 `IcySync` in `CitizenRadioCore` holds the rules. It has no time and no I/O.
 
 1. `IcySync` keeps a list of a maximum of 4 display states, newest first. Each state from the snapshot or the stream goes into it. A `{"track": null}` state does not go into the list.
-2. The key of a state is `"\(artist) - \(title)"`.
+2. The key of a state is `"\(artist) - \(title)"`. ADR 0024 gives the key of a state with a song line.
 3. After each input, `IcySync` selects again from the list and the present ICY text:
    - An empty ICY text selects no relay track and no ICY track. The screen shows the default display.
    - Else the newest state whose key matches the ICY text is the relay track. With no match, there is no relay track, and the parsed ICY title shows with no artwork.
@@ -63,7 +65,7 @@ Display states are early. The ICY title releases them.
 - Without ICY in this session, the ADR 0008 rule applies: a streamed state applies after the audio that AVPlayer holds, and a snapshot applies immediately.
 - The first ICY text of the session cancels the pending timed applies and selects from the list.
 - Backoff keeps the list and the selection. During a relay outage the ICY text continues to name the track.
-- These events clear the list: a `404` or `409` stop, a change of the **Track info** event, and Stop.
+- These events clear the list: a `404` or `409` stop, a change of the **Live value address**, and Stop.
 - Stop starts a new session. The next session has no ICY until its first ICY text.
 
 ## Alternatives considered
@@ -111,4 +113,4 @@ A person must examine these items on an iPhone. Report each item as open until a
 - The artwork, the title and the artist change when the listener hears the new track.
 - A pause in Mixxx clears the display when the listener hears the end of the track, not before.
 - "Pharaoh's Dance" shows its artwork.
-- With an empty **Track info** field, the stream title changes when the listener hears the new track.
+- With an empty **Live value address** field, the stream title changes when the listener hears the new track.

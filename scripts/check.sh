@@ -11,6 +11,12 @@ fail() {
     exit 1
 }
 
+echo "==> ADR links (project-baseline skill)"
+adr_check="$HOME/.agents/skills/project-baseline/scripts/check_adr_links.py"
+[ -f "$adr_check" ] || fail "$adr_check is missing. Install the project-baseline skill, then run this script again."
+python3 "$adr_check" --bar-from 0024 "$root" || fail "project-baseline §A Binding Rule Lives In A Decision Record: \
+correct the ADR links, the Bar line or the AGENTS.md text that the lines above name."
+
 echo "==> Core tests (Linux)"
 # Without --build-system native, swift test cannot find the GCC 16 C++ headers for BoringSSL in swift-crypto. See ADR 0007.
 swift test --build-system native

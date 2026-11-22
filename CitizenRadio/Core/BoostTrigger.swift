@@ -116,7 +116,7 @@ public struct BoostTrigger: Equatable, Sendable {
         candidate?.track = track
     }
 
-    /// Stop, a playback error or a change of the Track info event. Drops the candidate,
+    /// Stop, a playback error or a change of the live value address. Drops the candidate,
     /// clears the blocks, and starts a new session.
     public mutating func endSession() {
         hasPresentText = false

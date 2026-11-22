@@ -1,6 +1,7 @@
 import Foundation
 
 /// ADR 0011: display states are early, and the ICY text releases them.
+/// ADR 0024: the key of a state with a song line is that song line.
 public struct IcySync: Equatable, Sendable {
     /// The highest number of display states that the list keeps.
     public static let capacity = 4
@@ -115,8 +116,12 @@ public struct IcySync: Equatable, Sendable {
         return collapsed.precomposedStringWithCanonicalMapping.lowercased()
     }
 
-    /// normalize("\(artist) - \(title)")
+    /// ADR 0024: normalize(songLine) when the state has a song line.
+    /// Else ADR 0011: normalize("\(artist) - \(title)").
     public static func key(of track: TrackDisplay) -> String {
-        normalize("\(track.artist) - \(track.title)")
+        if let songLine = track.songLine {
+            return normalize(songLine)
+        }
+        return normalize("\(track.artist) - \(track.title)")
     }
 }

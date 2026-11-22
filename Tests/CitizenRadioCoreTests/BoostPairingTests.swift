@@ -144,4 +144,22 @@ final class BoostPairingTests: XCTestCase {
         XCTAssertEqual(pairing.payload(for: track), snapshot)
         XCTAssertEqual(pairing.payload(for: track)?.blockGuid, "block-b")
     }
+
+    // MARK: - Chapter states (ADR 0024)
+
+    func testEachChapterStatePairsWithItsOwnBlock() {
+        var pairing = BoostPairing()
+        for index in 1...3 {
+            pairing.receive(payload(title: "Chapter Song \(index)", blockGuid: "block-\(index)"))
+        }
+
+        for index in 1...3 {
+            let state = TrackDisplay(
+                artist: "Chapter Artist \(index)", title: "Chapter Song \(index)", artwork: nil,
+                value: TrackDisplay.ValueIdentity(eventGuid: "event", blockGuid: "block-\(index)"),
+                songLine: "Show Host - Episode 12"
+            )
+            XCTAssertEqual(pairing.payload(for: state)?.blockGuid, "block-\(index)")
+        }
+    }
 }

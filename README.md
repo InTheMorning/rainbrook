@@ -51,7 +51,7 @@ The Xcode build includes the named **Play CitizenRadio** and **Stop CitizenRadio
 ## Current implementation
 
 - The player screen shows an artwork placeholder, the playback status, Play or Stop, and the AirPlay button.
-- The settings sheet has a Stations section for a maximum of 20 stations. Each station has a stream, an optional alternate stream, and an optional Track info address. The app plays the alternate stream if the stream fails.
+- The settings sheet has a Stations section for a maximum of 20 stations. Each station has a stream, an optional alternate stream, and an optional live value address. The app plays the alternate stream if the stream fails.
 - An optional chime plays in a loop while the stream connects. The chime is on by default.
 - Play and Stop URL actions are available in each build.
 - Each build supplies the Play and Stop App Intents. The xtool build gets their metadata through the `resources` list in `xtool.yml`.
@@ -61,7 +61,7 @@ The Xcode build includes the named **Play CitizenRadio** and **Stop CitizenRadio
 - Playback can continue after a call if iOS permits it and the output device is unchanged.
 - A connection or buffering timeout of 20 seconds stops playback with an error.
 - The settings sheet has a Wallet section to connect, test and disconnect a Nostr Wallet Connect wallet, with a daily sats limit.
-- Each station can have a Track info address for the relay event. The player screen and Now Playing show the relay track and its artwork when the stream title names that track. Else they show the stream title.
+- Each station can have a live value address for the relay event. The player screen and Now Playing show the relay track and its artwork when the stream title names that track. Else they show the stream title.
 - The player screen shows an animated GIF when the artwork of a track comes from a URL. Now Playing shows the first frame.
 - With a connected wallet, the app can pay an auto-boost for a track the listener hears to its end. The listener can also send a manual boost with a message, and see each result in the Boost history screen.
 

@@ -5,7 +5,7 @@ final class RelayStatusTextTests: XCTestCase {
     func testNotFoundShowsTheAddressMessage() {
         XCTAssertEqual(
             RelayStatusText.message(for: .stopped(.notFound)),
-            "The relay does not know this event. Examine the track info address."
+            "The relay does not know this event. Examine the live value address."
         )
     }
 

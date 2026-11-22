@@ -2,6 +2,7 @@
 
 - Status: accepted. The visual acceptance criteria are open.
 - Date: 2026-10-06
+- Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
 - Class: situational. Supersede this record when the primary screen changes, or when a setting moves into or out of the settings sheet.
 - Supersedes: [ADR 0010](../archive/adr/0010-player-screen-without-extra-buffer.md)
 - Related:
@@ -31,7 +32,7 @@ All configuration and playback preferences are in the settings sheet. The player
 The settings sheet contains:
 
 - The stream URL.
-- **Track info**: the relay event address. The section also shows the relay status text, if there is one.
+- **Live value address**: the relay event address. The section also shows the relay status text, if there is one.
 - **Chime while connecting**. The default is on.
 - The Wallet section. [ADR 0007](0007-nwc-wallet-configuration.md) owns the wallet items. [ADR 0013](0013-boosts.md) owns the boost items.
 
@@ -43,7 +44,7 @@ The settings sheet contains:
 
 When the chime setting is on, `forcdchime.wav` plays in a loop while the playback state is `connecting`.
 
-### Track info
+### Live value address
 
 `TrackInfoModel` in the app target connects the track data to the player screen and Now Playing:
 

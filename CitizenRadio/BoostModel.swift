@@ -89,10 +89,15 @@ final class BoostModel: ObservableObject {
 
     /// Gives the relay track that ICY sync selected to the trigger.
     /// Also keeps the track, also nil, as the current track for a manual boost.
+    /// ADR 0024 §The chapter change: a new chapter state can complete a candidate. That starts a boost.
     func selectedTrack(_ track: TrackDisplay?) {
-        trigger.selectedTrack(track)
+        let time = ProcessInfo.processInfo.systemUptime
+        let completed = trigger.selectedTrack(track, at: time)
         currentTrack = track
         updateManualTarget()
+        if let completed {
+            boost(completed)
+        }
     }
 
     /// Keeps a live value payload for the pairing.

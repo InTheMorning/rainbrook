@@ -94,7 +94,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `TrackInfoModel` | Runs the relay client while playback is connecting or playing, and selects the track and the artwork for the player screen and Now Playing. |
 | `LiveValue` | Holds a live value payload and its payable destinations (ADR 0013). |
 | `BoostPairing` | Selects the live value payload that pays a completed relay track (ADR 0013). |
-| `BoostTrigger` | Decides when the listener heard a track from its start to its end, and tells a switch back from a repeat (ADR 0013, ADR 0016). |
+| `BoostTrigger` | Decides when the listener heard a track from its start to its end, tells a switch back from a repeat, and ends a candidate at a chapter change (ADR 0013, ADR 0016, ADR 0024). |
 | `BoostSettings` | Stores the auto-boost settings and the minimum play time (ADR 0013, ADR 0016). |
 | `BoostPlan` | Decides if the app pays a boost, and gives its parts or its skip reason (ADR 0013, ADR 0016). |
 | `BoostSplit` | Divides a boost amount among the payable destinations (ADR 0013). |

@@ -23,8 +23,8 @@ The app is also the base and the example for a client app of the suite. Write co
   With No Row". The app shows "track" for each item that plays, because the relay event gives no medium (musicindex ADR 0087 R-WORD-11
   item 5).
 - With an ICY text, the app selects a display state by its `songLine` when the state has one (ADR 0024). Thus the
-  app shows each chapter song of an episode file. ADR 0024 has two open points about the auto-boost of an episode
-  file.
+  app shows each chapter song of an episode file. Each chapter song that plays to its end gets its own auto-boost
+  candidate (ADR 0024 §The chapter change). ADR 0024 has one open point about the switch back in an episode file.
 
 ## The Design Rules
 

@@ -138,9 +138,9 @@ final class BoostTriggerTests: XCTestCase {
         XCTAssertNil(trigger.receiveIcyText("Track A", track: nil, at: 0))
         XCTAssertNil(trigger.receiveIcyText("Track B", track: nil, at: 10))
 
-        trigger.selectedTrack(olderTrack)
-        trigger.selectedTrack(nil)
-        trigger.selectedTrack(newerTrack)
+        trigger.selectedTrack(olderTrack, at: 15)
+        trigger.selectedTrack(nil, at: 15)
+        trigger.selectedTrack(newerTrack, at: 15)
 
         XCTAssertEqual(
             trigger.receiveIcyText("Track C", track: nil, at: 22),
@@ -221,5 +221,95 @@ final class BoostTriggerTests: XCTestCase {
             trigger.receiveIcyText("Track C", track: nil, at: 300),
             BoostTrigger.Completed(icyText: "Track B", track: nil, playedSeconds: 170)
         )
+    }
+
+    // MARK: - ADR 0024 §The chapter change
+
+    /// A chapter state of an episode file: the song line is the ICY line of the file.
+    private func chapter(_ block: String, songLine: String? = "Show - Episode 7") -> TrackDisplay {
+        TrackDisplay(
+            artist: "Chapter Artist \(block)", title: "Chapter Title \(block)", artwork: nil,
+            value: TrackDisplay.ValueIdentity(eventGuid: "event-1", blockGuid: block),
+            songLine: songLine
+        )
+    }
+
+    func testThreeChapterStatesWithOneSongLineGiveThreeCandidates() {
+        var trigger = BoostTrigger()
+        let c1 = chapter("c1"), c2 = chapter("c2"), c3 = chapter("c3")
+
+        XCTAssertNil(trigger.receiveIcyText("Song S", track: nil, at: 0))
+        XCTAssertNil(trigger.receiveIcyText("Show - Episode 7", track: c1, at: 100))
+        // The same chapter state again changes nothing.
+        XCTAssertNil(trigger.selectedTrack(c1, at: 100))
+
+        // Each new chapter state completes the candidate of the chapter before it.
+        XCTAssertEqual(
+            trigger.selectedTrack(c2, at: 400),
+            BoostTrigger.Completed(icyText: "Show - Episode 7", track: c1, playedSeconds: 300)
+        )
+        XCTAssertEqual(
+            trigger.selectedTrack(c3, at: 650),
+            BoostTrigger.Completed(icyText: "Show - Episode 7", track: c2, playedSeconds: 250)
+        )
+        // The next ICY text completes the last chapter.
+        XCTAssertEqual(
+            trigger.receiveIcyText("Song T", track: nil, at: 900),
+            BoostTrigger.Completed(icyText: "Show - Episode 7", track: c3, playedSeconds: 250)
+        )
+    }
+
+    func testChapterChangeStartsACandidateWhenTheListenerJoinedInTheEpisode() {
+        var trigger = BoostTrigger()
+        let c2 = chapter("c2"), c3 = chapter("c3")
+
+        // The first ICY text of the session starts no candidate.
+        XCTAssertNil(trigger.receiveIcyText("Show - Episode 7", track: chapter("c1"), at: 0))
+        // The listener hears chapter 2 from its start: a candidate starts, and none completes.
+        XCTAssertNil(trigger.selectedTrack(c2, at: 50))
+        XCTAssertEqual(
+            trigger.selectedTrack(c3, at: 290),
+            BoostTrigger.Completed(icyText: "Show - Episode 7", track: c2, playedSeconds: 240)
+        )
+    }
+
+    func testNewBlockWithoutTheSameSongLineIsNotAChapterChange() {
+        var trigger = BoostTrigger()
+        let b2 = TrackDisplay(
+            artist: "Artist", title: "Track", artwork: nil,
+            value: TrackDisplay.ValueIdentity(eventGuid: "event-1", blockGuid: "b2")
+        )
+
+        XCTAssertNil(trigger.receiveIcyText("Track A", track: nil, at: 0))
+        XCTAssertNil(trigger.receiveIcyText("Track B", track: track(block: "b1"), at: 10))
+        // A state with no song line and a new block keeps the candidate.
+        XCTAssertNil(trigger.selectedTrack(b2, at: 20))
+        // A state with a song line that the earlier state did not have keeps the candidate.
+        XCTAssertNil(trigger.selectedTrack(chapter("c1", songLine: "Track B"), at: 30))
+
+        XCTAssertEqual(
+            trigger.receiveIcyText("Track C", track: nil, at: 40),
+            BoostTrigger.Completed(icyText: "Track B", track: chapter("c1", songLine: "Track B"), playedSeconds: 30)
+        )
+    }
+
+    /// ADR 0024 §Open Points, the switch back: a reconnect repeat back to an episode file. The sync selects the newest
+    /// chapter state of the file again, and the trigger kept the block of that state.
+    func testReconnectRepeatBackToAnEpisodeDropsTheCandidate() {
+        var trigger = BoostTrigger()
+        let c2 = chapter("c2")
+
+        XCTAssertNil(trigger.receiveIcyText("Song S", track: nil, at: 0))
+        XCTAssertNil(trigger.receiveIcyText("Show - Episode 7", track: chapter("c1"), at: 10))
+        XCTAssertNotNil(trigger.selectedTrack(c2, at: 300))
+        XCTAssertEqual(
+            trigger.receiveIcyText("Song T", track: track(block: "t1"), at: 500),
+            BoostTrigger.Completed(icyText: "Show - Episode 7", track: c2, playedSeconds: 200)
+        )
+
+        // The reconnect repeat gives the episode text again with the same newest chapter state.
+        XCTAssertNil(trigger.receiveIcyText("Show - Episode 7", track: c2, at: 520))
+        // The dropped candidate for "Song T" never completes.
+        XCTAssertNil(trigger.receiveIcyText("Song U", track: nil, at: 700))
     }
 }

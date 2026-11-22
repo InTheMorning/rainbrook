@@ -3,6 +3,7 @@ import Foundation
 /// ADR 0012 §The trigger: decides when the listener heard a track from its start to its end.
 /// ADR 0016 §The switch back: tells a real switch back from a reconnect repeat by the block.
 /// ADR 0016 §The minimum play time: gives the play time of the completed candidate.
+/// ADR 0024 §The chapter change: a new chapter state of the present text completes the candidate.
 ///
 /// The inputs are the ICY texts of the session, the relay track of each text, and the end of
 /// the session. The trigger has no clock of its own. The caller gives the time of each text, on
@@ -25,6 +26,8 @@ public struct BoostTrigger: Equatable, Sendable {
         let startTime: Double
     }
 
+    /// The ICY text that plays, as received, or nil before the first text of the session.
+    private var presentIcyText: String?
     /// True after the first ICY text of the session.
     private var hasPresentText = false
     /// The normalized text that plays, or nil before the first text of the session.
@@ -35,6 +38,10 @@ public struct BoostTrigger: Equatable, Sendable {
     private var presentBlock: String?
     /// The block of the newest selected track for `previousText`, or nil.
     private var previousBlock: String?
+    /// The normalized song line of the track that gave `presentBlock`, or nil (ADR 0024).
+    private var presentSongLine: String?
+    /// The normalized song line of the track that gave `previousBlock`, or nil (ADR 0024).
+    private var previousSongLine: String?
     /// The candidate that runs, or nil.
     private var candidate: Candidate?
 
@@ -50,10 +57,13 @@ public struct BoostTrigger: Equatable, Sendable {
         // The first ICY text of a session starts no candidate. It becomes the current text.
         guard hasPresentText else {
             hasPresentText = true
+            presentIcyText = text
             presentText = normalized
             previousText = nil
             presentBlock = block
             previousBlock = nil
+            presentSongLine = Self.songLine(of: track)
+            previousSongLine = nil
             candidate = nil
             return nil
         }
@@ -76,16 +86,21 @@ public struct BoostTrigger: Equatable, Sendable {
                 )
                 previousText = presentText
                 previousBlock = presentBlock
+                previousSongLine = presentSongLine
+                presentIcyText = text
                 presentText = normalized
                 presentBlock = newBlock
+                presentSongLine = Self.songLine(of: track)
                 candidate = Candidate(icyText: text, track: track, startTime: time)
                 return completed
             }
             // One or both blocks are not known, or they are equal: the reconnect repeat
             // (ADR 0010). Drop the candidate. The two texts and the two blocks change places.
             previousText = presentText
+            presentIcyText = text
             presentText = normalized
             swap(&previousBlock, &presentBlock)
+            swap(&previousSongLine, &presentSongLine)
             candidate = nil
             return nil
         }
@@ -98,32 +113,70 @@ public struct BoostTrigger: Equatable, Sendable {
         }
         previousText = presentText
         previousBlock = presentBlock
+        previousSongLine = presentSongLine
+        presentIcyText = text
         presentText = normalized
         presentBlock = block
+        presentSongLine = Self.songLine(of: track)
         candidate = normalized.isEmpty ? nil : Candidate(icyText: text, track: track, startTime: time)
         return completed
     }
 
     /// The relay track that ICY sync selects now. Nil is a valid input and keeps the last non-nil track.
     /// A track with a block sets the block of the present text (ADR 0016 §The switch back).
-    public mutating func selectedTrack(_ track: TrackDisplay?) {
+    /// Gives a completed candidate at a chapter change, or nil (ADR 0024 §The chapter change).
+    /// `time` is seconds on a monotonic clock. The caller gives it.
+    @discardableResult
+    public mutating func selectedTrack(_ track: TrackDisplay?, at time: Double) -> Completed? {
         guard let track else {
-            return
+            return nil
         }
+        var completed: Completed?
         if let block = track.value?.blockGuid {
+            let songLine = Self.songLine(of: track)
+            if isChapterChange(block: block, songLine: songLine), let icyText = presentIcyText {
+                // The listener heard the earlier chapter to its end, and hears this chapter from its start.
+                completed = candidate.map {
+                    Completed(icyText: $0.icyText, track: $0.track, playedSeconds: time - $0.startTime)
+                }
+                candidate = Candidate(icyText: icyText, track: track, startTime: time)
+            }
             presentBlock = block
+            presentSongLine = songLine
         }
         candidate?.track = track
+        return completed
+    }
+
+    /// True when a track with a known block is a new chapter state of the present text: the track and
+    /// the earlier selected track have the same song line, and their blocks are different (ADR 0024).
+    private func isChapterChange(block: String, songLine: String?) -> Bool {
+        guard let songLine, let presentText, !presentText.isEmpty,
+              let presentBlock, presentBlock != block else {
+            return false
+        }
+        return songLine == presentSongLine
+    }
+
+    /// The normalized song line of a track with a known block, or nil.
+    private static func songLine(of track: TrackDisplay?) -> String? {
+        guard track?.value?.blockGuid != nil, let line = track?.songLine else {
+            return nil
+        }
+        return IcySync.normalize(line)
     }
 
     /// Stop, a playback error or a change of the live value address. Drops the candidate,
     /// clears the blocks, and starts a new session.
     public mutating func endSession() {
         hasPresentText = false
+        presentIcyText = nil
         presentText = nil
         previousText = nil
         presentBlock = nil
         previousBlock = nil
+        presentSongLine = nil
+        previousSongLine = nil
         candidate = nil
     }
 }

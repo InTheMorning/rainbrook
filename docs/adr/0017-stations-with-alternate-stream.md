@@ -78,6 +78,13 @@ If no station list exists, the app examines the old stream URL. If that URL is s
 - After a fallback, the display shows the default text until the first title of the alternate stream arrives.
 - The old stream URL and **Live value address** settings move into the first station.
 
+## Open Points
+
+1. **Fallback keeps the newest display state as the timed relay track.** Deferred on 2026-11-24 (operator choice,
+   relayed by the orchestrator session), see the payment risk. The two streams have different delays. During that
+   difference, a manual boost to the newest display state can pay the artist of an incorrect song. A time with no target
+   cannot pay an incorrect artist.
+
 ## Invariants
 
 These rules apply while this decision is current.

@@ -505,10 +505,13 @@ final class TrackInfoModel: ObservableObject {
         // Before the first ICY text, that is the relay track of the screen, so the Boost button has a target.
         // The trigger starts no candidate before the first ICY text, so this starts no auto-boost.
         let selected = sync.track(withoutIcy: relayTrack)
-        boost.selectedTrack(selected)
+        // ADR 0028: a track whose value block ended is a jingle or the time between songs.
+        // The Boost button is gray, and the station lines show.
+        let valueEnded = sync.valueEnded(selected)
+        boost.selectedTrack(selected, valueEnded: valueEnded)
         recordRelayTrack(selected)
-        // ADR 0028: the default lines take the station title.
-        let newLines = (sync.hasIcy ? sync.lines : TrackLines.select(relay: relayTrack, icy: nil)).withStation(station)
+        let newLines = (sync.hasIcy ? sync.lines : TrackLines.select(relay: relayTrack, icy: nil))
+            .withStation(station, valueEnded: valueEnded)
         guard newLines != lines else { return }
         let artworkChanged = newLines.artwork != lines.artwork
         lines = newLines

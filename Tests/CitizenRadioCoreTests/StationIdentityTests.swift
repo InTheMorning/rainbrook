@@ -47,6 +47,33 @@ final class StationIdentityTests: XCTestCase {
         XCTAssertEqual(StationIdentity(dead)?.artwork, .url(try XCTUnwrap(URL(string: stationImage))))
     }
 
+    /// The dead block of the operator decision of 2026-11-24: zero destinations, and no feedGuid or itemGuid.
+    func testADeadBlockWithNoDestinationsGivesTheStationAndIsNotPayable() throws {
+        let json = """
+        {
+            "title": "HeyCitizen Test Stream",
+            "image": "\(stationImage)",
+            "eventGuid": "event-guid",
+            "blockGuid": "dead-block",
+            "value": { "model": { "type": "lightning", "method": "lnaddress" }, "destinations": [] }
+        }
+        """
+        let dead = try payload(json)
+        XCTAssertTrue(dead.isDeadBlock)
+        XCTAssertFalse(dead.isPayable)
+        XCTAssertEqual(
+            StationIdentity(dead),
+            StationIdentity(title: "HeyCitizen Test Stream", image: URL(string: stationImage))
+        )
+        var pairing = BoostPairing()
+        pairing.receive(dead)
+        let track = TrackDisplay(
+            artist: "", title: "HeyCitizen Test Stream", artwork: nil,
+            value: TrackDisplay.ValueIdentity(eventGuid: "event-guid", blockGuid: "dead-block")
+        )
+        XCTAssertNil(pairing.payload(for: track))
+    }
+
     func testTheDefaultDeadBlockTitleGivesNoStationTitle() throws {
         let dead = try payload(deadJSON(title: LiveValuePayload.placeholderTitle, image: nil))
         XCTAssertTrue(dead.isDeadBlock)
@@ -115,5 +142,82 @@ final class StationIdentityTests: XCTestCase {
         sync.receive(nil)
         let station = StationIdentity(try payload(deadJSON(title: "HeyCitizen Test Stream", image: stationImage)))
         XCTAssertEqual(sync.lines.withStation(station).title, "HeyCitizen Test Stream")
+    }
+
+    private func anni(block: String?) -> TrackDisplay {
+        TrackDisplay(
+            artist: "Anni Powell", title: "Beyond the Hills", artwork: .url(URL(string: "https://example.org/anni.jpg")!),
+            value: block.map { TrackDisplay.ValueIdentity(eventGuid: "event-guid", blockGuid: $0) },
+            songLine: "Anni Powell - Beyond the Hills"
+        )
+    }
+
+    /// The jingle at 12:27:40 on 2026-11-24: the ICY text stays at the song, and the relay sends the song again
+    /// with no value block for 24 s. Then the next song starts.
+    func testAJingleWithNoTitleShowsTheStationLines() throws {
+        let station = StationIdentity(title: "HeyCitizen Test Stream", image: URL(string: stationImage))
+        var sync = IcySync()
+        sync.receive(anni(block: nil))
+        sync.receiveIcyText("Anni Powell - Beyond the Hills")
+        // The new song starts with no value block. Its value block did not end, so the song lines stay.
+        XCTAssertFalse(sync.valueEnded(sync.relayTrack))
+        sync.receive(anni(block: "anni-block"))
+        XCTAssertFalse(sync.valueEnded(sync.relayTrack))
+        XCTAssertEqual(sync.lines.withStation(station, valueEnded: false).title, "Beyond the Hills")
+
+        sync.receive(anni(block: nil))
+        let valueEnded = sync.valueEnded(sync.relayTrack)
+        XCTAssertTrue(valueEnded)
+        let lines = sync.lines.withStation(station, valueEnded: valueEnded)
+        XCTAssertEqual(lines, TrackLines(title: "HeyCitizen Test Stream", artist: nil, artwork: nil))
+
+        let rods = TrackDisplay(
+            artist: "12 Rods", title: "Red", artwork: nil,
+            value: TrackDisplay.ValueIdentity(eventGuid: "event-guid", blockGuid: "rods-block"), songLine: "12 Rods - Red"
+        )
+        sync.receiveIcyText("12 Rods - Red")
+        sync.receive(rods)
+        XCTAssertFalse(sync.valueEnded(sync.relayTrack))
+        XCTAssertEqual(sync.lines.withStation(station, valueEnded: false).title, "Red")
+    }
+
+    func testAValueBlockAgainEndsTheJingleState() {
+        var sync = IcySync()
+        sync.receive(anni(block: "anni-block"))
+        sync.receive(anni(block: nil))
+        XCTAssertTrue(sync.valueEnded(anni(block: nil)))
+        XCTAssertFalse(sync.valueEnded(anni(block: "anni-block")))
+        sync.receive(anni(block: "anni-block-2"))
+        XCTAssertFalse(sync.valueEnded(anni(block: nil)))
+        sync.receive(anni(block: nil))
+        sync.clearStates()
+        XCTAssertFalse(sync.valueEnded(anni(block: nil)))
+    }
+
+    func testWithNoStationAnEndedValueKeepsTheSongLines() {
+        let lines = TrackLines.select(relay: anni(block: nil), icy: nil)
+        XCTAssertEqual(lines.withStation(nil, valueEnded: true), lines)
+        let imageOnly = StationIdentity(title: nil, image: URL(string: stationImage))
+        XCTAssertEqual(
+            lines.withStation(imageOnly, valueEnded: true),
+            TrackLines(title: TrackLines.defaultTitle, artist: nil, artwork: nil)
+        )
+    }
+
+    /// ADR 0026 and ADR 0028: the title pairing finds the payload of the song that ended, so the manual target
+    /// needs the value ended test. `BoostModel.updateManualTarget` applies it.
+    func testTheTitlePairingStillFindsTheSongThatEnded() throws {
+        let json = """
+        {
+            "title": "Anni Powell - Beyond the Hills",
+            "eventGuid": "event-guid",
+            "blockGuid": "anni-block",
+            "value": { "destinations": [{ "type": "lnaddress", "address": "anni@getalby.com", "split": 100 }] }
+        }
+        """
+        var pairing = BoostPairing()
+        pairing.receive(try payload(json))
+        pairing.receive(try payload(deadJSON(title: "HeyCitizen Test Stream", image: stationImage)))
+        XCTAssertEqual(pairing.payload(for: anni(block: nil))?.blockGuid, "anni-block")
     }
 }

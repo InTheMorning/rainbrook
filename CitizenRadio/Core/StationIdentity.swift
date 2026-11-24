@@ -30,9 +30,14 @@ public struct StationIdentity: Equatable, Sendable {
 }
 
 extension TrackLines {
-    /// ADR 0028: the default lines take the station title. Each other line stays as it is.
-    public func withStation(_ station: StationIdentity?) -> TrackLines {
-        guard let title = station?.title, self == TrackLines.select(relay: nil, icy: nil) else {
+    /// ADR 0028: the station lines replace the default lines, and the lines of a track whose value block ended.
+    /// `valueEnded` comes from `IcySync.valueEnded(_:)`. Without a station identity, the lines stay as they are.
+    public func withStation(_ station: StationIdentity?, valueEnded: Bool = false) -> TrackLines {
+        guard let station else { return self }
+        if valueEnded {
+            return TrackLines(title: station.title ?? Self.defaultTitle, artist: nil, artwork: nil, album: nil)
+        }
+        guard let title = station.title, self == TrackLines.select(relay: nil, icy: nil) else {
             return self
         }
         return TrackLines(title: title, artist: nil, artwork: nil, album: nil)

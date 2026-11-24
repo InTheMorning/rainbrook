@@ -43,6 +43,8 @@ final class BoostModel: ObservableObject {
     private var reservedSats = 0
     /// The relay track that ICY sync selected last, also nil.
     private var currentTrack: TrackDisplay?
+    /// ADR 0028: true when the value block of `currentTrack` ended.
+    private var currentValueEnded = false
 
     init(
         walletStore: WalletStore = WalletStore(secrets: KeychainSecretStore()),
@@ -90,10 +92,13 @@ final class BoostModel: ObservableObject {
     /// Gives the relay track that ICY sync selected to the trigger.
     /// Also keeps the track, also nil, as the current track for a manual boost.
     /// ADR 0024 §The chapter change: a new chapter state can complete a candidate. That starts a boost.
-    func selectedTrack(_ track: TrackDisplay?) {
+    /// `valueEnded` is true when the value block of the track ended (ADR 0028). Then no manual target exists.
+    /// The trigger gets the track with no change, so an auto-boost of the song that ended stays.
+    func selectedTrack(_ track: TrackDisplay?, valueEnded: Bool = false) {
         let time = ProcessInfo.processInfo.systemUptime
         let completed = trigger.selectedTrack(track, at: time)
         currentTrack = track
+        currentValueEnded = valueEnded
         updateManualTarget()
         if let completed {
             boost(completed)
@@ -124,7 +129,7 @@ final class BoostModel: ObservableObject {
     /// The value changes only when it is different, so the views do not update without a change.
     private func updateManualTarget() {
         var target: TrackDisplay?
-        if let currentTrack, pairing.payload(for: currentTrack) != nil {
+        if let currentTrack, !currentValueEnded, pairing.payload(for: currentTrack) != nil {
             target = currentTrack
         }
         if target != manualTarget {

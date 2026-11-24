@@ -22,6 +22,9 @@ public struct IcySync: Equatable, Sendable {
     private var icyText: String?
     /// The ID3 title alone of the last ICY text, or nil (ADR 0027).
     private var icyTitleAlone: String?
+    /// ADR 0028: the keys of the states whose value block ended. A state of the key had a value block, and a newer
+    /// state of the same key has none. The publisher sends this during a jingle and between songs.
+    private var valueEndedKeys: Set<String> = []
 
     /// Creates an IcySync with an empty list and no ICY text.
     public init() {}
@@ -38,17 +41,31 @@ public struct IcySync: Equatable, Sendable {
         hasIcy ? relayTrack : timedTrack
     }
 
+    /// ADR 0028: true when the track has no value block and the value block of its key ended.
+    public func valueEnded(_ track: TrackDisplay?) -> Bool {
+        guard let track, track.value == nil else { return false }
+        return valueEndedKeys.contains(Self.key(of: track))
+    }
+
     /// Adds a display state from the snapshot or the stream.
     /// A nil state (`{"track": null}`) is not added. Selects again after the add.
     public mutating func receive(_ track: TrackDisplay?) {
         if let track {
             let newKey = Self.key(of: track)
+            // ADR 0028: a state with no value block after a state of the same key with a value block.
+            if track.value != nil {
+                valueEndedKeys.remove(newKey)
+            } else if states.contains(where: { Self.key(of: $0) == newKey && $0.value != nil }) {
+                valueEndedKeys.insert(newKey)
+            }
             // A state with an equal key replaces the older state, at the front.
             states.removeAll { Self.key(of: $0) == newKey }
             states.insert(track, at: 0)
             if states.count > Self.capacity {
                 states.removeLast(states.count - Self.capacity)
             }
+            let keptKeys = Set(states.map(Self.key(of:)))
+            valueEndedKeys.formIntersection(keptKeys)
         }
         select()
     }
@@ -66,6 +83,7 @@ public struct IcySync: Equatable, Sendable {
     /// Removes all display states. The ICY text stays. Selects again after the clear.
     public mutating func clearStates() {
         states.removeAll()
+        valueEndedKeys.removeAll()
         select()
     }
 

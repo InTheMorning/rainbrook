@@ -5,6 +5,7 @@
 - Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
 - Changed by: [ADR 0024](0024-song-line-is-the-icy-key.md)
 - Changed by: [ADR 0026](0026-dead-block-title-and-artist-title-payload.md)
+- Changed by: [ADR 0028](0028-station-title-and-image-from-the-dead-block.md)
 - Class: situational. Supersede this record when the app pays by a different trigger, by a different method, or from a different value source.
 - Supersedes: [ADR 0012](../archive/adr/0012-auto-boost.md)
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md)

@@ -47,13 +47,14 @@ public struct LiveValuePayload: Equatable, Sendable {
     public let podcastName: String?
     /// The `image` URL of the payload, or nil. Only an `http` or `https` URL. ADR 0028 uses the image of the dead block.
     public let image: URL?
-    /// True when a destination has a reserved host, as the dead block has (ADR 0026, ADR 0028).
-    let hasReservedDestination: Bool
+    /// True when `value.destinations` is an empty array, or when a destination has a reserved host.
+    /// The dead block has one of the two (ADR 0026, ADR 0028).
+    let hasDeadBlockDestinations: Bool
 
     /// ADR 0028: true for the dead block. It has the default dead block title, or it has no payable destination and
-    /// a destination with a reserved host.
+    /// an empty destination array or a destination with a reserved host.
     public var isDeadBlock: Bool {
-        title == Self.placeholderTitle || (destinations.isEmpty && hasReservedDestination)
+        title == Self.placeholderTitle || (destinations.isEmpty && hasDeadBlockDestinations)
     }
 
     /// False for the default dead block title, and when no destination is payable.
@@ -110,11 +111,11 @@ public struct LiveValuePayload: Equatable, Sendable {
         }
 
         var destinations: [LiveValueDestination] = []
-        var hasReservedDestination = false
+        var hasDeadBlockDestinations = false
         if let value = dict["value"] as? [String: Any],
            let rawDestinations = value["destinations"] as? [[String: Any]] {
             destinations = rawDestinations.compactMap(Self.destination(from:))
-            hasReservedDestination = rawDestinations.contains(where: Self.hasReservedHost)
+            hasDeadBlockDestinations = rawDestinations.isEmpty || rawDestinations.contains(where: Self.hasReservedHost)
         }
 
         return LiveValuePayload(
@@ -126,7 +127,7 @@ public struct LiveValuePayload: Equatable, Sendable {
             destinations: destinations,
             podcastName: podcastName,
             image: Self.webURL(dict["image"]),
-            hasReservedDestination: hasReservedDestination
+            hasDeadBlockDestinations: hasDeadBlockDestinations
         )
     }
 

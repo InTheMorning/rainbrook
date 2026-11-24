@@ -343,20 +343,26 @@ final class RadioPlayer: ObservableObject {
     }
 
     /// Logs one event with the play position: the seconds behind the live edge and the buffered seconds.
+    /// Task diagnosis-task-002: only an item with an indefinite duration (HLS live) has a live edge.
+    /// For a progressive stream the seekable range is a byte count estimate, so the log writes "none".
     private func logPosition(_ event: String) {
         guard let item = player?.currentItem else {
             PlaybackDiagnostics.record("\(event): no item")
             return
         }
         let now = item.currentTime().seconds
-        let liveEdge = item.seekableTimeRanges.last.map { CMTimeRangeGetEnd($0.timeRangeValue).seconds }
-        let behind = liveEdge.map { $0 - now } ?? -1
         let buffered = item.loadedTimeRanges.last.map { CMTimeRangeGetEnd($0.timeRangeValue).seconds - now } ?? -1
         let status = player?.timeControlStatus.rawValue ?? -1
         let reason = player?.reasonForWaitingToPlay?.rawValue ?? "none"
-        let behindText = String(format: "%.1f", behind)
+        let behindText: String
+        if item.duration.isIndefinite {
+            let liveEdge = item.seekableTimeRanges.last.map { CMTimeRangeGetEnd($0.timeRangeValue).seconds }
+            behindText = String(format: "%.1f s", liveEdge.map { $0 - now } ?? -1)
+        } else {
+            behindText = "none"
+        }
         let bufferedText = String(format: "%.1f", buffered)
-        PlaybackDiagnostics.record("\(event): status \(status), waiting \(reason), behind live \(behindText) s, buffered \(bufferedText) s, path \(pathSatisfied)")
+        PlaybackDiagnostics.record("\(event): status \(status), waiting \(reason), behind live \(behindText), buffered \(bufferedText) s, path \(pathSatisfied)")
     }
 
     private func refreshPlayback(expectedID: UUID) {

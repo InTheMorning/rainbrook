@@ -30,14 +30,40 @@ actor ArtworkLoader {
         }
 
         let url = sourceURL(for: artwork, event: event)
-        guard let data = await download(from: url, maximumBytes: ArtworkPolicy.maximumBytes(for: artwork)),
-              ArtworkPolicy.accepts(data, for: artwork),
-              let image = decode(data) else {
+        let clock = ContinuousClock()
+        let start = clock.now
+        guard let data = await download(from: url, maximumBytes: ArtworkPolicy.maximumBytes(for: artwork)) else {
+            await PlaybackDiagnostics.record("Artwork download: failed after \(Self.seconds(clock.now - start))")
+            return nil
+        }
+        let downloaded = clock.now
+        guard ArtworkPolicy.accepts(data, for: artwork) else {
+            await PlaybackDiagnostics.record("Artwork download: \(Self.kilobytes(data.count)), type not accepted")
+            return nil
+        }
+        // The decode runs off this actor, so a large animated image does not hold the next load.
+        let image = await Self.decode(data)
+        await PlaybackDiagnostics.record(
+            "Artwork download: \(Self.kilobytes(data.count)) in \(Self.seconds(downloaded - start)), "
+                + "decode \(image == nil ? "failed" : "ok") in \(Self.seconds(clock.now - downloaded))"
+        )
+        guard let image else {
             return nil
         }
 
         cache.insert(image, for: key)
         return image
+    }
+
+    /// The log text of a duration, for example "2.4 s".
+    private static func seconds(_ duration: Duration) -> String {
+        let value = Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+        return String(format: "%.1f s", value)
+    }
+
+    /// The log text of a byte count, for example "18432 KB".
+    private static func kilobytes(_ count: Int) -> String {
+        "\((count + 1023) / 1024) KB"
     }
 
     private func sourceURL(for artwork: TrackDisplay.Artwork, event: RelayEvent) -> URL {
@@ -107,8 +133,10 @@ actor ArtworkLoader {
     // MARK: - Decode
 
     /// Decodes the data with ImageIO into a smaller image.
-    /// A GIF with two or more frames gives an animated image. Gives nil when a step fails.
-    private func decode(_ data: Data) -> UIImage? {
+    /// A GIF with two or more frames gives an animated image. When the animated decode fails, the first frame gives
+    /// a still image. Gives nil when a step fails, or when the caller is canceled.
+    /// The function is nonisolated and async, so it runs off the actor of the loader.
+    nonisolated private static func decode(_ data: Data) async -> UIImage? {
         guard let format = ArtworkPolicy.format(of: data),
               let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return nil
@@ -117,17 +145,18 @@ actor ArtworkLoader {
         guard frameCount >= 1 else {
             return nil
         }
-        if format == .gif && frameCount >= 2 {
-            return animatedImage(from: source, frameCount: frameCount)
+        if format == .gif && frameCount >= 2, let animated = animatedImage(from: source, frameCount: frameCount) {
+            return animated
         }
-        guard let cgImage = thumbnail(from: source, at: 0, maximumSide: ArtworkFrames.stillMaximumSide) else {
+        guard !Task.isCancelled, let cgImage = thumbnail(from: source, at: 0, maximumSide: ArtworkFrames.stillMaximumSide) else {
             return nil
         }
         return UIImage(cgImage: cgImage)
     }
 
     /// Makes an animated image from the frames in the plan of `ArtworkFrames`.
-    private func animatedImage(from source: CGImageSource, frameCount: Int) -> UIImage? {
+    /// Gives nil when a frame fails, or when the caller is canceled.
+    nonisolated private static func animatedImage(from source: CGImageSource, frameCount: Int) -> UIImage? {
         let delays = (0..<frameCount).map { frameDelay(from: source, at: $0) }
         guard let framePixels = reducedFramePixels(from: source) else {
             return nil
@@ -138,7 +167,7 @@ actor ArtworkLoader {
         frames.reserveCapacity(plan.count)
         var duration = 0.0
         for kept in plan {
-            guard let cgImage = thumbnail(from: source, at: kept.index, maximumSide: ArtworkFrames.animatedMaximumSide) else {
+            guard !Task.isCancelled, let cgImage = thumbnail(from: source, at: kept.index, maximumSide: ArtworkFrames.animatedMaximumSide) else {
                 return nil
             }
             frames.append(UIImage(cgImage: cgImage))
@@ -151,7 +180,7 @@ actor ArtworkLoader {
     }
 
     /// Reads the delay of one GIF frame through `ArtworkFrames.delay`.
-    private func frameDelay(from source: CGImageSource, at index: Int) -> Double {
+    nonisolated private static func frameDelay(from source: CGImageSource, at index: Int) -> Double {
         let properties = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [CFString: Any]
         let gif = properties?[kCGImagePropertyGIFDictionary] as? [CFString: Any]
         let unclamped = (gif?[kCGImagePropertyGIFUnclampedDelayTime] as? NSNumber)?.doubleValue
@@ -161,7 +190,7 @@ actor ArtworkLoader {
 
     /// Gives the pixel count of one reduced frame.
     /// The app makes the dimensions of frame 0 smaller until the longest side is a maximum of `animatedMaximumSide`.
-    private func reducedFramePixels(from source: CGImageSource) -> Int? {
+    nonisolated private static func reducedFramePixels(from source: CGImageSource) -> Int? {
         guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
               let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.doubleValue,
               let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.doubleValue,
@@ -175,7 +204,7 @@ actor ArtworkLoader {
     }
 
     /// Makes a decoded thumbnail of one frame, with a maximum side in pixels.
-    private func thumbnail(from source: CGImageSource, at index: Int, maximumSide: Int) -> CGImage? {
+    nonisolated private static func thumbnail(from source: CGImageSource, at index: Int, maximumSide: Int) -> CGImage? {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,

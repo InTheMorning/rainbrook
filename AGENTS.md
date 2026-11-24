@@ -31,6 +31,9 @@ The app is also the base and the example for a client app of the suite. Write co
 - The dead block title is a station setting, and a payable payload has the title "artist - title" (publisher
   ADR 0029). The reserved `.invalid` host excludes the dead block. The title pairing compares the key of the relay
   track first, then its title (ADR 0026).
+- The dead block payload gives the station title and image. The default lines take the station title, and the screen
+  shows the track image or else the station image (ADR 0028). The playback log records the size and the times of each
+  artwork download. The visual checks of ADR 0028 are open.
 
 ## The Design Rules
 

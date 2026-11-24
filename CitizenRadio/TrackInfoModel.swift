@@ -15,6 +15,7 @@ import CitizenRadioCore
 @MainActor
 final class TrackInfoModel: ObservableObject {
     @Published private(set) var lines = TrackLines.select(relay: nil, icy: nil)
+    /// ADR 0028: the shown image. It is the track image, or else the station image.
     @Published private(set) var image: UIImage?
     @Published private(set) var relayStatus: EventStreamStatus?
     /// Decides and pays the boosts of the session.
@@ -48,6 +49,14 @@ final class TrackInfoModel: ObservableObject {
     private var valueUpdatesTask: Task<Void, Never>?
     private var pathTask: Task<Void, Never>?
     private var artworkTask: Task<Void, Never>?
+    /// The image of the artwork of `lines`, or nil.
+    private var trackImage: UIImage?
+    /// True when the retries of the artwork of `lines` ended with no image (ADR 0022 §The artwork retry).
+    private var artworkRetriesEnded = false
+    /// ADR 0028: the station title and image from the newest dead block payload of this event.
+    private var station: StationIdentity?
+    private var stationImage: UIImage?
+    private var stationImageTask: Task<Void, Never>?
     /// ADR 0022 §The playback log: the last recorded relay track and value client status.
     private var recordedRelayTrack: TrackDisplay?
     private var valueStatus: EventStreamStatus?
@@ -113,6 +122,7 @@ final class TrackInfoModel: ObservableObject {
         valueUpdatesTask?.cancel()
         pathTask?.cancel()
         artworkTask?.cancel()
+        stationImageTask?.cancel()
         for apply in pending {
             apply.task.cancel()
         }
@@ -146,6 +156,8 @@ final class TrackInfoModel: ObservableObject {
             relayStatus = nil
             sync.clearStates()
             setRelayTrack(nil)
+            // ADR 0028: the station identity belongs to the event.
+            stationChanged(nil)
             // ADR 0013 §The trigger: a change of the live value address ends the session.
             boost.sessionEnded()
         }
@@ -384,7 +396,49 @@ final class TrackInfoModel: ObservableObject {
             return
         }
         guard let payload = decoded else { return }
+        if let identity = StationIdentity(payload) {
+            stationChanged(identity)
+        }
         boost.payload(payload)
+    }
+
+    /// ADR 0028: keeps the station identity of the newest dead block payload.
+    /// It loads the station image when the image changes, or when no image is loaded and no load runs.
+    private func stationChanged(_ identity: StationIdentity?) {
+        let imageChanged = identity?.image != station?.image
+        let reload = imageChanged || (identity?.image != nil && stationImage == nil && stationImageTask == nil)
+        guard identity != station || reload else { return }
+        station = identity
+        if reload {
+            loadStationImage()
+        }
+        updateLines()
+    }
+
+    /// Loads the station image. A result for an older station image is ignored.
+    private func loadStationImage() {
+        stationImageTask?.cancel()
+        stationImageTask = nil
+        stationImage = nil
+        showImage()
+        guard let artwork = station?.artwork, let event else { return }
+        let loader = self.loader
+        stationImageTask = Task { [weak self] in
+            let loaded = await loader.image(for: artwork, event: event)
+            guard !Task.isCancelled, let self, self.station?.artwork == artwork else { return }
+            self.stationImageTask = nil
+            self.stationImage = loaded
+            PlaybackDiagnostics.record(loaded == nil ? "Station image load: failed" : "Station image load: ok")
+            self.showImage()
+        }
+    }
+
+    /// ADR 0028: shows the track image, or else the station image.
+    private func showImage() {
+        let shown = trackImage ?? stationImage
+        guard shown !== image else { return }
+        image = shown
+        updateNowPlaying()
     }
 
     // MARK: - Delayed applies
@@ -453,11 +507,13 @@ final class TrackInfoModel: ObservableObject {
         let selected = sync.track(withoutIcy: relayTrack)
         boost.selectedTrack(selected)
         recordRelayTrack(selected)
-        let newLines = sync.hasIcy ? sync.lines : TrackLines.select(relay: relayTrack, icy: nil)
+        // ADR 0028: the default lines take the station title.
+        let newLines = (sync.hasIcy ? sync.lines : TrackLines.select(relay: relayTrack, icy: nil)).withStation(station)
         guard newLines != lines else { return }
         let artworkChanged = newLines.artwork != lines.artwork
         lines = newLines
-        if artworkChanged {
+        // A new track with the same artwork loads it again when the retries of that artwork ended with no image.
+        if artworkChanged || (artworkRetriesEnded && trackImage == nil && newLines.artwork != nil) {
             PlaybackDiagnostics.record("Artwork: \(Self.artworkKind(newLines.artwork))")
             loadArtwork()
         }
@@ -472,8 +528,10 @@ final class TrackInfoModel: ObservableObject {
     private func loadArtwork() {
         artworkTask?.cancel()
         artworkTask = nil
+        artworkRetriesEnded = false
         guard let artwork = lines.artwork, let event else {
-            image = nil
+            trackImage = nil
+            showImage()
             return
         }
         let loader = self.loader
@@ -497,19 +555,21 @@ final class TrackInfoModel: ObservableObject {
     /// Gives the interval in seconds before the next load, or nil when no retry is necessary.
     private func artworkLoadEnded(_ loaded: UIImage?, artwork: TrackDisplay.Artwork, attempt: Int) -> Int? {
         guard lines.artwork == artwork else { return nil }
-        image = loaded
-        updateNowPlaying()
+        trackImage = loaded
+        showImage()
         guard loaded == nil else {
             PlaybackDiagnostics.record("Artwork load: ok")
             return nil
         }
         PlaybackDiagnostics.record("Artwork load: failed, attempt \(attempt)")
-        return ArtworkRetry.delay(beforeRetry: attempt)
+        let delay = ArtworkRetry.delay(beforeRetry: attempt)
+        artworkRetriesEnded = delay == nil
+        return delay
     }
 
     /// ADR 0022 §The artwork retry: when the path becomes satisfied, load an artwork with no image immediately.
     private func pathBecameSatisfied() {
-        guard lines.artwork != nil, image == nil else { return }
+        guard lines.artwork != nil, trackImage == nil else { return }
         loadArtwork()
     }
 

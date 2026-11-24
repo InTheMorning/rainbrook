@@ -30,3 +30,4 @@ ADR from number 0024 has a `- Bar:` line or a `- Supersedes:` line.
 | [ADR 0025](0025-the-icy-text-of-an-hls-stream.md) | The ICY text of an HLS stream | accepted |
 | [ADR 0026](0026-dead-block-title-and-artist-title-payload.md) | The dead block title and the "artist - title" payload | accepted |
 | [ADR 0027](0027-title-alone-match-on-hls.md) | The match of the ID3 title alone on HLS | accepted |
+| [ADR 0028](0028-station-title-and-image-from-the-dead-block.md) | The station title and image from the dead block | accepted |

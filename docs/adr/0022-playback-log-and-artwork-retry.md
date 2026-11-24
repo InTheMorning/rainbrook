@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-10-07
 - Class: situational. Supersede this record when the diagnosis tools or the artwork load rules change.
+- Changed by: [ADR 0028](0028-station-title-and-image-from-the-dead-block.md)
 - Related:
   - [ADR 0015](0015-artwork-from-url-and-animated-gif.md): the artwork load.
   - [ADR 0011](0011-icy-sync-of-the-relay-display.md): the ICY text and the relay track selection.

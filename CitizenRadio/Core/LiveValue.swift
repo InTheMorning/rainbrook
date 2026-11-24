@@ -45,6 +45,16 @@ public struct LiveValuePayload: Equatable, Sendable {
     /// The podcast name of the payload. Nil when the payload has no non-empty `podcastName` text.
     /// ADR 0023 §The boost record uses it for the `podcast` key.
     public let podcastName: String?
+    /// The `image` URL of the payload, or nil. Only an `http` or `https` URL. ADR 0028 uses the image of the dead block.
+    public let image: URL?
+    /// True when a destination has a reserved host, as the dead block has (ADR 0026, ADR 0028).
+    let hasReservedDestination: Bool
+
+    /// ADR 0028: true for the dead block. It has the default dead block title, or it has no payable destination and
+    /// a destination with a reserved host.
+    public var isDeadBlock: Bool {
+        title == Self.placeholderTitle || (destinations.isEmpty && hasReservedDestination)
+    }
 
     /// False for the default dead block title, and when no destination is payable.
     /// ADR 0026: the reserved host of the dead block gives no destination. That rule excludes the dead block
@@ -100,9 +110,11 @@ public struct LiveValuePayload: Equatable, Sendable {
         }
 
         var destinations: [LiveValueDestination] = []
+        var hasReservedDestination = false
         if let value = dict["value"] as? [String: Any],
            let rawDestinations = value["destinations"] as? [[String: Any]] {
             destinations = rawDestinations.compactMap(Self.destination(from:))
+            hasReservedDestination = rawDestinations.contains(where: Self.hasReservedHost)
         }
 
         return LiveValuePayload(
@@ -112,8 +124,34 @@ public struct LiveValuePayload: Equatable, Sendable {
             feedGuid: feedGuid,
             itemGuid: itemGuid,
             destinations: destinations,
-            podcastName: podcastName
+            podcastName: podcastName,
+            image: Self.webURL(dict["image"]),
+            hasReservedDestination: hasReservedDestination
         )
+    }
+
+    /// Gives the URL of an `http` or `https` text with a host, or nil.
+    private static func webURL(_ raw: Any?) -> URL? {
+        guard let text = raw as? String,
+              let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = url.host, !host.isEmpty else {
+            return nil
+        }
+        return url
+    }
+
+    /// True for a lightning address destination with a reserved host, for example `example.invalid`.
+    private static func hasReservedHost(_ raw: [String: Any]) -> Bool {
+        guard raw["type"] as? String == "lnaddress",
+              let address = (raw["address"] as? String)?.lowercased() else {
+            return false
+        }
+        let parts = address.components(separatedBy: "@")
+        guard parts.count == 2, !parts[0].isEmpty, parts[1].contains(".") else {
+            return false
+        }
+        return !isPayableHost(parts[1])
     }
 
     /// Reads one destination. Gives nil when the destination is not payable.

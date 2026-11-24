@@ -4,6 +4,7 @@
 - Date: 2026-10-04
 - Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
 - Class: situational. Supersede this record when the relay display path changes, or when the app gets track data from a different source.
+- Changed by: [ADR 0028](0028-station-title-and-image-from-the-dead-block.md)
 - Research: [musicindex relay metadata](../research/musicindex-relay-metadata.md)
 - Related:
   - [ADR 0004](../archive/adr/0004-player-screen-and-settings.md): this record changes its player screen items. See §Changes at implementation.

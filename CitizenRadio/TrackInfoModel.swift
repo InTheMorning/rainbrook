@@ -42,7 +42,8 @@ final class TrackInfoModel: ObservableObject {
     /// The value is yes when the display client stopped on a 404 or a 409. The client stays until playback stops or the event changes.
     private var relayStopped = false
     private var updatesTask: Task<Void, Never>?
-    /// ADR 0012: the live value client. It runs only while the display client runs and Auto-boost is on.
+    /// ADR 0013 and ADR 0018: the live value client. It runs while the display client runs.
+    /// Auto-boost and the manual boost use its payloads, so the Auto-boost setting does not control it.
     private var valueClient: EventStreamClient?
     private var valueUpdatesTask: Task<Void, Never>?
     private var pathTask: Task<Void, Never>?
@@ -123,8 +124,8 @@ final class TrackInfoModel: ObservableObject {
         }
     }
 
-    /// Reads the live value address and Auto-boost settings again. If the event changed, the relay client starts again.
-    /// If only the Auto-boost setting changed, the live value client starts or stops.
+    /// Reads the live value address again. If the event changed, the relay client starts again.
+    /// If the event did not change, `updateValueClient` starts the live value client if it is missing.
     func reloadSettings() {
         let newEvent = StationStore().selected?.event
         guard newEvent != event else {
@@ -310,9 +311,9 @@ final class TrackInfoModel: ObservableObject {
 
     // MARK: - Live value client
 
-    /// Starts or stops the live value client. It runs while the display client runs and Auto-boost is on.
+    /// Starts or stops the live value client. It runs while the display client runs.
     private func updateValueClient() {
-        let shouldRun = client != nil && !relayStopped && BoostSettings().isEnabled
+        let shouldRun = client != nil && !relayStopped
         if shouldRun {
             startValueClient()
         } else {

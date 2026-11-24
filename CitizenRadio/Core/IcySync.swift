@@ -2,6 +2,7 @@ import Foundation
 
 /// ADR 0011: display states are early, and the ICY text releases them.
 /// ADR 0024: the key of a state with a song line is that song line.
+/// ADR 0027: when the ICY text gives no match, the ID3 title alone can give the match.
 public struct IcySync: Equatable, Sendable {
     /// The highest number of display states that the list keeps.
     public static let capacity = 4
@@ -19,6 +20,8 @@ public struct IcySync: Equatable, Sendable {
     private var states: [TrackDisplay] = []
     /// The raw text from the last call to `receiveIcyText`, or nil before that call.
     private var icyText: String?
+    /// The ID3 title alone of the last ICY text, or nil (ADR 0027).
+    private var icyTitleAlone: String?
 
     /// Creates an IcySync with an empty list and no ICY text.
     public init() {}
@@ -51,10 +54,12 @@ public struct IcySync: Equatable, Sendable {
     }
 
     /// Sets the ICY text from a StreamTitle item. An empty text is a valid input.
+    /// `titleAlone` is the ID3 title alone when the text joins an artist and a title (ADR 0027).
     /// Selects again after the set.
-    public mutating func receiveIcyText(_ text: String) {
+    public mutating func receiveIcyText(_ text: String, titleAlone: String? = nil) {
         hasIcy = true
         icyText = text
+        icyTitleAlone = titleAlone
         select()
     }
 
@@ -69,6 +74,7 @@ public struct IcySync: Equatable, Sendable {
     public mutating func resetIcy() {
         hasIcy = false
         icyText = nil
+        icyTitleAlone = nil
         select()
     }
 
@@ -88,7 +94,15 @@ public struct IcySync: Equatable, Sendable {
         }
 
         icyTrack = IcyTitle.parse(icyText)
-        relayTrack = Self.match(normalizedIcyText, in: states)
+        relayTrack = Self.match(normalizedIcyText, in: states) ?? titleAloneMatch()
+    }
+
+    /// ADR 0027: the match of the ID3 title alone, when the ICY text gives no match.
+    private func titleAloneMatch() -> TrackDisplay? {
+        guard let icyTitleAlone else { return nil }
+        let normalizedTitle = Self.normalize(icyTitleAlone)
+        guard !normalizedTitle.isEmpty else { return nil }
+        return Self.match(normalizedTitle, in: states)
     }
 
     /// Finds the newest state whose key equals the ICY text, or else starts with it.

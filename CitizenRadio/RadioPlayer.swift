@@ -29,8 +29,8 @@ final class RadioPlayer: ObservableObject {
     @Published private(set) var state: PlaybackState = .stopped {
         didSet { updateChime() }
     }
-    /// The raw ICY text from the stream. Nil means no ICY text in this session.
-    @Published private(set) var icyText: String?
+    /// The raw ICY text from the stream, with the ID3 title alone (ADR 0027). Nil means no ICY text in this session.
+    @Published private(set) var icyText: IcyText?
     /// ADR 0017 §The fallback: true while the alternate stream plays. Stop and each new Play set it to false.
     @Published private(set) var usingAlternateStream = false
     /// ADR 0021 §The status: true during a drop while the network path is not satisfied.

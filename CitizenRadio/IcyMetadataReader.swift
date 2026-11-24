@@ -11,10 +11,10 @@ import CitizenRadioCore
 /// hands only that text to `onText`. The caller of `onText` decides where the text then
 /// goes.
 final class IcyMetadataReader: NSObject, AVPlayerItemMetadataOutputPushDelegate, Sendable {
-    private let onText: @Sendable (String) -> Void
+    private let onText: @Sendable (IcyText) -> Void
 
-    /// Creates a reader. The reader calls `onText` once for each group that gives an ICY text (ADR 0025).
-    init(onText: @escaping @Sendable (String) -> Void) {
+    /// Creates a reader. The reader calls `onText` once for each group that gives an ICY text (ADR 0025, ADR 0027).
+    init(onText: @escaping @Sendable (IcyText) -> Void) {
         self.onText = onText
     }
 
@@ -35,7 +35,7 @@ final class IcyMetadataReader: NSObject, AVPlayerItemMetadataOutputPushDelegate,
         // AVMetadataItem is not Sendable. AVFoundation sends the groups to this method,
         // so the task can take them. The task reads the items only inside the task.
         // ADR 0025: a StreamTitle item gives the ICY text. Else the ID3 artist and title items
-        // of an HLS stream give it. IcyTitle.text holds the rule.
+        // of an HLS stream give it. IcyTitle.icyText holds the rule.
         Task { [onText] in
             let candidates = groups.flatMap(\.items)
             let streamTitleItem = candidates.first { $0.identifier == .icyMetadataStreamTitle }
@@ -52,7 +52,7 @@ final class IcyMetadataReader: NSObject, AVPlayerItemMetadataOutputPushDelegate,
                 ?? candidates.first { $0.commonKey == .commonKeyTitle }
             let artist = await Self.string(of: artistItem)
             let title = await Self.string(of: titleItem)
-            guard let text = IcyTitle.text(streamTitle: streamTitle, artist: artist, title: title) else {
+            guard let text = IcyTitle.icyText(streamTitle: streamTitle, artist: artist, title: title) else {
                 return
             }
             onText(text)

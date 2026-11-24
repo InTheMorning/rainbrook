@@ -26,7 +26,8 @@ The app is also the base and the example for a client app of the suite. Write co
   app shows each chapter song of an episode file. Each chapter song that plays to its end gets its own auto-boost
   candidate (ADR 0024 §The chapter change). ADR 0024 has one open point about the switch back in an episode file.
 - An HLS stream has no ICY `StreamTitle`. The app makes the ICY text from the ID3 artist and title of each tag
-  (ADR 0025). The visual check on HLS is open.
+  (ADR 0025). When that text gives no match, the app tries the ID3 title alone (ADR 0027). The visual check on HLS
+  is open.
 - The dead block title is a station setting, and a payable payload has the title "artist - title" (publisher
   ADR 0029). The reserved `.invalid` host excludes the dead block. The title pairing compares the key of the relay
   track first, then its title (ADR 0026).

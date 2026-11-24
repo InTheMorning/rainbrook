@@ -430,11 +430,13 @@ final class TrackInfoModel: ObservableObject {
     }
 
     /// Gives an ICY text to the sync. A nil text changes nothing, because Stop makes a new sync.
-    private func icyTextChanged(_ text: String?) {
-        guard let text else { return }
+    private func icyTextChanged(_ icyText: IcyText?) {
+        guard let icyText else { return }
+        let text = icyText.text
         PlaybackDiagnostics.record("ICY: \(text)")
         let firstIcyText = !sync.hasIcy
-        sync.receiveIcyText(text)
+        // ADR 0027: the sync tries the ID3 title alone when the text gives no match.
+        sync.receiveIcyText(text, titleAlone: icyText.titleAlone)
         // ADR 0016 §The switch back: give the relay track that the sync selects for this text.
         boost.icyText(text, track: sync.relayTrack)
         if firstIcyText {

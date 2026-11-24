@@ -11,8 +11,32 @@ public struct IcyTrack: Equatable, Sendable {
     }
 }
 
+/// ADR 0027: the ICY text of one metadata group, with the ID3 title alone when the text joins an artist and a title.
+public struct IcyText: Equatable, Sendable {
+    /// The ICY text (ADR 0025).
+    public let text: String
+    /// The title item alone, when `text` is "artist - title" from ID3 items. Else nil.
+    public let titleAlone: String?
+
+    public init(text: String, titleAlone: String? = nil) {
+        self.text = text
+        self.titleAlone = titleAlone
+    }
+}
+
 /// Parses Icecast StreamTitle values.
 public enum IcyTitle {
+    /// ADR 0025 and ADR 0027: gives the ICY text of one metadata group, or nil when the group gives no ICY text.
+    /// `titleAlone` is the trimmed title only when the text joins an artist and a title.
+    public static func icyText(streamTitle: String?, artist: String?, title: String?) -> IcyText? {
+        guard let text = text(streamTitle: streamTitle, artist: artist, title: title) else {
+            return nil
+        }
+        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let joined = streamTitle == nil && text != trimmedTitle
+        return IcyText(text: text, titleAlone: joined ? trimmedTitle : nil)
+    }
+
     /// ADR 0025: gives the ICY text of one metadata group, or nil when the group gives no ICY text.
     ///
     /// - A StreamTitle value wins, also an empty one.

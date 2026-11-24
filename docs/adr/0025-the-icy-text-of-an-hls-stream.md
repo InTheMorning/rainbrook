@@ -6,6 +6,7 @@
   record, an agent can remove the ID3 path, or use the title alone again.
 - Changes: [ADR 0011](0011-icy-sync-of-the-relay-display.md) §The ICY text items 1 and 2, and §Invariants item 2.
   A group with no `StreamTitle` item can give an ICY text from its ID3 artist and title items.
+- Changed by: [ADR 0027](0027-title-alone-match-on-hls.md)
 - Operator choice, 2026-11-24: fix B1. The app joins the ID3 artist and title of an HLS stream to make the ICY text.
   The orchestrator session relayed the choice.
 - Class: situational. Supersede this record when the app selects a display state from a different signal of an HLS

@@ -162,4 +162,69 @@ final class BoostPairingTests: XCTestCase {
             XCTAssertEqual(pairing.payload(for: state)?.blockGuid, "block-\(index)")
         }
     }
+
+    // ADR 0026: the payload title of a payable block is "artist - title" (publisher ADR 0029).
+    func testTitlePairingMatchesArtistAndTitleOfTheTrack() {
+        var pairing = BoostPairing()
+        pairing.receive(payload(title: "Anni Powell - Beyond the Hills", blockGuid: "block-1"))
+
+        let track = TrackDisplay(artist: "Anni Powell", title: "Beyond the Hills", artwork: nil)
+        XCTAssertEqual(pairing.payload(for: track)?.blockGuid, "block-1")
+    }
+
+    func testTitlePairingMatchesTheSongLineOfTheTrack() {
+        var pairing = BoostPairing()
+        pairing.receive(payload(title: "Anni Powell - Beyond the Hills", blockGuid: "block-1"))
+
+        let track = TrackDisplay(
+            artist: "Other", title: "Other", artwork: nil, songLine: "anni powell -  Beyond the Hills"
+        )
+        XCTAssertEqual(pairing.payload(for: track)?.blockGuid, "block-1")
+    }
+
+    func testTitlePairingPrefersTheKeyOverTheTitle() {
+        var pairing = BoostPairing()
+        pairing.receive(payload(title: "Anni Powell - Beyond the Hills", blockGuid: "key-block"))
+        pairing.receive(payload(title: "Beyond the Hills", blockGuid: "title-block"))
+
+        let track = TrackDisplay(artist: "Anni Powell", title: "Beyond the Hills", artwork: nil)
+        XCTAssertEqual(pairing.payload(for: track)?.blockGuid, "key-block")
+    }
+
+    func testTitlePairingGivesNilForANonPayableKeyMatch() {
+        var pairing = BoostPairing()
+        pairing.receive(payload(title: "Anni Powell - Beyond the Hills", blockGuid: "block-1", payable: false))
+
+        let track = TrackDisplay(artist: "Anni Powell", title: "Beyond the Hills", artwork: nil)
+        XCTAssertNil(pairing.payload(for: track))
+    }
+
+    func testDeadBlockWithAStationTitleNeverPairs() throws {
+        let json = """
+        {
+            "title": "HeyCitizen Test Stream",
+            "eventGuid": "event-guid",
+            "blockGuid": "dead-block",
+            "value": {
+                "model": { "type": "lightning", "method": "lnaddress" },
+                "destinations": [
+                    { "name": "No V4V payment route", "type": "lnaddress",
+                      "address": "no-v4v-track@example.invalid", "split": "100" }
+                ]
+            }
+        }
+        """
+        var pairing = BoostPairing()
+        pairing.receive(try XCTUnwrap(LiveValuePayload.decode(Data(json.utf8))))
+
+        let byTitle = TrackDisplay(artist: "HeyCitizen", title: "HeyCitizen Test Stream", artwork: nil)
+        XCTAssertNil(pairing.payload(for: byTitle))
+        let byKey = TrackDisplay(artist: "Other", title: "Other", artwork: nil, songLine: "HeyCitizen Test Stream")
+        XCTAssertNil(pairing.payload(for: byKey))
+        let byGuid = TrackDisplay(
+            artist: "HeyCitizen", title: "Jingle", artwork: nil,
+            value: TrackDisplay.ValueIdentity(eventGuid: "event-guid", blockGuid: "dead-block")
+        )
+        XCTAssertNil(pairing.payload(for: byGuid))
+    }
 }

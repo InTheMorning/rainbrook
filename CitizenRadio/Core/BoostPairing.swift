@@ -1,7 +1,7 @@
 import Foundation
 
 /// Pairs a completed relay track with its live value payload.
-/// ADR 0012 §The pairing names the rules this type enforces.
+/// ADR 0013 §The pairing and ADR 0026 name the rules this type enforces.
 public struct BoostPairing: Equatable, Sendable {
     /// The highest number of payloads that the list keeps.
     public static let capacity = 8
@@ -27,7 +27,7 @@ public struct BoostPairing: Equatable, Sendable {
     }
 
     /// The payload to pay for this relay track, or nil.
-    /// ADR 0012 §The pairing names the rules.
+    /// ADR 0013 §The pairing and ADR 0026 name the rules.
     public func payload(for track: TrackDisplay) -> LiveValuePayload? {
         if let value = track.value {
             guard let match = payloads.first(where: { $0.blockGuid == value.blockGuid }),
@@ -37,7 +37,13 @@ public struct BoostPairing: Equatable, Sendable {
             return match
         }
 
-        let normalizedTitle = IcySync.normalize(track.title)
-        return payloads.first { $0.isPayable && IcySync.normalize($0.title) == normalizedTitle }
+        // ADR 0026 §The title pairing: the key of the track first, then its title.
+        // The key is the song line, or "artist - title" (IcySync.key).
+        for text in [IcySync.key(of: track), IcySync.normalize(track.title)] {
+            if let match = payloads.first(where: { $0.isPayable && IcySync.normalize($0.title) == text }) {
+                return match
+            }
+        }
+        return nil
     }
 }

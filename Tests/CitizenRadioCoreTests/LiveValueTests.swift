@@ -86,6 +86,29 @@ final class LiveValueTests: XCTestCase {
         XCTAssertEqual(payload?.isPayable, false)
     }
 
+    // ADR 0026: the reserved host excludes a dead block with a title that the station sets (publisher ADR 0029).
+    func testDeadBlockWithAStationTitleIsNotPayable() throws {
+        let json = """
+        {
+            "title": "HeyCitizen Test Stream",
+            "eventGuid": "event-guid-2",
+            "blockGuid": "block-guid-2",
+            "value": {
+                "model": { "type": "lightning", "method": "lnaddress" },
+                "destinations": [
+                    { "name": "No V4V payment route", "type": "lnaddress",
+                      "address": "no-v4v-track@example.invalid", "split": "100" }
+                ]
+            }
+        }
+        """
+        let payload = try LiveValuePayload.decode(Data(json.utf8))
+
+        XCTAssertNotEqual(payload?.title, LiveValuePayload.placeholderTitle)
+        XCTAssertEqual(payload?.destinations.count, 0)
+        XCTAssertEqual(payload?.isPayable, false)
+    }
+
     func testPayableLightningAddressAndReservedHostsAreDropped() throws {
         let json = """
         {

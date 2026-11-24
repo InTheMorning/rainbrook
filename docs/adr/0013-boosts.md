@@ -4,6 +4,7 @@
 - Date: 2026-10-06
 - Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
 - Changed by: [ADR 0024](0024-song-line-is-the-icy-key.md)
+- Changed by: [ADR 0026](0026-dead-block-title-and-artist-title-payload.md)
 - Class: situational. Supersede this record when the app pays by a different trigger, by a different method, or from a different value source.
 - Supersedes: [ADR 0012](../archive/adr/0012-auto-boost.md)
 - Plan: [auto-boost phase plan](../plans/auto-boost-plan.md)
@@ -30,7 +31,7 @@ Facts on 2026-10-06:
 
 - The relay sends the live value on `GET /v1/liveitems/{id}/remoteValue` and on the SSE route `/v1/liveitems/{id}/events`, with the event name `remoteValue`. The data is one payload. [ADR 0018](0018-instant-snapshots-and-replay-on-connect.md) replaces the snapshot source: the app reads `GET /metadata`, not `GET /remoteValue`.
 - A V4V payload has `title`, `eventGuid`, `blockGuid`, optional `feedGuid`, `itemGuid` and `duration`, and `value.model.method = keysend`. Each destination has `type`, `address`, `split`, and optional `name`, `customKey`, `customValue` and `fee`.
-- Between V4V tracks, the payload is a placeholder: the title "No V4V track playing" and one `lnaddress` destination `no-v4v-track@example.invalid`.
+- Between V4V tracks, the payload is a placeholder: the title "No V4V track playing" and one `lnaddress` destination `no-v4v-track@example.invalid`. [ADR 0026](0026-dead-block-title-and-artist-title-payload.md) changes this item: the title is a station setting (publisher ADR 0029), and the reserved `.invalid` host is the rule that excludes this block.
 - The display state does not name its payload yet. Relay ADR 0005 and publisher ADR 0012 propose `value {eventGuid, blockGuid}` in the display track.
 
 ## Decision
@@ -79,7 +80,7 @@ The Wallet section of the settings sheet has these boost items. They are active 
 
 - The app keeps the last 8 payloads of the session, newest first, without a duplicate `blockGuid`.
 - If the relay track has `value.blockGuid`, the app pays only the payload with that `blockGuid`. If the app does not hold it, there is no boost.
-- Else the app pays the newest payload whose `title` is equal to the title of the relay track, after the normalization of ADR 0011 §Matching.
+- Else the app pays a payload that has a `title` equal to the key or the title of the relay track. [ADR 0026](0026-dead-block-title-and-artist-title-payload.md) §The title pairing gives the sequence.
 - No relay track gives no boost. A payload with no payable destination gives no boost.
 
 `TrackDisplay` decodes the optional `value {eventGuid, blockGuid}` of a display track. A display track without it is valid.
@@ -88,8 +89,8 @@ The Wallet section of the settings sheet has these boost items. They are active 
 
 - A destination with `type` equal to `node` is a keysend destination. Its `address` must be 66 hexadecimal characters.
 - A destination with `type` equal to `lnaddress` is a lightning address destination. Its `address` must have the form `name@host`.
-- The app never pays a lightning address whose host ends in `.invalid`, `.example`, `.test` or `.localhost`, or is `example.com`, `example.net` or `example.org`. This excludes the placeholder.
-- The app never pays a payload with the title "No V4V track playing".
+- The app never pays a lightning address whose host ends in `.invalid`, `.example`, `.test` or `.localhost`, or is `example.com`, `example.net` or `example.org`. This excludes the placeholder for each title (ADR 0026 §The dead block).
+- The app never pays a payload with the default title "No V4V track playing". ADR 0026 §The dead block tells why this rule is not sufficient alone.
 - The app ignores a destination of a different type and a destination without a valid split. A JSON boolean is not a valid split.
 
 ### The split

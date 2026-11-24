@@ -46,7 +46,9 @@ public struct LiveValuePayload: Equatable, Sendable {
     /// ADR 0023 §The boost record uses it for the `podcast` key.
     public let podcastName: String?
 
-    /// False for the placeholder title, and when no destination is payable.
+    /// False for the default dead block title, and when no destination is payable.
+    /// ADR 0026: the reserved host of the dead block gives no destination. That rule excludes the dead block
+    /// for each title, also for a title that the station sets.
     public var isPayable: Bool {
         title != Self.placeholderTitle && !destinations.isEmpty
     }

@@ -17,7 +17,7 @@ The app is also the base and the example for a client app of the suite. Write co
   decisions.
 - The app reads relay events and ICY titles (`CitizenRadio/Core/LiveValue.swift`, `TrackDisplay.swift`,
   `IcyTitle.swift`). It reads no feed and no file tags.
-- The app reads the relay `fee` as a JSON boolean (`LiveValue.swift:146`).
+- The app reads the relay `fee` as a JSON boolean (`LiveValue.swift:148`).
 - ADR 0007 and ADR 0014 have open visual acceptance criteria.
 - `~/build/musicindex/docs/glossary.md` has each word that the app shows, as a row or in its section "Shown Words
   With No Row". The app shows "track" for each item that plays, because the relay event gives no medium (musicindex ADR 0087 R-WORD-11
@@ -27,6 +27,9 @@ The app is also the base and the example for a client app of the suite. Write co
   candidate (ADR 0024 §The chapter change). ADR 0024 has one open point about the switch back in an episode file.
 - An HLS stream has no ICY `StreamTitle`. The app makes the ICY text from the ID3 artist and title of each tag
   (ADR 0025). The visual check on HLS is open.
+- The dead block title is a station setting, and a payable payload has the title "artist - title" (publisher
+  ADR 0029). The reserved `.invalid` host excludes the dead block. The title pairing compares the key of the relay
+  track first, then its title (ADR 0026).
 
 ## The Design Rules
 

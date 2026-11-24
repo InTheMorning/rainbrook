@@ -124,22 +124,32 @@ final class TrackInfoModel: ObservableObject {
         }
     }
 
-    /// Reads the live value address again. If the event changed, the relay client starts again.
+    /// Reads the live value address again, when the settings sheet closes.
+    /// `applyEvent` restarts the relay clients only for a different event.
     /// If the event did not change, `updateValueClient` starts the live value client if it is missing.
     func reloadSettings() {
         let newEvent = StationStore().selected?.event
-        guard newEvent != event else {
+        if newEvent == event {
             updateValueClient()
-            return
         }
-        event = newEvent
-        stopRelay()
-        relayStatus = nil
-        sync.clearStates()
-        setRelayTrack(nil)
-        // ADR 0012 §The trigger: a change of the live value address ends the session.
-        boost.sessionEnded()
-        if playbackActive {
+        applyEvent(newEvent)
+    }
+
+    /// Task stations-task-003: applies the event of the selected station. `RelayEventChange` holds the rule.
+    private func applyEvent(_ newEvent: RelayEvent?) {
+        let change = RelayEventChange.decide(
+            current: event, new: newEvent, playbackActive: playbackActive, clientExists: client != nil
+        )
+        if change.clearsRelay {
+            event = newEvent
+            stopRelay()
+            relayStatus = nil
+            sync.clearStates()
+            setRelayTrack(nil)
+            // ADR 0013 §The trigger: a change of the live value address ends the session.
+            boost.sessionEnded()
+        }
+        if change.startsClient {
             startRelay()
         }
     }
@@ -149,7 +159,8 @@ final class TrackInfoModel: ObservableObject {
     private func playbackChanged(_ state: PlaybackState) {
         playbackActive = state == .connecting || state == .playing
         if playbackActive {
-            startRelay()
+            // Task stations-task-003: use the event of the station that starts, not the event of the station before.
+            applyEvent(StationStore().selected?.event)
         } else {
             stopRelay()
             // ADR 0011 §The session: Stop starts a new session with no ICY.

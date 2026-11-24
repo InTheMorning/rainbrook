@@ -171,7 +171,7 @@ struct SettingsView: View {
     }
 
     /// Selects the station, closes the sheet and starts playback.
-    /// The onDismiss of the sheet in PlayerView reads the track info again.
+    /// The start of playback reads the live value address of the station (task stations-task-003).
     private func play(_ station: Station) {
         StationStore().select(id: station.id)
         selectedID = station.id

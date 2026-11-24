@@ -27,3 +27,4 @@ ADR from number 0024 has a `- Bar:` line or a `- Supersedes:` line.
 | [ADR 0022](0022-playback-log-and-artwork-retry.md) | Playback log and artwork retry | accepted |
 | [ADR 0023](0023-boost-metadata-for-each-recipient.md) | Boost metadata for each recipient | accepted |
 | [ADR 0024](0024-song-line-is-the-icy-key.md) | The song line is the ICY key of a display state | accepted |
+| [ADR 0025](0025-the-icy-text-of-an-hls-stream.md) | The ICY text of an HLS stream | accepted |

@@ -25,6 +25,8 @@ The app is also the base and the example for a client app of the suite. Write co
 - With an ICY text, the app selects a display state by its `songLine` when the state has one (ADR 0024). Thus the
   app shows each chapter song of an episode file. Each chapter song that plays to its end gets its own auto-boost
   candidate (ADR 0024 §The chapter change). ADR 0024 has one open point about the switch back in an episode file.
+- An HLS stream has no ICY `StreamTitle`. The app makes the ICY text from the ID3 artist and title of each tag
+  (ADR 0025). The visual check on HLS is open.
 
 ## The Design Rules
 
@@ -33,7 +35,8 @@ The app is also the base and the example for a client app of the suite. Write co
 - A Swift app cannot use a Rust crate. The owner of a shared rule states what applies to this app (`project-baseline`
   skill).
 - musicindex ADR 0086 R-FEED-5 applies to this app and to each client app that starts from it:
-  - Items 2 to 4 do not apply yet, because the app reads no feed and no tags.
+  - Items 2 to 4 do not apply yet, because the app reads no feed and no suite frames. It reads only the standard ID3
+    artist and title of an HLS stream (ADR 0025).
   - When the app starts to read a feed, it accepts the two namespace URIs of musicindex ADR 0086 R-FEED-3. It reads
     `fee` as musicindex ADR 0086 R-FEED-4 item 5 gives.
   - When the app starts to read tags, it reads only the frame names of musicindex ADR 0086 R-TAG-2.

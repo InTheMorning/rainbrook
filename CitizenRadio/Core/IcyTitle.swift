@@ -13,6 +13,24 @@ public struct IcyTrack: Equatable, Sendable {
 
 /// Parses Icecast StreamTitle values.
 public enum IcyTitle {
+    /// ADR 0025: gives the ICY text of one metadata group, or nil when the group gives no ICY text.
+    ///
+    /// - A StreamTitle value wins, also an empty one.
+    /// - Else a title that is not empty gives "artist - title", or the title alone when the artist is empty.
+    /// - Else the result is nil. An empty value is a value with only white space.
+    public static func text(streamTitle: String?, artist: String?, title: String?) -> String? {
+        if let streamTitle {
+            return streamTitle
+        }
+        guard let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
+            return nil
+        }
+        guard let artist = artist?.trimmingCharacters(in: .whitespacesAndNewlines), !artist.isEmpty else {
+            return title
+        }
+        return "\(artist) - \(title)"
+    }
+
     /// Parses an Icecast StreamTitle. Gives nil for an empty text.
     public static func parse(_ text: String) -> IcyTrack? {
         // Rule 1: Return nil if empty after trimming

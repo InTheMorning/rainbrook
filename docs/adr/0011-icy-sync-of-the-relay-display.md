@@ -4,6 +4,7 @@
 - Date: 2026-10-05
 - Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
 - Changed by: [ADR 0024](0024-song-line-is-the-icy-key.md)
+- Changed by: [ADR 0025](0025-the-icy-text-of-an-hls-stream.md)
 - Class: situational. Supersede this record when the app gets the time of a track change from a different signal.
 - Plan: [ICY sync phase plan](../plans/icy-sync-plan.md)
 - Related:
@@ -56,7 +57,7 @@ Display states are early. The ICY title releases them.
 ### The ICY text
 
 - A metadata group with a `StreamTitle` item gives an ICY text. An empty value is an empty ICY text.
-- A metadata group with no `StreamTitle` item is not an ICY text. It changes nothing.
+- A metadata group with no `StreamTitle` item is not an ICY text. It changes nothing. ADR 0025 gives the ICY text of a group with ID3 artist and title items.
 - "ICY in this session" means that the player item gave a minimum of one ICY text, also an empty one.
 
 ### The session
@@ -89,7 +90,7 @@ Display states are early. The ICY title releases them.
 These rules apply while this decision is current.
 
 - The selection rules in the Decision section. `IcySyncTests` enforces them.
-- A metadata group with no `StreamTitle` changes nothing. Manual check: examine `IcyMetadataReader`. A test cannot examine AVFoundation types on Linux.
+- A metadata group with no `StreamTitle` changes nothing. ADR 0025 §Invariants replaces this item for a group with ID3 items.
 - With ICY in this session, no display state applies from a timer. Manual check: examine `TrackInfoModel`.
 
 ## Changes at implementation

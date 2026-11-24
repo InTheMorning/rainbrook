@@ -4,7 +4,7 @@
 - Date: 2026-11-24
 - Revised: 2026-11-24, before the first push. Phone check 1 failed on a jingle with no title. Rule 3 accepts a dead
   block with no destinations (operator decision, relayed by the orchestrator session). Rules 6 and 7 replace the old
-  rule 6.
+  rule 6. A review of `0a90815` added the dead block test to rule 7 and the clear on a new ICY text to rule 6.
 - Bar: crosses repositories. Publisher ADR 0029 sends the station title and the station image in the dead block
   payload. This record sets how the app shows them.
 - Changes: [ADR 0008](0008-relay-display-metadata.md) §Display data item 4, and §Player screen and Now Playing items
@@ -67,11 +67,15 @@
    image shows when the lines have no artwork, while a track image loads with no earlier image, and after its
    retries end.
 6. The value block of a key ends when `IcySync` gets a state with no value block after a state of the same key with
-   a value block. A new state of that key with a value block clears the condition. While the selected track has no
+   a value block. A new state of that key with a value block clears the condition. A different ICY text clears the
+   condition for each key. While the selected track has no
    value block and its value block ended, the lines are the station lines: the station title, or "CitizenRadio" when
    the station has no title, with no artist and no artwork. Without a station identity, the lines do not change.
-7. While the value block of the selected track ended, the **Boost** button is gray: `BoostModel` has no manual target.
-   The trigger gets the track with no change, so the auto-boost of the song that ended stays as ADR 0013 states.
+7. The **Boost** button is gray (`BoostModel` has no manual target) while the value block of the selected track ended,
+   and while the newest live value payload is the dead block. `BoostPairing.manualPayload(for:valueEnded:)` holds the
+   rule. The dead block payload can arrive before the display state with no value block, or with no such state. The
+   trigger and the auto-boost use the pairing with no change, so the auto-boost of the song that ended stays as
+   ADR 0013 states.
 8. Each other relay track or ICY track keeps its own title and artist. The app cannot tell a jingle with its own tags
    from a song with no value block. A song that starts with no value block shows its own lines.
 
@@ -103,8 +107,12 @@
 - During a jingle with no title, the screen shows the station title and the station image, and **Boost** is gray.
 - During a jingle with its own tags, the screen shows those tags and the station image.
 - Between two songs on Icecast, the station lines show for 1 to 6 s.
-- On HLS the display states arrive before the audio. So the station lines can show before the end of the song audio,
-  for a maximum of the stream delay. This is an open point.
+- On HLS the display states and the payloads arrive before the audio. So the station lines can show, and **Boost** can
+  become gray, before the end of the song audio, for a maximum of the stream delay. This is an open point. It does not
+  pay an incorrect artist.
+- The replay on connect (ADR 0018) gives the states after the snapshot. Older states can then select the song again for
+  some milliseconds, until the replay gets to the snapshot state. The dead block test of rule 7 keeps **Boost** gray
+  while the dead block payload is the newest.
 - Between songs on Icecast, the ICY lines can show for about 1 s with no artwork. The station image now shows in
   that time.
 - A station with no dead block title and no dead block image shows the default display, as before.

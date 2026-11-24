@@ -74,6 +74,10 @@ public struct IcySync: Equatable, Sendable {
     /// `titleAlone` is the ID3 title alone when the text joins an artist and a title (ADR 0027).
     /// Selects again after the set.
     public mutating func receiveIcyText(_ text: String, titleAlone: String? = nil) {
+        // ADR 0028: a different ICY text starts a new song, so the ended value blocks of earlier songs are old.
+        if let icyText, Self.normalize(icyText) != Self.normalize(text) {
+            valueEndedKeys.removeAll()
+        }
         hasIcy = true
         icyText = text
         icyTitleAlone = titleAlone

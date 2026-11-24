@@ -220,4 +220,83 @@ final class StationIdentityTests: XCTestCase {
         pairing.receive(try payload(deadJSON(title: "HeyCitizen Test Stream", image: stationImage)))
         XCTAssertEqual(pairing.payload(for: anni(block: nil))?.blockGuid, "anni-block")
     }
+
+    private let anniPayloadJSON = """
+    {
+        "title": "Anni Powell - Beyond the Hills",
+        "eventGuid": "event-guid",
+        "blockGuid": "anni-block",
+        "value": { "destinations": [{ "type": "lnaddress", "address": "anni@getalby.com", "split": 100 }] }
+    }
+    """
+
+    /// Review of 0a90815, item 1: the dead block payload arrives, and no display state with no value block follows.
+    /// The current track is the song with its value block. No manual target exists.
+    func testTheDeadBlockPayloadAloneGivesNoManualTarget() throws {
+        var pairing = BoostPairing()
+        pairing.receive(try payload(anniPayloadJSON))
+        let song = anni(block: "anni-block")
+        XCTAssertEqual(pairing.manualPayload(for: song, valueEnded: false)?.blockGuid, "anni-block")
+
+        pairing.receive(try payload(deadJSON(title: "HeyCitizen Test Stream", image: stationImage)))
+        XCTAssertTrue(pairing.deadBlockIsNewest)
+        XCTAssertNil(pairing.manualPayload(for: song, valueEnded: false))
+        XCTAssertNil(pairing.manualPayload(for: anni(block: nil), valueEnded: false))
+        // The auto-boost path keeps the payload of the song that ended.
+        XCTAssertEqual(pairing.payload(for: song)?.blockGuid, "anni-block")
+    }
+
+    func testTheDeadBlockPayloadWithNoDestinationsGivesNoManualTarget() throws {
+        let json = """
+        {
+            "title": "HeyCitizen Test Stream", "eventGuid": "event-guid", "blockGuid": "dead-block",
+            "value": { "model": { "type": "lightning", "method": "lnaddress" }, "destinations": [] }
+        }
+        """
+        var pairing = BoostPairing()
+        pairing.receive(try payload(anniPayloadJSON))
+        pairing.receive(try payload(json))
+        XCTAssertNil(pairing.manualPayload(for: anni(block: "anni-block"), valueEnded: false))
+    }
+
+    func testTheNextSongPayloadGivesTheManualTargetAgain() throws {
+        let rodsJSON = """
+        {
+            "title": "12 Rods - Red", "eventGuid": "event-guid", "blockGuid": "rods-block",
+            "value": { "destinations": [{ "type": "lnaddress", "address": "rods@getalby.com", "split": 100 }] }
+        }
+        """
+        var pairing = BoostPairing()
+        pairing.receive(try payload(anniPayloadJSON))
+        pairing.receive(try payload(deadJSON(title: "HeyCitizen Test Stream", image: stationImage)))
+        pairing.receive(try payload(rodsJSON))
+        let rods = TrackDisplay(
+            artist: "12 Rods", title: "Red", artwork: nil,
+            value: TrackDisplay.ValueIdentity(eventGuid: "event-guid", blockGuid: "rods-block")
+        )
+        XCTAssertEqual(pairing.manualPayload(for: rods, valueEnded: false)?.blockGuid, "rods-block")
+    }
+
+    /// Review of 0a90815, item 1 with the display state: the value block ended, so no manual target exists,
+    /// also while the payload of the song is the newest.
+    func testAnEndedValueGivesNoManualTarget() throws {
+        var pairing = BoostPairing()
+        pairing.receive(try payload(anniPayloadJSON))
+        XCTAssertNil(pairing.manualPayload(for: anni(block: nil), valueEnded: true))
+    }
+
+    /// Review of 0a90815, item 4: a different ICY text clears the ended value blocks of earlier songs.
+    func testADifferentIcyTextClearsTheEndedValueBlocks() {
+        var sync = IcySync()
+        sync.receiveIcyText("Anni Powell - Beyond the Hills")
+        sync.receive(anni(block: "anni-block"))
+        sync.receive(anni(block: nil))
+        XCTAssertTrue(sync.valueEnded(sync.relayTrack))
+        // The same text again, as in each HLS segment, keeps the condition.
+        sync.receiveIcyText("Anni Powell - Beyond the Hills")
+        XCTAssertTrue(sync.valueEnded(sync.relayTrack))
+        sync.receiveIcyText("12 Rods - Red")
+        sync.receiveIcyText("Anni Powell - Beyond the Hills")
+        XCTAssertFalse(sync.valueEnded(sync.relayTrack))
+    }
 }

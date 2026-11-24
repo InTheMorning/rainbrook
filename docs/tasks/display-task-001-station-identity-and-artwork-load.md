@@ -50,7 +50,9 @@ Mechanical:
 - `StationIdentityTests`: a dead block with `value.destinations: []` gives the station and no payload pairs with it.
 - `StationIdentityTests`: the jingle sequence of 2026-11-24 12:27 gives the station lines, and the next song gives
   its own lines.
-- `BoostModel.updateManualTarget` gives no target while the value block ended. Method: read the diff.
+- `StationIdentityTests`: the input order "song payload, dead block payload, no display state" gives no manual payload.
+  The next song payload gives the manual payload again. A different ICY text clears the ended value blocks.
+- `BoostModel.updateManualTarget` uses `BoostPairing.manualPayload(for:valueEnded:)`. Method: read the diff.
 - `TrackInfoModel` shows the track image, or else the station image. Method: read the diff. A test on Linux cannot
   examine `TrackInfoModel`.
 - `ArtworkLoader` decodes off its actor, gives the first frame when the animated decode fails, and records the size

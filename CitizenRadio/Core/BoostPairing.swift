@@ -21,6 +21,19 @@ public struct BoostPairing: Equatable, Sendable {
         }
     }
 
+    /// ADR 0028: true when the newest payload is the dead block. Then a jingle or the time between songs starts.
+    public var deadBlockIsNewest: Bool {
+        payloads.first?.isDeadBlock ?? false
+    }
+
+    /// ADR 0028 rule 7: the payload of a manual boost for the track, or nil.
+    /// It is nil while the value block of the track ended, and while the newest payload is the dead block.
+    /// The auto-boost does not use this function, so the auto-boost of the song that ended stays.
+    public func manualPayload(for track: TrackDisplay, valueEnded: Bool) -> LiveValuePayload? {
+        guard !valueEnded, !deadBlockIsNewest else { return nil }
+        return payload(for: track)
+    }
+
     /// Removes all stored payloads.
     public mutating func clear() {
         payloads.removeAll()

@@ -129,7 +129,7 @@ final class BoostModel: ObservableObject {
     /// The value changes only when it is different, so the views do not update without a change.
     private func updateManualTarget() {
         var target: TrackDisplay?
-        if let currentTrack, !currentValueEnded, pairing.payload(for: currentTrack) != nil {
+        if let currentTrack, pairing.manualPayload(for: currentTrack, valueEnded: currentValueEnded) != nil {
             target = currentTrack
         }
         if target != manualTarget {

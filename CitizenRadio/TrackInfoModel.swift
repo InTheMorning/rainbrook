@@ -434,9 +434,12 @@ final class TrackInfoModel: ObservableObject {
     }
 
     private func updateLines() {
-        // ADR 0012 §The trigger: give each change of the ICY sync selection to the boost model.
-        boost.selectedTrack(sync.relayTrack)
-        recordRelayTrack(sync.hasIcy ? sync.relayTrack : relayTrack)
+        // ADR 0013 §The trigger: give each change of the selected relay track to the boost model.
+        // Before the first ICY text, that is the relay track of the screen, so the Boost button has a target.
+        // The trigger starts no candidate before the first ICY text, so this starts no auto-boost.
+        let selected = sync.track(withoutIcy: relayTrack)
+        boost.selectedTrack(selected)
+        recordRelayTrack(selected)
         let newLines = sync.hasIcy ? sync.lines : TrackLines.select(relay: relayTrack, icy: nil)
         guard newLines != lines else { return }
         let artworkChanged = newLines.artwork != lines.artwork

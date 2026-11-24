@@ -28,6 +28,13 @@ public struct IcySync: Equatable, Sendable {
         TrackLines.select(relay: relayTrack, icy: icyTrack)
     }
 
+    /// The relay track of the screen, the boost model and the log (task boost-pairing-task-002).
+    /// After the first ICY text, the track that the ICY text selects.
+    /// Before it, `timedTrack`: the relay track of the timed apply (ADR 0008), which the screen shows.
+    public func track(withoutIcy timedTrack: TrackDisplay?) -> TrackDisplay? {
+        hasIcy ? relayTrack : timedTrack
+    }
+
     /// Adds a display state from the snapshot or the stream.
     /// A nil state (`{"track": null}`) is not added. Selects again after the add.
     public mutating func receive(_ track: TrackDisplay?) {

@@ -5,6 +5,8 @@
 - Revised: 2026-11-24, before the first push. Phone check 1 failed on a jingle with no title. Rule 3 accepts a dead
   block with no destinations (operator decision, relayed by the orchestrator session). Rules 6 and 7 replace the old
   rule 6. A review of `0a90815` added the dead block test to rule 7 and the clear on a new ICY text to rule 6.
+- Revised: 2026-11-25, before the first push. Rule 12 adds the station line and the value state of the relay track
+  line, so the log of one jingle shows the cause of a wrong display.
 - Bar: crosses repositories. Publisher ADR 0029 sends the station title and the station image in the dead block
   payload. This record sets how the app shows them.
 - Changes: [ADR 0008](0008-relay-display-metadata.md) §Display data item 4, and §Player screen and Now Playing items
@@ -86,7 +88,8 @@
 10. When the animated decode of a GIF fails, the first frame gives a still image.
 11. A new track with the same artwork loads that artwork again when its retries ended with no image.
 12. The playback log records each download: the size in KB, the download time, and the decode result and time. It also
-    records each station image load result.
+    records each station image load result, each change of the station identity ("Station:"), and for each relay track
+    line if the track has a value block, no value block, or a value block that ended.
 
 ## Options
 

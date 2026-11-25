@@ -54,7 +54,10 @@ Mechanical:
   The next song payload gives the manual payload again. A different ICY text clears the ended value blocks.
 - `JingleReplayTests`: the relay input and the ICY text of 2026-11-25 16:29 to 16:34 give the station lines and no
   manual payload during the jingle, in the two orders of the dead block payload and the display state. The next song
-  gives its own lines and its manual payload.
+  gives its own lines and its manual payload. The test runs with the dead block of an empty destination array and with
+  the dead block of 18:36 UTC, which has one destination at `no-v4v-track@example.invalid` (publisher ADR 0033).
+- The playback log records "Station:" at each change of the station identity, and each "Relay track:" line ends with
+  "value", "no value" or "value ended". Method: read the diff.
 - `BoostModel.updateManualTarget` uses `BoostPairing.manualPayload(for:valueEnded:)`. Method: read the diff.
 - `TrackInfoModel` shows the track image, or else the station image. Method: read the diff. A test on Linux cannot
   examine `TrackInfoModel`.

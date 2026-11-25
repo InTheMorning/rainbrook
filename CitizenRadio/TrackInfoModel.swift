@@ -59,6 +59,7 @@ final class TrackInfoModel: ObservableObject {
     private var stationImageTask: Task<Void, Never>?
     /// ADR 0022 §The playback log: the last recorded relay track and value client status.
     private var recordedRelayTrack: TrackDisplay?
+    private var recordedValueEnded = false
     private var valueStatus: EventStreamStatus?
     private var pending: [PendingApply] = []
     private var nextApplyID: UInt64 = 0
@@ -408,6 +409,12 @@ final class TrackInfoModel: ObservableObject {
         let imageChanged = identity?.image != station?.image
         let reload = imageChanged || (identity?.image != nil && stationImage == nil && stationImageTask == nil)
         guard identity != station || reload else { return }
+        if identity != station {
+            // ADR 0028 rule 12.
+            let title = identity.map { $0.title ?? "default title" } ?? "none"
+            let image = identity?.image == nil ? "no image" : "image"
+            PlaybackDiagnostics.record("Station: \(title), \(image)")
+        }
         station = identity
         if reload {
             loadStationImage()
@@ -509,7 +516,7 @@ final class TrackInfoModel: ObservableObject {
         // The Boost button is gray, and the station lines show.
         let valueEnded = sync.valueEnded(selected)
         boost.selectedTrack(selected, valueEnded: valueEnded)
-        recordRelayTrack(selected)
+        recordRelayTrack(selected, valueEnded: valueEnded)
         let newLines = (sync.hasIcy ? sync.lines : TrackLines.select(relay: relayTrack, icy: nil))
             .withStation(station, valueEnded: valueEnded)
         guard newLines != lines else { return }
@@ -578,11 +585,14 @@ final class TrackInfoModel: ObservableObject {
 
     /// ADR 0022 §The playback log: records a change of the selected relay track.
     /// The text has only the artist and the title.
-    private func recordRelayTrack(_ track: TrackDisplay?) {
-        guard track != recordedRelayTrack else { return }
+    /// ADR 0028 rule 12: the line tells if the track has a value block, and if its value block ended.
+    private func recordRelayTrack(_ track: TrackDisplay?, valueEnded: Bool) {
+        guard track != recordedRelayTrack || valueEnded != recordedValueEnded else { return }
         recordedRelayTrack = track
+        recordedValueEnded = valueEnded
         if let track {
-            PlaybackDiagnostics.record("Relay track: \(track.artist) - \(track.title)")
+            let value = valueEnded ? "value ended" : (track.value == nil ? "no value" : "value")
+            PlaybackDiagnostics.record("Relay track: \(track.artist) - \(track.title), \(value)")
         } else {
             PlaybackDiagnostics.record("Relay track: none")
         }

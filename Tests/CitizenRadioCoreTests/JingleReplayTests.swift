@@ -13,12 +13,30 @@ final class JingleReplayTests: XCTestCase {
     private let denimArtwork =
         "https://music.behindthesch3m3s.com/wp-content/uploads/Denim%20Cobra/Leather_Diamond/Cobra_Diamond_Leather%20Diamond.jpg"
 
-    private func deadBlock(_ block: String) -> String {
-        """
-        {"blockGuid":"\(block)","description":"","eventGuid":"\(event)","image":"\(stationImage)",\
-        "startTime":0,"title":"HeyCitizen Test Stream","type":"music",\
-        "value":{"destinations":[],"model":{"method":"lnaddress","type":"lightning"}}}
-        """
+    /// The two forms of the dead block payload. The relay sent `emptyDestinations` from 2026-11-24 to 2026-11-25
+    /// 18:05 UTC. Since then it sends `reservedHost` (publisher ADR 0033).
+    private enum DeadBlockForm: CaseIterable {
+        case emptyDestinations
+        case reservedHost
+    }
+
+    private func deadBlock(_ block: String, _ form: DeadBlockForm) -> String {
+        switch form {
+        case .emptyDestinations:
+            return """
+            {"blockGuid":"\(block)","description":"","eventGuid":"\(event)","image":"\(stationImage)",\
+            "startTime":0,"title":"HeyCitizen Test Stream","type":"music",\
+            "value":{"destinations":[],"model":{"method":"lnaddress","type":"lightning"}}}
+            """
+        case .reservedHost:
+            // The form of the relay value stream at 18:36:42 UTC on 2026-11-25.
+            return """
+            {"blockGuid":"\(block)","description":"","eventGuid":"\(event)","image":"\(stationImage)",\
+            "startTime":0,"title":"HeyCitizen Test Stream","type":"music",\
+            "value":{"destinations":[{"address":"no-v4v-track@example.invalid","name":"No V4V payment route",\
+            "split":"100","type":"lnaddress"}],"model":{"method":"lnaddress","type":"lightning"}}}
+            """
+        }
     }
 
     private var mattPayload: String {
@@ -96,12 +114,12 @@ final class JingleReplayTests: XCTestCase {
     }
 
     /// `displayFirst` is the order of 16:49:15, where the display state came before the dead block payload.
-    private func replay(displayFirst: Bool) throws {
+    private func replay(displayFirst: Bool, form: DeadBlockForm) throws {
         var model = Model()
 
         // 16:29:19 to 16:29:21: the song starts.
         model.icy("Matt Finlay - Copenhagen Time")
-        try model.value(deadBlock("95d94d7c-184a-4b0b-9598-36de14f4fcab"))
+        try model.value(deadBlock("95d94d7c-184a-4b0b-9598-36de14f4fcab", form))
         try model.display(mattDisplay(block: nil))
         XCTAssertFalse(model.valueEnded, "A song that starts with no value block keeps its lines (rule 8).")
         XCTAssertEqual(model.lines.title, "Copenhagen Time")
@@ -114,9 +132,9 @@ final class JingleReplayTests: XCTestCase {
         model.icy("Matt Finlay - Copenhagen Time")
         if displayFirst {
             try model.display(mattDisplay(block: nil))
-            try model.value(deadBlock("c796dff4-eb8b-465a-8b39-f737a7b27ed2"))
+            try model.value(deadBlock("c796dff4-eb8b-465a-8b39-f737a7b27ed2", form))
         } else {
-            try model.value(deadBlock("c796dff4-eb8b-465a-8b39-f737a7b27ed2"))
+            try model.value(deadBlock("c796dff4-eb8b-465a-8b39-f737a7b27ed2", form))
             try model.display(mattDisplay(block: nil))
         }
         XCTAssertTrue(model.valueEnded)
@@ -126,7 +144,7 @@ final class JingleReplayTests: XCTestCase {
 
         // 16:34:20: the next song.
         model.icy("Denim Cobra - Hermetic Drifter")
-        try model.value(deadBlock("acec83fb-522a-4ccf-bb48-485237b70ffa"))
+        try model.value(deadBlock("acec83fb-522a-4ccf-bb48-485237b70ffa", form))
         try model.display(denimDisplay(block: nil))
         XCTAssertFalse(model.valueEnded)
         XCTAssertEqual(model.lines.title, "Hermetic Drifter")
@@ -138,10 +156,16 @@ final class JingleReplayTests: XCTestCase {
     }
 
     func testTheJingleOf20261125ShowsTheStationLinesAndNoManualTarget() throws {
-        try replay(displayFirst: false)
+        try replay(displayFirst: false, form: .emptyDestinations)
     }
 
     func testTheDisplayStateBeforeTheDeadBlockGivesTheSameResult() throws {
-        try replay(displayFirst: true)
+        try replay(displayFirst: true, form: .emptyDestinations)
+    }
+
+    /// Publisher ADR 0033: the dead block has one destination with a reserved host.
+    func testTheDeadBlockWithAReservedHostGivesTheSameResult() throws {
+        try replay(displayFirst: false, form: .reservedHost)
+        try replay(displayFirst: true, form: .reservedHost)
     }
 }

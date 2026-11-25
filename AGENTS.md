@@ -32,7 +32,8 @@ The app is also the base and the example for a client app of the suite. Write co
   ADR 0029). The reserved `.invalid` host excludes the dead block. The title pairing compares the key of the relay
   track first, then its title (ADR 0026).
 - The dead block payload gives the station title and image. The default lines, and the lines of a track whose value
-  block ended, take the station identity. **Boost** is gray while the value block ended. The screen shows the track
+  block ended, take the station identity. **Boost** is gray while the value block ended. After the first ICY text, a value end waits for the display delay,
+  because the stream title does not change at a jingle. The screen shows the track
   image or else the station image (ADR 0028). The playback log records the size and the times of each
   artwork download. The visual checks of ADR 0028 are open.
 - The last row of Settings shows the version line of musicindex ADR 0083 R-VERSION-4. The SwiftPM plugin

@@ -62,6 +62,8 @@ final class TrackInfoModel: ObservableObject {
     private var recordedValueEnded = false
     private var valueStatus: EventStreamStatus?
     private var pending: [PendingApply] = []
+    /// ADR 0028 rule 13: the tasks of the held value ends, by key.
+    private var valueEndTasks: [String: Task<Void, Never>] = [:]
     private var nextApplyID: UInt64 = 0
     private var subscriptions = Set<AnyCancellable>()
 
@@ -178,6 +180,7 @@ final class TrackInfoModel: ObservableObject {
             stopRelay()
             // ADR 0011 §The session: Stop starts a new session with no ICY.
             sync = IcySync()
+            cancelPendingApplies()
             setRelayTrack(nil)
             // ADR 0012 §The trigger: Stop and a playback error end the session.
             boost.sessionEnded()
@@ -282,12 +285,17 @@ final class TrackInfoModel: ObservableObject {
             } catch {
                 return
             }
-            sync.receive(track)
+            // ADR 0028 rule 13: with ICY, the stream title does not change at a jingle. So the value end waits
+            // for the display delay. Without ICY, the timed apply of the state gives the delay.
+            let delay = DisplayTiming.delay(bufferedAhead: player.bufferedAheadSeconds())
+            let held = sync.receive(track, holdValueEnd: sync.hasIcy)
             if sync.hasIcy {
                 // ADR 0011: the ICY text releases the state. No timed apply.
+                if let held {
+                    scheduleValueEnd(held, after: delay)
+                }
                 updateLines()
             } else {
-                let delay = DisplayTiming.delay(bufferedAhead: player.bufferedAheadSeconds())
                 schedule(track, after: delay)
             }
         case .replay(let streamed):
@@ -481,6 +489,31 @@ final class TrackInfoModel: ObservableObject {
             apply.task.cancel()
         }
         pending.removeAll()
+        for task in valueEndTasks.values {
+            task.cancel()
+        }
+        valueEndTasks.removeAll()
+    }
+
+    /// ADR 0028 rule 13: applies a held value end after the delay.
+    private func scheduleValueEnd(_ held: IcySync.HeldValueEnd, after delay: Duration) {
+        let seconds = Double(delay.components.seconds) + Double(delay.components.attoseconds) / 1e18
+        PlaybackDiagnostics.record("Value end held: \(String(format: "%.1f", seconds)) s")
+        valueEndTasks[held.key]?.cancel()
+        valueEndTasks[held.key] = Task { [weak self] in
+            do {
+                try await Task.sleep(for: delay)
+            } catch {
+                return
+            }
+            self?.releaseValueEnd(held)
+        }
+    }
+
+    private func releaseValueEnd(_ held: IcySync.HeldValueEnd) {
+        valueEndTasks[held.key] = nil
+        guard sync.releaseValueEnd(held) else { return }
+        updateLines()
     }
 
     // MARK: - Lines, artwork and Now Playing

@@ -7,6 +7,8 @@
   rule 6. A review of `0a90815` added the dead block test to rule 7 and the clear on a new ICY text to rule 6.
 - Revised: 2026-11-25, before the first push. Rule 12 adds the station line and the value state of the relay track
   line, so the log of one jingle shows the cause of a wrong display.
+- Revised: 2026-11-25, before the first push. Rule 13 delays the value end on a stream with ICY. On HLS the station
+  lines showed 10 s or more before the jingle played (operator report, publisher station log step 44).
 - Bar: crosses repositories. Publisher ADR 0029 sends the station title and the station image in the dead block
   payload. This record sets how the app shows them.
 - Changes: [ADR 0008](0008-relay-display-metadata.md) §Display data item 4, and §Player screen and Now Playing items
@@ -91,6 +93,15 @@
     records each station image load result, each change of the station identity ("Station:"), and for each relay track
     line if the track has a value block, no value block, or a value block that ended.
 
+### The timing
+
+13. After the first ICY text, a value end from the event stream applies after the display delay of ADR 0008
+    (`DisplayTiming.delay(bufferedAhead:)`). At a jingle the stream title of the song does not change (publisher
+    ADR 0035 and ADR 0036), so no ICY text can release the value end. `IcySync.receive(_:holdValueEnd:)` holds it, and
+    `IcySync.releaseValueEnd(_:)` applies it. A newer state of the key with a value block, a different ICY text, or a
+    clear cancels the hold. A snapshot state and a replayed state apply at once. Without ICY, the timed apply of
+    ADR 0008 gives the delay. The playback log records each hold ("Value end held:") with its delay.
+
 ## Options
 
 - **Show the art and the title of the last live item during a jingle.** Rejected by the operator choice. The
@@ -110,9 +121,13 @@
 - During a jingle with no title, the screen shows the station title and the station image, and **Boost** is gray.
 - During a jingle with its own tags, the screen shows those tags and the station image.
 - Between two songs on Icecast, the station lines show for 1 to 6 s.
-- On HLS the display states and the payloads arrive before the audio. So the station lines can show, and **Boost** can
-  become gray, before the end of the song audio, for a maximum of the stream delay. This is an open point. It does not
-  pay an incorrect artist.
+- On HLS the display states and the payloads arrive before the audio. Rule 13 makes the station lines wait for the
+  display delay. The delay is the audio that AVPlayer holds ahead of the play position. It does not include the
+  segment time of the server, so the station lines can show some seconds before the jingle (an inference, not
+  measured).
+- **Boost** becomes gray when the dead block payload arrives, because the payloads have no delay. On HLS that is before
+  the end of the song audio, for a maximum of the stream delay. This is an open point. It does not pay an incorrect
+  artist.
 - The replay on connect (ADR 0018) gives the states after the snapshot. Older states can then select the song again for
   some milliseconds, until the replay gets to the snapshot state. The dead block test of rule 7 keeps **Boost** gray
   while the dead block payload is the newest.
@@ -125,9 +140,9 @@
 
 These rules apply while this decision is current.
 
-- Rules 1 to 4, 6 and 8. `StationIdentityTests` and `JingleReplayTests` enforce them. `JingleReplayTests` also
+- Rules 1 to 4, 6, 8 and the `IcySync` part of rule 13. `StationIdentityTests` and `JingleReplayTests` enforce them. `JingleReplayTests` also
   enforces the `BoostPairing` part of rule 7 with the relay input of 2026-11-25.
-- Rules 5, 7, 9, 10, 11 and 12 are in `TrackInfoModel` and `ArtworkLoader`, which use UIKit. A test on Linux cannot examine
+- Rules 5, 7, 9, 10, 11, 12 and the timer of rule 13 are in `TrackInfoModel` and `ArtworkLoader`, which use UIKit. A test on Linux cannot examine
   them. Manual check: read the diff, and examine the playback log on the phone.
 
 ## Acceptance criteria
@@ -146,4 +161,5 @@ A person must examine these items on an iPhone. Report each item as open until a
   gray. The next song shows its own lines and image.
 - During the "AzuraCast is Live!" jingle, the screen shows that title and the station image.
 - A song with an artwork shows its own image.
+- On HLS, during a jingle with no title, the song lines stay until the jingle plays. Then the station lines show.
 - When a song artwork is missing, the playback log shows an "Artwork download:" line with the size and the times.

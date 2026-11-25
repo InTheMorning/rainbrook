@@ -25,6 +25,15 @@ public struct IcySync: Equatable, Sendable {
     /// ADR 0028: the keys of the states whose value block ended. A state of the key had a value block, and a newer
     /// state of the same key has none. The publisher sends this during a jingle and between songs.
     private var valueEndedKeys: Set<String> = []
+    /// ADR 0028 rule 13: the value ends that wait for the play time of the audio, with the number of each hold.
+    private var heldValueEnds: [String: UInt64] = [:]
+    private var nextHoldNumber: UInt64 = 0
+
+    /// ADR 0028 rule 13: a value end that waits for the play time. `releaseValueEnd(_:)` applies it.
+    public struct HeldValueEnd: Equatable, Sendable {
+        public let key: String
+        let number: UInt64
+    }
 
     /// Creates an IcySync with an empty list and no ICY text.
     public init() {}
@@ -49,14 +58,25 @@ public struct IcySync: Equatable, Sendable {
 
     /// Adds a display state from the snapshot or the stream.
     /// A nil state (`{"track": null}`) is not added. Selects again after the add.
-    public mutating func receive(_ track: TrackDisplay?) {
+    /// ADR 0028 rule 13: with `holdValueEnd`, a value end does not apply now. The result is the held value end,
+    /// and `releaseValueEnd(_:)` applies it at the play time of the audio.
+    @discardableResult
+    public mutating func receive(_ track: TrackDisplay?, holdValueEnd: Bool = false) -> HeldValueEnd? {
+        var held: HeldValueEnd?
         if let track {
             let newKey = Self.key(of: track)
             // ADR 0028: a state with no value block after a state of the same key with a value block.
             if track.value != nil {
                 valueEndedKeys.remove(newKey)
+                heldValueEnds[newKey] = nil
             } else if states.contains(where: { Self.key(of: $0) == newKey && $0.value != nil }) {
-                valueEndedKeys.insert(newKey)
+                if holdValueEnd {
+                    nextHoldNumber &+= 1
+                    heldValueEnds[newKey] = nextHoldNumber
+                    held = HeldValueEnd(key: newKey, number: nextHoldNumber)
+                } else {
+                    valueEndedKeys.insert(newKey)
+                }
             }
             // A state with an equal key replaces the older state, at the front.
             states.removeAll { Self.key(of: $0) == newKey }
@@ -66,8 +86,20 @@ public struct IcySync: Equatable, Sendable {
             }
             let keptKeys = Set(states.map(Self.key(of:)))
             valueEndedKeys.formIntersection(keptKeys)
+            heldValueEnds = heldValueEnds.filter { keptKeys.contains($0.key) }
         }
         select()
+        return held
+    }
+
+    /// ADR 0028 rule 13: applies a held value end. Gives true when the value end applies now.
+    /// A newer state of the key with a value block, a different ICY text, or a clear cancels the hold.
+    @discardableResult
+    public mutating func releaseValueEnd(_ held: HeldValueEnd) -> Bool {
+        guard heldValueEnds[held.key] == held.number else { return false }
+        heldValueEnds[held.key] = nil
+        valueEndedKeys.insert(held.key)
+        return true
     }
 
     /// Sets the ICY text from a StreamTitle item. An empty text is a valid input.
@@ -77,6 +109,7 @@ public struct IcySync: Equatable, Sendable {
         // ADR 0028: a different ICY text starts a new song, so the ended value blocks of earlier songs are old.
         if let icyText, Self.normalize(icyText) != Self.normalize(text) {
             valueEndedKeys.removeAll()
+            heldValueEnds.removeAll()
         }
         hasIcy = true
         icyText = text
@@ -88,6 +121,7 @@ public struct IcySync: Equatable, Sendable {
     public mutating func clearStates() {
         states.removeAll()
         valueEndedKeys.removeAll()
+        heldValueEnds.removeAll()
         select()
     }
 

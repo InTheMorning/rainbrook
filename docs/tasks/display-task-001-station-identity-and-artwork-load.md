@@ -56,6 +56,10 @@ Mechanical:
   manual payload during the jingle, in the two orders of the dead block payload and the display state. The next song
   gives its own lines and its manual payload. The test runs with the dead block of an empty destination array and with
   the dead block of 18:36 UTC, which has one destination at `no-v4v-track@example.invalid` (publisher ADR 0033).
+- `JingleReplayTests` (ADR 0028 rule 13): after the first ICY text, a held value end keeps the song lines until its
+  release. A different ICY text and a newer state with a value block cancel the hold.
+- `TrackInfoModel` holds the value end of an event stream state after the first ICY text, and releases it after
+  `DisplayTiming.delay(bufferedAhead:)`. Method: read the diff.
 - The playback log records "Station:" at each change of the station identity, and each "Relay track:" line ends with
   "value", "no value" or "value ended". Method: read the diff.
 - `BoostModel.updateManualTarget` uses `BoostPairing.manualPayload(for:valueEnded:)`. Method: read the diff.
@@ -70,4 +74,5 @@ Visual (open until the operator does the check):
 - During the "AzuraCast is Live!" jingle, the screen shows that title and the station image.
 - During a jingle with no title, the screen shows "HeyCitizen Test Stream" and the station image, and **Boost** is
   gray.
+- On HLS, during a jingle with no title, the song lines stay until the jingle plays. Then the station lines show.
 - When a song artwork is missing, the playback log shows an "Artwork download:" line with the size and the times.

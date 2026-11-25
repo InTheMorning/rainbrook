@@ -89,13 +89,25 @@ final class JingleReplayTests: XCTestCase {
         var sync = IcySync()
         var pairing = BoostPairing()
         var station: StationIdentity?
+        /// ADR 0028 rule 13: true for a stream state of the event stream after the first ICY text, as in the app.
+        var holdValueEnds = false
+        var held: [IcySync.HeldValueEnd] = []
 
         mutating func icy(_ text: String) {
             sync.receiveIcyText(text)
         }
 
         mutating func display(_ json: String) throws {
-            sync.receive(try TrackDisplay.decode(Data(json.utf8)))
+            if let hold = sync.receive(try TrackDisplay.decode(Data(json.utf8)), holdValueEnd: holdValueEnds) {
+                held.append(hold)
+            }
+        }
+
+        /// The display delay ends: the audio of the held states plays. Gives the count of value ends that applied.
+        @discardableResult
+        mutating func play() -> Int {
+            defer { held.removeAll() }
+            return held.filter { sync.releaseValueEnd($0) }.count
         }
 
         mutating func value(_ json: String) throws {
@@ -167,5 +179,62 @@ final class JingleReplayTests: XCTestCase {
     func testTheDeadBlockWithAReservedHostGivesTheSameResult() throws {
         try replay(displayFirst: false, form: .reservedHost)
         try replay(displayFirst: true, form: .reservedHost)
+    }
+
+    /// ADR 0028 rule 13, operator report of 2026-11-25 on HLS: the station lines showed 10 s or more before the
+    /// jingle played. The relay states arrive at live time, and the stream title of the song stays during the jingle.
+    /// So the song lines stay until the display delay ends.
+    func testOnHlsTheStationLinesWaitForThePlayTime() throws {
+        var model = try songWithValue()
+
+        // Live time of the jingle. The audio of the song still plays, with the same stream title.
+        try model.value(deadBlock("c796dff4-eb8b-465a-8b39-f737a7b27ed2", .reservedHost))
+        try model.display(mattDisplay(block: nil))
+        model.icy("Matt Finlay - Copenhagen Time")
+        XCTAssertFalse(model.valueEnded)
+        XCTAssertEqual(model.lines.title, "Copenhagen Time")
+        XCTAssertEqual(model.lines.artwork, .url(try XCTUnwrap(URL(string: mattArtwork))))
+
+        // The display delay ends: the jingle plays.
+        XCTAssertEqual(model.play(), 1)
+        XCTAssertTrue(model.valueEnded)
+        XCTAssertEqual(model.lines, TrackLines(title: "HeyCitizen Test Stream", artist: nil, artwork: nil))
+        XCTAssertNil(model.manualBlock)
+
+        // The next song: its stream title clears the value end.
+        model.icy("Denim Cobra - Hermetic Drifter")
+        try model.display(denimDisplay(block: "931e065a-718d-4e67-82d8-52e4ffda5fa5"))
+        XCTAssertFalse(model.valueEnded)
+        XCTAssertEqual(model.lines.title, "Hermetic Drifter")
+    }
+
+    /// ADR 0028 rule 13: a different stream title before the end of the delay cancels the held value end.
+    func testANewStreamTitleCancelsTheHeldValueEnd() throws {
+        var model = try songWithValue()
+        try model.display(mattDisplay(block: nil))
+        try model.display(denimDisplay(block: "931e065a-718d-4e67-82d8-52e4ffda5fa5"))
+        model.icy("Denim Cobra - Hermetic Drifter")
+        XCTAssertEqual(model.play(), 0)
+        model.icy("Matt Finlay - Copenhagen Time")
+        XCTAssertFalse(model.valueEnded)
+    }
+
+    /// ADR 0028 rule 13: a newer state of the key with a value block cancels the held value end.
+    func testANewValueBlockCancelsTheHeldValueEnd() throws {
+        var model = try songWithValue()
+        try model.display(mattDisplay(block: nil))
+        try model.display(mattDisplay(block: "c0ba21f0-2e8a-4f60-b568-7a15b46ecf9d"))
+        XCTAssertEqual(model.play(), 0)
+        XCTAssertFalse(model.valueEnded)
+    }
+
+    /// The song of 16:29 with its value block, after the first ICY text. Later states are held.
+    private func songWithValue() throws -> Model {
+        var model = Model()
+        model.icy("Matt Finlay - Copenhagen Time")
+        try model.value(mattPayload)
+        try model.display(mattDisplay(block: "c0ba21f0-2e8a-4f60-b568-7a15b46ecf9d"))
+        model.holdValueEnds = true
+        return model
     }
 }

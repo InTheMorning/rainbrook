@@ -35,6 +35,10 @@ The app is also the base and the example for a client app of the suite. Write co
   block ended, take the station identity. **Boost** is gray while the value block ended. The screen shows the track
   image or else the station image (ADR 0028). The playback log records the size and the times of each
   artwork download. The visual checks of ADR 0028 are open.
+- The last row of Settings shows the version line of musicindex ADR 0083 R-VERSION-4. The SwiftPM plugin
+  `BuildValuesPlugin` gives the git revision and the build time. The Xcode project has no such module, so an Xcode
+  build shows only the version. The visual check is open
+  ([task](docs/tasks/musicindex-adr-0083-task-001-version-line.md)).
 
 ## The Design Rules
 

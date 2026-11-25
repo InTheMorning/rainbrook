@@ -12,7 +12,7 @@ let package = Package(
     targets: [
         .target(
             name: "CitizenRadio",
-            dependencies: ["CitizenRadioCore"],
+            dependencies: ["CitizenRadioCore", "CitizenRadioBuildValues"],
             path: "CitizenRadio",
             exclude: [
                 "Assets.xcassets",
@@ -30,6 +30,19 @@ let package = Package(
                 .product(name: "CryptoExtras", package: "swift-crypto")
             ],
             path: "CitizenRadio/Core"
+        ),
+        // musicindex ADR 0083 R-VERSION-1: the git revision and the build time of the app.
+        .target(
+            name: "CitizenRadioBuildValues",
+            path: "Tools/CitizenRadioBuildValues",
+            plugins: ["BuildValuesPlugin"]
+        ),
+        .executableTarget(name: "BuildValuesTool", path: "Tools/BuildValuesTool"),
+        .plugin(
+            name: "BuildValuesPlugin",
+            capability: .buildTool(),
+            dependencies: ["BuildValuesTool"],
+            path: "Plugins/BuildValuesPlugin"
         ),
         .testTarget(
             name: "CitizenRadioCoreTests",

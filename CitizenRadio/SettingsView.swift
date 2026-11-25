@@ -85,6 +85,8 @@ struct SettingsView: View {
                     boostMinimumPlaySecondsText: $draft.boostMinimumPlaySecondsText,
                     boostStatus: boostStatus
                 )
+
+                versionSection
             }
             .navigationTitle("Settings")
             .sheet(item: $editorTarget, onDismiss: reloadStations) { target in
@@ -103,6 +105,28 @@ struct SettingsView: View {
                         .disabled(!draft.canSave)
                         .accessibilityIdentifier("saveStream")
                 }
+            }
+        }
+    }
+
+    // MARK: - Version
+
+    /// musicindex ADR 0083 R-VERSION-4: one line with the build values at the end of Settings. The text can be
+    /// selected, and Copy copies the line for a bug report.
+    private var versionSection: some View {
+        let line = AppBuildValues.current.versionLine
+        return Section {
+            HStack {
+                Text(line)
+                    .font(.footnote.monospaced())
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("versionLine")
+                Spacer()
+                Button("Copy") {
+                    UIPasteboard.general.string = line
+                }
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("copyVersionLine")
             }
         }
     }

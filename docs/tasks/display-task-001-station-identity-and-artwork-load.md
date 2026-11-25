@@ -52,6 +52,9 @@ Mechanical:
   its own lines.
 - `StationIdentityTests`: the input order "song payload, dead block payload, no display state" gives no manual payload.
   The next song payload gives the manual payload again. A different ICY text clears the ended value blocks.
+- `JingleReplayTests`: the relay input and the ICY text of 2026-11-25 16:29 to 16:34 give the station lines and no
+  manual payload during the jingle, in the two orders of the dead block payload and the display state. The next song
+  gives its own lines and its manual payload.
 - `BoostModel.updateManualTarget` uses `BoostPairing.manualPayload(for:valueEnded:)`. Method: read the diff.
 - `TrackInfoModel` shows the track image, or else the station image. Method: read the diff. A test on Linux cannot
   examine `TrackInfoModel`.

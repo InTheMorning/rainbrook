@@ -122,7 +122,8 @@
 
 These rules apply while this decision is current.
 
-- Rules 1 to 4, 6 and 8. `StationIdentityTests` enforces them.
+- Rules 1 to 4, 6 and 8. `StationIdentityTests` and `JingleReplayTests` enforce them. `JingleReplayTests` also
+  enforces the `BoostPairing` part of rule 7 with the relay input of 2026-11-25.
 - Rules 5, 7, 9, 10, 11 and 12 are in `TrackInfoModel` and `ArtworkLoader`, which use UIKit. A test on Linux cannot examine
   them. Manual check: read the diff, and examine the playback log on the phone.
 

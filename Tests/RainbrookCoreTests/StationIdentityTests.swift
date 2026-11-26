@@ -230,7 +230,7 @@ final class StationIdentityTests: XCTestCase {
     }
     """
 
-    /// Review of 0a90815, item 1: the dead block payload arrives, and no display state with no value block follows.
+    /// Review of 713753d, item 1: the dead block payload arrives, and no display state with no value block follows.
     /// The current track is the song with its value block. No manual target exists.
     func testTheDeadBlockPayloadAloneGivesNoManualTarget() throws {
         var pairing = BoostPairing()
@@ -277,7 +277,7 @@ final class StationIdentityTests: XCTestCase {
         XCTAssertEqual(pairing.manualPayload(for: rods, valueEnded: false)?.blockGuid, "rods-block")
     }
 
-    /// Review of 0a90815, item 1 with the display state: the value block ended, so no manual target exists,
+    /// Review of 713753d, item 1 with the display state: the value block ended, so no manual target exists,
     /// also while the payload of the song is the newest.
     func testAnEndedValueGivesNoManualTarget() throws {
         var pairing = BoostPairing()
@@ -285,7 +285,7 @@ final class StationIdentityTests: XCTestCase {
         XCTAssertNil(pairing.manualPayload(for: anni(block: nil), valueEnded: true))
     }
 
-    /// Review of 0a90815, item 4: a different ICY text clears the ended value blocks of earlier songs.
+    /// Review of 713753d, item 4: a different ICY text clears the ended value blocks of earlier songs.
     func testADifferentIcyTextClearsTheEndedValueBlocks() {
         var sync = IcySync()
         sync.receiveIcyText("Anni Powell - Beyond the Hills")

@@ -1,7 +1,7 @@
 # Shown Words And The Glossary
 
 - Date: 2026-11-22
-- Code: citizenradio commit `58bbda6`
+- Code: citizenradio commit `26c8329`
 - Glossary: `~/build/musicindex/docs/glossary.md`, as on 2026-11-22
 - Rule: musicindex ADR 0087 R-WORD-12 item 2 and R-WORD-13
 - Request: the orchestrator session, task of 2026-11-22

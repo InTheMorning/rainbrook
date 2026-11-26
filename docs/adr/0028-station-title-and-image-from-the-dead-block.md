@@ -4,7 +4,7 @@
 - Date: 2026-11-24
 - Revised: 2026-11-24, before the first push. Phone check 1 failed on a jingle with no title. Rule 3 accepts a dead
   block with no destinations (operator decision, relayed by the orchestrator session). Rules 6 and 7 replace the old
-  rule 6. A review of `0a90815` added the dead block test to rule 7 and the clear on a new ICY text to rule 6.
+  rule 6. A review of `713753d` added the dead block test to rule 7 and the clear on a new ICY text to rule 6.
 - Revised: 2026-11-25, before the first push. Rule 12 adds the station line and the value state of the relay track
   line, so the log of one jingle shows the cause of a wrong display.
 - Revised: 2026-11-25, before the first push. Rule 13 delays the value end on a stream with ICY. On HLS the station

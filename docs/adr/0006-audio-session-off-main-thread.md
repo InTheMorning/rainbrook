@@ -6,7 +6,7 @@
 
 ## Context
 
-The Xcode hang checker reported "AVAudioSession Hang Risk" four times on a device run of commit `f4b5041`:
+The Xcode hang checker reported "AVAudioSession Hang Risk" four times on a device run of commit `b083f83`:
 
 - `RadioPlayer.swift:92`: `setActive(true)` in `play()`.
 - `RadioPlayer.swift:258`, two times: `setActive(false)` in `deactivateSession()`.

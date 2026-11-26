@@ -9,7 +9,7 @@
 - The app did not decode `image` of a live value payload. So it did not show the station title or the station image
   during a jingle.
 - A missing artwork stayed missing until the artwork changed. The log did not show the cause.
-- Phone check 1 of `1941a90` failed. During a jingle with no title, the ICY text stays at the song that ended, and the
+- Phone check 1 of `fdd93b2` failed. During a jingle with no title, the ICY text stays at the song that ended, and the
   relay sends that song with no value block. The app showed that song, and **Boost** stayed active.
 - Operator choice (2026-11-24, relayed by the orchestrator session): the dead block has `value.destinations: []`.
 

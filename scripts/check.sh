@@ -27,11 +27,11 @@ xtool dev build || fail "ADR 0005 §Decision: the iOS build must pass in Swift 6
 
 echo "==> App Intents in the binary"
 command -v llvm-nm >/dev/null || fail "llvm-nm is not on PATH. Install LLVM, then run this script again."
-binary="xtool/CitizenRadio.app/CitizenRadio"
+binary="xtool/Rainbrook.app/Rainbrook"
 symbols="$(llvm-nm "$binary")"
-for intent in PlayB6IntentV StopB6IntentV; do
+for intent in 9Rainbrook15PlayRadioIntentV 9Rainbrook15StopRadioIntentV; do
     grep -q "$intent" <<<"$symbols" || fail "ADR 0003 §Invariants: $binary has no $intent symbols. \
-The linker removed RadioIntents.o. Make sure that CitizenRadioApp.init() calls RadioShortcuts.updateAppShortcutParameters()."
+The linker removed RadioIntents.o. Make sure that RainbrookApp.init() calls RadioShortcuts.updateAppShortcutParameters()."
 done
 
 echo "==> All checks passed"

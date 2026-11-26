@@ -1,8 +1,8 @@
-# CitizenRadio architecture
+# Rainbrook architecture
 
 ## Purpose
 
-CitizenRadio plays one saved Icecast stream after a user action or a Shortcuts automation.
+Rainbrook plays one saved Icecast stream after a user action or a Shortcuts automation.
 The user enters the URL in the app.
 The source code contains no station URL.
 
@@ -31,7 +31,7 @@ Boost button -> BoostSheet -> BoostModel.sendManualBoost -> BoostPayer -> BoostH
 ```
 
 Shortcuts owns the Bluetooth trigger.
-CitizenRadio does not scan for Bluetooth devices or request location access.
+Rainbrook does not scan for Bluetooth devices or request location access.
 Apple supports a trigger for a selected Bluetooth device.
 See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting-triggers-apde31e9638b/ios).
 
@@ -39,7 +39,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 
 | Component | Responsibility |
 | --- | --- |
-| `CitizenRadioApp` | Creates the SwiftUI scene. |
+| `RainbrookApp` | Creates the SwiftUI scene. |
 | `PlayerView` | Shows the artwork placeholder, status, Play or Stop, the AirPlay button, and the Boost button (ADR 0014). |
 | `SettingsView` | Shows the station list and the other settings in a sheet. |
 | `StationEditorView` | Adds a station or changes a station (ADR 0017). |
@@ -110,7 +110,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `BoostHistoryView` | Shows the boost history, and a Retry button for a failed part (ADR 0013, ADR 0016). |
 
 The Xcode target compiles all sixty-seven Swift source files into the app.
-The Swift package exposes the `CitizenRadio` app library and an internal `CitizenRadioCore` target.
+The Swift package exposes the `Rainbrook` app library and an internal `RainbrookCore` target.
 The app target depends on the core target.
 Its four UI and playback files use an iOS compilation condition so host tests do not need Apple frameworks.
 The app has one player instance on the main actor.
@@ -118,7 +118,7 @@ Its URL actions and App Intents use that same instance.
 
 ## xtool packaging
 
-`xtool.yml` selects the `CitizenRadio` library product for the app.
+`xtool.yml` selects the `Rainbrook` library product for the app.
 xtool supplies the executable entry point from the app's SwiftUI `@main` declaration.
 The package and the Xcode target use Swift 6 language mode and an iOS 17 deployment target.
 `scripts/check.sh` runs the core tests and the iOS build. See [ADR 0005](../adr/0005-swift-6-and-check-script.md).
@@ -134,13 +134,13 @@ The Swift package compiles `RadioIntents.swift` like the Xcode target.
 xtool does not extract App Intents metadata ([issue 145](https://github.com/xtool-org/xtool/issues/145)).
 Its [packer](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/Packer.swift) has no metadata stage.
 `Configuration/AppIntents/Metadata.appintents` holds the metadata that Xcode generates, made by `scripts/generate-app-intents-metadata.sh`.
-It names the intent types by module (`CitizenRadio`) and mangled type name, which match in both builds.
+It names the intent types by module (`Rainbrook`) and mangled type name, which match in both builds.
 xtool copies this directory to the app bundle root before it signs the app, so `xtool dev` signs one time.
 Do not add files to an app that xtool signed, and do not install a signed app again with `xtool install`.
 xtool signs again and adds a second `XTL-<team>.` prefix to the bundle ID.
 See [ADR 0003](../adr/0003-committed-app-intents-metadata.md).
 
-As a fallback, Shortcuts can use **Open URLs** with `citizenradio://play` or `citizenradio://stop`.
+As a fallback, Shortcuts can use **Open URLs** with `rainbrook://play` or `rainbrook://stop`.
 These actions open the app and can require device unlocking.
 They do not provide the background launch behavior of `AudioPlaybackIntent`.
 The URL handler uses only the saved stream and rejects additional URL parameters.

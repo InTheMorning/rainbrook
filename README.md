@@ -1,6 +1,6 @@
-# CitizenRadio
+# Rainbrook
 
-CitizenRadio is a native iPhone app for an Icecast or HLS radio station.
+Rainbrook is a native iPhone app for an Icecast or HLS radio station.
 Add a station in the app settings, then play it.
 A Bluetooth automation in Shortcuts can start playback when your iPhone connects to your car.
 
@@ -15,10 +15,10 @@ xtool dev
 ```
 
 xtool builds the app, signs it one time with your Apple account, and installs it.
-The app includes the committed App Intents metadata, so Shortcuts shows **Play CitizenRadio** and **Stop CitizenRadio**.
+The app includes the committed App Intents metadata, so Shortcuts shows **Play Rainbrook** and **Stop Rainbrook**.
 
-The configuration selects the `CitizenRadio` app product and includes the icon, privacy manifest, and background audio settings.
-The generated app is `xtool/CitizenRadio.app`.
+The configuration selects the `Rainbrook` app product and includes the icon, privacy manifest, and background audio settings.
+The generated app is `xtool/Rainbrook.app`.
 Change `bundleID` in `xtool.yml` if Apple reports an identifier conflict.
 The deployment target is iOS 17.
 The project depends on swift-secp256k1 and swift-crypto for the wallet connection.
@@ -27,17 +27,17 @@ Open the installed app and tap **Settings**.
 Tap **Add Station**, enter a name and a direct MP3 or AAC stream URL, then tap **Save**.
 Tap the new station to start playback.
 
-Use the **Play CitizenRadio** and **Stop CitizenRadio** actions in your car's Bluetooth automations.
+Use the **Play Rainbrook** and **Stop Rainbrook** actions in your car's Bluetooth automations.
 See the [setup guide](docs/runbooks/iphone-setup.md).
 
 xtool cannot generate App Intents metadata ([xtool issue 145](https://github.com/xtool-org/xtool/issues/145)).
 The repository keeps a copy that Xcode generated in `Configuration/AppIntents/Metadata.appintents`.
-After you change `CitizenRadio/RadioIntents.swift`, run `scripts/generate-app-intents-metadata.sh` on a Mac with Xcode and commit the result.
+After you change `Rainbrook/RadioIntents.swift`, run `scripts/generate-app-intents-metadata.sh` on a Mac with Xcode and commit the result.
 
 ## Install with Xcode
 
-1. Open `CitizenRadio.xcodeproj` in Xcode on a Mac.
-2. Select the **CitizenRadio** target.
+1. Open `Rainbrook.xcodeproj` in Xcode on a Mac.
+2. Select the **Rainbrook** target.
 3. Select your development team in **Signing & Capabilities**.
 4. Change the bundle identifier to a unique identifier for your account.
 5. Select your iPhone as the run destination.
@@ -46,7 +46,7 @@ After you change `CitizenRadio/RadioIntents.swift`, run `scripts/generate-app-in
 8. Tap **Save**, then tap the new station to start playback.
 
 Use Xcode 15 or a subsequent version that supports your iPhone's installed iOS version.
-The Xcode build includes the named **Play CitizenRadio** and **Stop CitizenRadio** App Intents.
+The Xcode build includes the named **Play Rainbrook** and **Stop Rainbrook** App Intents.
 
 ## Current implementation
 

@@ -1,5 +1,5 @@
 // musicindex ADR 0083 R-VERSION-1: gives the git revision and the build time to the module
-// CitizenRadioBuildValues. The command runs again when a Swift file of the app, Package.swift, HEAD, the file of
+// RainbrookBuildValues. The command runs again when a Swift file of the app, Package.swift, HEAD, the file of
 // the branch or the Git index changes. Thus the build time is the time of the last run of the command, as in the
 // Rust crate `musicindex-build-info`.
 import Foundation
@@ -11,11 +11,11 @@ struct BuildValuesPlugin: BuildToolPlugin {
         let packageDirectory = context.package.directoryURL
         let output = context.pluginWorkDirectoryURL.appending(path: "GeneratedBuildValues.swift")
         var inputs = [packageDirectory.appending(path: "Package.swift")]
-        inputs += Self.swiftFiles(in: packageDirectory.appending(path: "CitizenRadio"))
+        inputs += Self.swiftFiles(in: packageDirectory.appending(path: "Rainbrook"))
         inputs += Self.gitFiles(in: packageDirectory.appending(path: ".git"))
         return [
             .buildCommand(
-                displayName: "Write the build values of CitizenRadio",
+                displayName: "Write the build values of Rainbrook",
                 executable: try context.tool(named: "BuildValuesTool").url,
                 arguments: [packageDirectory.path(percentEncoded: false), output.path(percentEncoded: false)],
                 environment: Self.passedEnvironment(),
@@ -49,7 +49,7 @@ struct BuildValuesPlugin: BuildToolPlugin {
     private static func passedEnvironment() -> [String: String] {
         let environment = ProcessInfo.processInfo.environment
         var passed: [String: String] = [:]
-        for name in ["CITIZENRADIO_GIT_REVISION", "CITIZENRADIO_BUILT_AT", "PATH", "HOME"] {
+        for name in ["RAINBROOK_GIT_REVISION", "RAINBROOK_BUILT_AT", "PATH", "HOME"] {
             if let value = environment[name] {
                 passed[name] = value
             }

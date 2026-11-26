@@ -15,10 +15,10 @@ dest="$root/Configuration/AppIntents/Metadata.appintents"
 derived="$(mktemp -d)"
 trap 'rm -rf "$derived"' EXIT
 
-echo "Building CitizenRadio with Xcode to extract App Intents metadata..."
+echo "Building Rainbrook with Xcode to extract App Intents metadata..."
 xcodebuild \
-    -project "$root/CitizenRadio.xcodeproj" \
-    -scheme CitizenRadio \
+    -project "$root/Rainbrook.xcodeproj" \
+    -scheme Rainbrook \
     -configuration Release \
     -destination 'generic/platform=iOS' \
     -derivedDataPath "$derived" \
@@ -30,7 +30,7 @@ xcodebuild \
         exit 1
     }
 
-src="$derived/Build/Products/Release-iphoneos/CitizenRadio.app/Metadata.appintents"
+src="$derived/Build/Products/Release-iphoneos/Rainbrook.app/Metadata.appintents"
 if [[ ! -f "$src/extract.actionsdata" ]]; then
     echo "error: Xcode did not produce $src/extract.actionsdata" >&2
     exit 1

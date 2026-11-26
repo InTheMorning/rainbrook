@@ -1,9 +1,9 @@
 version: 1
-bundleID: org.citizenradio.CitizenRadio
-product: CitizenRadio
+bundleID: org.rainbrook.Rainbrook
+product: Rainbrook
 infoPath: Configuration/xtool-info.plist
-iconPath: CitizenRadio/Assets.xcassets/AppIcon.appiconset/icon.png
+iconPath: Rainbrook/Assets.xcassets/AppIcon.appiconset/icon.png
 resources:
-  - CitizenRadio/PrivacyInfo.xcprivacy
-  - CitizenRadio/forcdchime.wav
+  - Rainbrook/PrivacyInfo.xcprivacy
+  - Rainbrook/forcdchime.wav
   - Configuration/AppIntents/Metadata.appintents

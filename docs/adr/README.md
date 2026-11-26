@@ -1,6 +1,6 @@
 # Current Decisions
 
-This file is the index of the current decisions of citizenradio. It answers what binds a change today
+This file is the index of the current decisions of rainbrook. It answers what binds a change today
 (`project-baseline` skill, section "A Binding Rule Lives In A Decision Record"). `docs/archive/adr/` holds the
 superseded decisions.
 
@@ -31,3 +31,4 @@ ADR from number 0024 has a `- Bar:` line or a `- Supersedes:` line.
 | [ADR 0026](0026-dead-block-title-and-artist-title-payload.md) | The dead block title and the "artist - title" payload | accepted |
 | [ADR 0027](0027-title-alone-match-on-hls.md) | The match of the ID3 title alone on HLS | accepted |
 | [ADR 0028](0028-station-title-and-image-from-the-dead-block.md) | The station title and image from the dead block | accepted |
+| [ADR 0029](0029-the-app-name-is-rainbrook.md) | The app name is Rainbrook | accepted. The App Intents metadata and the visual acceptance criteria are open. |

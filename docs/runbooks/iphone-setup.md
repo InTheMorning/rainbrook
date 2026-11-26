@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Install CitizenRadio and start its saved stream when the iPhone connects to the car's Bluetooth device.
+Install Rainbrook and start its saved stream when the iPhone connects to the car's Bluetooth device.
 
 ## Prerequisites
 
@@ -19,7 +19,7 @@ Install CitizenRadio and start its saved stream when the iPhone connects to the 
 2. Connect the iPhone through USB.
 3. Unlock the iPhone.
 4. Accept the device trust request if it appears.
-5. Open a terminal in the CitizenRadio project root.
+5. Open a terminal in the Rainbrook project root.
 6. Use this command:
 
 ```sh
@@ -31,7 +31,7 @@ It copies `Configuration/AppIntents/Metadata.appintents` into the app, then sign
 If Developer Mode is disabled, enable it and repeat the command.
 Follow [xtool's device setup instructions](https://xtool.sh/tutorials/xtool/first-app/) if iOS requests developer trust.
 
-The expected generated bundle is `xtool/CitizenRadio.app`.
+The expected generated bundle is `xtool/Rainbrook.app`.
 The build directory is excluded from Git.
 If Apple reports an identifier conflict, change `bundleID` in `xtool.yml` to an identifier for your account.
 The Xcode identifier is separate from this setting.
@@ -47,19 +47,19 @@ The current package declares an iOS 17 deployment target.
 
 ## Install with Xcode
 
-1. Open `CitizenRadio.xcodeproj` on the Mac.
-2. Select the **CitizenRadio** scheme.
+1. Open `Rainbrook.xcodeproj` on the Mac.
+2. Select the **Rainbrook** scheme.
 3. Open the target's **Signing & Capabilities** settings.
 4. Select your development team.
-5. Change `org.citizenradio.CitizenRadio` to a unique bundle identifier for your account.
+5. Change `org.rainbrook.Rainbrook` to a unique bundle identifier for your account.
 6. Connect the iPhone to the Mac.
 7. Select the iPhone as the run destination.
 8. Enable Developer Mode if iOS requests it.
-9. Build and run CitizenRadio.
+9. Build and run Rainbrook.
 
 ## Add a station
 
-1. Open CitizenRadio on the iPhone.
+1. Open Rainbrook on the iPhone.
 2. Tap **Settings**.
 3. In the **Stations** section, tap **Add Station**.
 4. Enter the **Name**, the **Stream**, the **Alternate stream**, and the **Live value address**. Only the **Stream** is necessary.
@@ -78,7 +78,7 @@ With an alternate stream, the app plays it if the stream fails (ADR 0017). The p
 
 ## Configure playback
 
-1. Open CitizenRadio on the iPhone.
+1. Open Rainbrook on the iPhone.
 2. Tap **Settings**.
 3. Set **Chime while connecting** on or off.
 4. Tap **Save**.
@@ -97,9 +97,9 @@ The first version stores and tests the connection. It sends no payment.
 
 ### Paste the connection
 
-1. In Alby Hub, make a new app connection for CitizenRadio.
+1. In Alby Hub, make a new app connection for Rainbrook.
 2. Copy the connection URI to the clipboard.
-3. Open CitizenRadio on the iPhone.
+3. Open Rainbrook on the iPhone.
 4. Tap **Settings**.
 5. In the **Wallet** section, tap **Paste**. This is the system paste button.
 
@@ -108,9 +108,9 @@ The relay host and the wallet key prefix appear. The Lightning address appears i
 
 ### Scan the QR code
 
-1. In Alby Hub, make a new app connection for CitizenRadio.
+1. In Alby Hub, make a new app connection for Rainbrook.
 2. Show the connection QR code on a separate screen.
-3. Open CitizenRadio on the iPhone.
+3. Open Rainbrook on the iPhone.
 4. Tap **Settings**.
 5. In the **Wallet** section, tap **Scan QR Code**.
 6. Allow camera access. This request shows only after this tap.
@@ -150,7 +150,7 @@ Without a wallet connection, the app plays as before.
 
 Connect a wallet before you configure boosts.
 
-1. Open CitizenRadio on the iPhone.
+1. Open Rainbrook on the iPhone.
 2. Tap **Settings**.
 3. In the **Wallet** section, set **Auto-boost** on.
 4. Enter the **Boost amount**, in sats.
@@ -175,7 +175,7 @@ The **Boost** button is active only while a V4V track plays.
 
 ## See the boost history
 
-1. Open CitizenRadio on the iPhone.
+1. Open Rainbrook on the iPhone.
 2. Tap **Settings**.
 3. In the **Wallet** section, tap **Boost history**.
 4. Tap an entry to see its message and the result of each part.
@@ -191,7 +191,7 @@ Apple added the **Run Immediately** control for Bluetooth automations in iOS 17.
 See [Apple's iOS 17 Shortcuts changes](https://support.apple.com/en-gb/111098).
 
 1. Open Shortcuts on the iPhone.
-2. Make a shortcut with the **Play CitizenRadio** action.
+2. Make a shortcut with the **Play Rainbrook** action.
 3. Run the shortcut to test playback.
 4. Add a Bluetooth automation for your car's paired device.
 5. Select the connection trigger.
@@ -204,20 +204,20 @@ Some versions create automations from the Automation tab.
 Newer layouts can attach a trigger to an existing shortcut.
 Apple's [automation guide](https://support.apple.com/guide/shortcuts/add-automations-apdfbdbd7123/ios) describes the current controls.
 
-Use the **Play CitizenRadio** action for playback.
+Use the **Play Rainbrook** action for playback.
 The **Open App** action only opens the interface.
-You can make a separate shortcut with **Stop CitizenRadio** for manual control.
+You can make a separate shortcut with **Stop Rainbrook** for manual control.
 
 ### URL fallback
 
 Use URL actions if Shortcuts does not show the Play and Stop actions.
 
-1. Make a shortcut with a **URL** action set to `citizenradio://play`.
+1. Make a shortcut with a **URL** action set to `rainbrook://play`.
 2. Add an **Open URLs** action after the URL action.
 3. Use this shortcut in the Bluetooth automation.
 
-For Stop, use `citizenradio://stop` in a separate shortcut.
-The URL opens CitizenRadio in the foreground, so iOS may require unlocking first.
+For Stop, use `rainbrook://stop` in a separate shortcut.
+The URL opens Rainbrook in the foreground, so iOS may require unlocking first.
 This method does not guarantee playback from a locked phone.
 
 ## Device checks
@@ -242,14 +242,14 @@ Complete these checks before normal use of the automation.
 | Play with an empty **Live value address** field. | The title and the artist come from the stream title, and the artwork area shows the placeholder. |
 | Tap **Stop**, then **Play**, with a relay event configured. | The display is correct again. |
 | Open the app before a station is saved. | The status shows **Add a station in Settings** and Play is disabled. |
-| Run a Play action before a URL is saved. | The app reports missing settings. The Play CitizenRadio action also reports an error to Shortcuts. |
+| Run a Play action before a URL is saved. | The app reports missing settings. The Play Rainbrook action also reports an error to Shortcuts. |
 | Lock the screen during playback. | Audio continues and Now Playing controls remain available. |
-| Run Play CitizenRadio while locked. | Playback starts without opening the app. |
-| Run the URL fallback shortcut while locked. | iOS can require unlocking before it opens CitizenRadio. |
-| Open `citizenradio://play` and `citizenradio://stop`. | The saved stream starts and stops. |
-| Search Shortcuts for CitizenRadio after `xtool dev`. | Play CitizenRadio and Stop CitizenRadio appear. |
-| Say "Play CitizenRadio" to Siri. | Playback starts. If it fails, see [ADR 0003](../adr/0003-committed-app-intents-metadata.md#consequences). |
-| Open `citizenradio://play?url=https://example.org/other`. | The app does not start playback or change the saved stream. |
+| Run Play Rainbrook while locked. | Playback starts without opening the app. |
+| Run the URL fallback shortcut while locked. | iOS can require unlocking before it opens Rainbrook. |
+| Open `rainbrook://play` and `rainbrook://stop`. | The saved stream starts and stops. |
+| Search Shortcuts for Rainbrook after `xtool dev`. | Play Rainbrook and Stop Rainbrook appear. |
+| Say "Play Rainbrook" to Siri. | Playback starts. If it fails, see [ADR 0003](../adr/0003-committed-app-intents-metadata.md#consequences). |
+| Open `rainbrook://play?url=https://example.org/other`. | The app does not start playback or change the saved stream. |
 | Run the automation while the app is closed. | iOS starts the action and playback begins. |
 | Connect the paired car device. | The automation starts the saved stream through the selected iOS output. |
 | Disconnect the audio device during playback. | Playback stops. |
@@ -292,7 +292,7 @@ Complete these checks before normal use of the automation.
 | Tap a station in the list. | The station plays. Its artwork and its title show. |
 | Give a station a primary stream that does not work. | The station plays the alternate stream after a maximum of 20 seconds. The player screen shows "Alternate stream". |
 | Play a station with an HLS stream. | The title and the artwork of the track show. |
-| Say "Play CitizenRadio" with more than one station saved. | The selected station plays. |
+| Say "Play Rainbrook" with more than one station saved. | The selected station plays. |
 | Tap **Play** on a V4V track. | **Boost** is active for the first track (ADR 0018). |
 | Tap **Play** in the first minute of a new V4V track. | **Boost** is active, and the boost pays that track (ADR 0018). |
 | Play a track with an album. | The album shows below the artist, and the lock screen shows it (ADR 0019). |
@@ -323,8 +323,8 @@ On a Mac, compile the iOS target without device signing:
 
 ```sh
 xcodebuild \
-  -project CitizenRadio.xcodeproj \
-  -scheme CitizenRadio \
+  -project Rainbrook.xcodeproj \
+  -scheme Rainbrook \
   -configuration Debug \
   -sdk iphonesimulator \
   -destination 'generic/platform=iOS Simulator' \
@@ -344,11 +344,11 @@ The core tests run through the Swift package.
 | xtool reports no iOS SDK. | Complete `xtool setup` on the development computer. |
 | xtool reports an identifier conflict. | Set a unique `bundleID` in `xtool.yml`. |
 | An xtool installation has no named Play action. | Examine `resources` in `xtool.yml`, then run `xtool dev` again. Use the URL shortcut until the actions show. |
-| Play or Stop CitizenRadio reports an internal error. | Run `llvm-nm xtool/CitizenRadio.app/CitizenRadio \| grep PlayB6IntentV`. If it shows no symbols, the binary has no intents. See [ADR 0003](../adr/0003-committed-app-intents-metadata.md). |
+| Play or Stop Rainbrook reports an internal error. | Run `llvm-nm xtool/Rainbrook.app/Rainbrook \| grep 9Rainbrook15PlayRadioIntentV`. If it shows no symbols, the binary has no intents. See [ADR 0003](../adr/0003-committed-app-intents-metadata.md). |
 | The URL shortcut requires unlocking. | Unlock the phone, or test the App Intent through an Xcode build. |
 | Xcode reports a signing error. | Select your development team and a unique bundle identifier. |
-| Shortcuts cannot find CitizenRadio. | Open the installed app, then search for its actions again. |
-| The app opens but audio does not start. | Use the Play CitizenRadio action in the automation. |
+| Shortcuts cannot find Rainbrook. | Open the installed app, then search for its actions again. |
+| The app opens but audio does not start. | Use the Play Rainbrook action in the automation. |
 | The automation asks before running. | Check its automatic execution and locked-device settings. |
 | The stream fails immediately. | Examine the direct URL and MP3 or AAC format. |
 | The connection times out. | Check network access and the stream server, then request Play again. |
@@ -359,7 +359,7 @@ The core tests run through the Swift package.
 ## Rollback
 
 1. Disable or remove the Bluetooth automation in Shortcuts.
-2. Tap **Stop Radio** in CitizenRadio.
+2. Tap **Stop Radio** in Rainbrook.
 3. Remove the app if you no longer need it.
 
 Removing the app deletes its saved stream setting from the device.

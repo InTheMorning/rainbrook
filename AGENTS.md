@@ -1,13 +1,16 @@
-# citizenradio Agent Guidelines
+# rainbrook Agent Guidelines
 
 ## The Project
 
-CitizenRadio is an iPhone app in Swift. It plays an Icecast or HLS radio station. It shows the track from a
+Rainbrook is an iPhone app in Swift. It plays an Icecast or HLS radio station. It shows the track from a
 MusicIndex relay or from the ICY title. It pays boosts through a Nostr Wallet Connect wallet. Only the operator uses
 the app.
 
 The app is also the base and the example for a client app of the suite. Write code for reuse in
-`CitizenRadio/Core/`. The `project-baseline` skill, section "citizenradio Is The Example Client App", owns this rule.
+`Rainbrook/Core/`. The `project-baseline` skill, section "rainbrook Is The Example Client App", owns this rule.
+
+The app name is Rainbrook, with the bundle ID `org.rainbrook.Rainbrook` (ADR 0029). Records with a date before
+2026-11-25 use the name CitizenRadio. ADR 0029 Decision 7 gives the meaning of that name in them.
 
 `README.md` gives the install steps. `docs/architecture/overview.md` gives the data flow and the components.
 
@@ -15,10 +18,12 @@ The app is also the base and the example for a client app of the suite. Write co
 
 - `docs/adr/README.md` is the index of the current decisions of this app. `docs/archive/adr/` holds the superseded
   decisions.
-- The app reads relay events and ICY titles (`CitizenRadio/Core/LiveValue.swift`, `TrackDisplay.swift`,
+- The app reads relay events and ICY titles (`Rainbrook/Core/LiveValue.swift`, `TrackDisplay.swift`,
   `IcyTitle.swift`). It reads no feed and no file tags.
 - The app reads the relay `fee` as a JSON boolean (`LiveValue.swift:148`).
 - ADR 0007 and ADR 0014 have open visual acceptance criteria.
+- ADR 0029 has open items. A person must run `scripts/generate-app-intents-metadata.sh` on a Mac, because the
+  committed App Intents metadata still names the module `CitizenRadio`. The visual checks of ADR 0029 are open.
 - `~/build/musicindex/docs/glossary.md` has each word that the app shows, as a row or in its section "Shown Words
   With No Row". The app shows "track" for each item that plays, because the relay event gives no medium (musicindex ADR 0087 R-WORD-11
   item 5).
@@ -43,8 +48,8 @@ The app is also the base and the example for a client app of the suite. Write co
 
 ## The Design Rules
 
-- `CitizenRadio/Core/` has no SwiftUI, AVFoundation or UIKit import. The host tests run it on Linux. The app files
-  that use Apple frameworks are in `CitizenRadio/`. ADR 0005 owns the Swift 6 language mode and the check script.
+- `Rainbrook/Core/` has no SwiftUI, AVFoundation or UIKit import. The host tests run it on Linux. The app files
+  that use Apple frameworks are in `Rainbrook/`. ADR 0005 owns the Swift 6 language mode and the check script.
 - A Swift app cannot use a Rust crate. The owner of a shared rule states what applies to this app (`project-baseline`
   skill).
 - musicindex ADR 0086 R-FEED-5 applies to this app and to each client app that starts from it:
@@ -67,7 +72,7 @@ The app is also the base and the example for a client app of the suite. Write co
   `llvm-nm` on the `PATH`.
 - The gate runs `check_adr_links.py` of the `project-baseline` skill with `--bar-from 0024`. Each new ADR has a
   `- Bar:` line. A new ADR also gets a row in `docs/adr/README.md`.
-- After a change to `CitizenRadio/RadioIntents.swift`, run `scripts/generate-app-intents-metadata.sh` on a Mac with
+- After a change to `Rainbrook/RadioIntents.swift`, run `scripts/generate-app-intents-metadata.sh` on a Mac with
   Xcode, and commit the result (ADR 0003).
 - Do not add a license file. The operator chose no license on 2026-11-22 (`project-baseline` skill).
 - The operator does each push.

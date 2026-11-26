@@ -1,0 +1,1198 @@
+// !$*UTF8*$!
+{
+	"archiveVersion" = 1;
+	"classes" = {
+
+	};
+	"objectVersion" = 56;
+	"objects" = {
+		"000000000000000000000064" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "RainbrookApp.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000C8" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000064";
+		};
+		"000000000000000000000065" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PlayerView.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000C9" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000065";
+		};
+		"000000000000000000000066" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "RadioPlayer.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000CA" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000066";
+		};
+		"000000000000000000000067" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "RadioIntents.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000CB" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000067";
+		};
+		"000000000000000000000068" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/StreamAddress.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000CC" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000068";
+		};
+		"000000000000000000000069" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/Station.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000CD" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000069";
+		};
+		"00000000000000000000006A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/PlaybackRequest.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000CE" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000006A";
+		};
+		"00000000000000000000006B" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/RadioURLAction.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000CF" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000006B";
+		};
+		"000000000000000000000071" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "SettingsView.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000D5" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000071";
+		};
+		"000000000000000000000072" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/PlaybackState.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000D6" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000072";
+		};
+		"000000000000000000000073" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/PlayerScreenModel.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000D7" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000073";
+		};
+		"000000000000000000000074" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/StreamSettingsDraft.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000D8" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000074";
+		};
+		"00000000000000000000006E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.xml";
+			"path" = "Info.plist";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000006F" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.xml";
+			"path" = "PrivacyInfo.xcprivacy";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000D3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000006F";
+		};
+		"000000000000000000000070" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder.assetcatalog";
+			"path" = "Assets.xcassets";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000D4" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000070";
+		};
+		"000000000000000000000075" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "audio.wav";
+			"path" = "forcdchime.wav";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000D9" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000075";
+		};
+		"000000000000000000000076" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/ChimeSetting.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000DA" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000076";
+		};
+		"000000000000000000000077" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/LoadedAudio.swift";
+			"sourceTree" = "<group>";
+		};
+		"0000000000000000000000DB" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000077";
+		};
+		"000000000000000000000100" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NWCConnection.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000111" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000100";
+		};
+		"000000000000000000000101" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/WalletSummary.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000112" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000101";
+		};
+		"000000000000000000000102" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/SpendingLimit.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000113" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000102";
+		};
+		"000000000000000000000103" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NostrKeys.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000114" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000103";
+		};
+		"000000000000000000000104" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NostrEvent.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000115" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000104";
+		};
+		"000000000000000000000105" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NIP44.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000116" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000105";
+		};
+		"000000000000000000000106" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NIP04.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000117" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000106";
+		};
+		"000000000000000000000107" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/RelayMessage.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000118" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000107";
+		};
+		"000000000000000000000108" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/RelayConnection.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000119" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000108";
+		};
+		"000000000000000000000109" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NWCClient.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011A" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000109";
+		};
+		"00000000000000000000010A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/SecretStore.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010A";
+		};
+		"00000000000000000000010B" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/WalletStatusText.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011C" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010B";
+		};
+		"00000000000000000000010C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "KeychainSecretStore.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010C";
+		};
+		"00000000000000000000010D" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "URLSessionRelayConnection.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010D";
+		};
+		"00000000000000000000010E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "WalletSettingsModel.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000011F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010E";
+		};
+		"00000000000000000000010F" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "WalletSettingsView.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000120" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000010F";
+		};
+		"000000000000000000000110" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "QRScannerView.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000121" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000110";
+		};
+		"00000000000000000000012A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/RelayEvent.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000012B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000012A";
+		};
+		"00000000000000000000012C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/EventStreamParser.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000012D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000012C";
+		};
+		"00000000000000000000012E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/TrackDisplay.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000012F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000012E";
+		};
+		"000000000000000000000130" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/IcyTitle.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000131" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000130";
+		};
+		"000000000000000000000132" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/EventStreamClient.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000133" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000132";
+		};
+		"000000000000000000000134" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/DisplayTiming.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000135" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000134";
+		};
+		"000000000000000000000136" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/TrackLines.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000137" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000136";
+		};
+		"000000000000000000000138" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/ArtworkPolicy.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000139" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000138";
+		};
+		"00000000000000000000013A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/LRUCache.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000013B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000013A";
+		};
+		"00000000000000000000013C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/StationStore.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000013D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000013C";
+		};
+		"00000000000000000000013E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NetworkPathSummary.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000013F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000013E";
+		};
+		"000000000000000000000140" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/RelayStatusText.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000141" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000140";
+		};
+		"000000000000000000000142" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "URLSessionEventStream.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000143" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000142";
+		};
+		"000000000000000000000144" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "NetworkPathMonitor.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000145" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000144";
+		};
+		"000000000000000000000146" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "ArtworkLoader.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000147" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000146";
+		};
+		"000000000000000000000148" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "IcyMetadataReader.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000149" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000148";
+		};
+		"00000000000000000000014A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "TrackInfoModel.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000014B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000014A";
+		};
+		"00000000000000000000014C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/IcySync.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000014D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000014C";
+		};
+		"00000000000000000000014E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "StationEditorView.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000014F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000014E";
+		};
+		"000000000000000000000150" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/ArtworkFrames.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000151" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000150";
+		};
+		"000000000000000000000152" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/Bolt11.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000153" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000152";
+		};
+		"000000000000000000000154" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostHistory.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000155" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000154";
+		};
+		"000000000000000000000156" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostPairing.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000157" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000156";
+		};
+		"000000000000000000000158" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostPayer.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000159" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000158";
+		};
+		"00000000000000000000015A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostPlan.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000015B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000015A";
+		};
+		"00000000000000000000015C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostRecord.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000015D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000015C";
+		};
+		"00000000000000000000015E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostSettings.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000015F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000015E";
+		};
+		"000000000000000000000160" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostSplit.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000161" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000160";
+		};
+		"000000000000000000000162" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostStatusText.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000163" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000162";
+		};
+		"000000000000000000000164" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/BoostTrigger.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000165" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000164";
+		};
+		"000000000000000000000166" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/LightningAddress.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000167" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000166";
+		};
+		"000000000000000000000168" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/LiveValue.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000169" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000168";
+		};
+		"00000000000000000000016A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/NWCPayment.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000016B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000016A";
+		};
+		"00000000000000000000016C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "BoostHistoryView.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000016D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000016C";
+		};
+		"00000000000000000000016E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "BoostModel.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000016F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000016E";
+		};
+		"000000000000000000000170" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "BoostSheet.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000171" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000170";
+		};
+		"000000000000000000000172" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/StreamQuality.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000173" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000172";
+		};
+		"000000000000000000000174" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/StallBudget.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000175" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000174";
+		};
+		"000000000000000000000176" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/PlaybackLog.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000177" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000176";
+		};
+		"000000000000000000000178" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/ArtworkRetry.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000179" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000178";
+		};
+		"00000000000000000000017A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PlaybackLogStore.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000017B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000017A";
+		};
+		"00000000000000000000017C" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "PlaybackLogView.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000017D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000017C";
+		};
+		"00000000000000000000017E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Core/HLSMasterPlaylist.swift";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000017F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "00000000000000000000017E";
+		};
+		"000000000000000000000122" = {
+			"isa" = "XCRemoteSwiftPackageReference";
+			"repositoryURL" = "https://github.com/21-DOT-DEV/swift-secp256k1";
+			"requirement" = {
+				"kind" = "exactVersion";
+				"version" = "0.23.2";
+			};
+		};
+		"000000000000000000000123" = {
+			"isa" = "XCRemoteSwiftPackageReference";
+			"repositoryURL" = "https://github.com/apple/swift-crypto";
+			"requirement" = {
+				"kind" = "versionRange";
+				"minimumVersion" = "4.0.0";
+				"maximumVersion" = "6.0.0";
+			};
+		};
+		"000000000000000000000124" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "000000000000000000000122";
+			"productName" = "P256K";
+		};
+		"000000000000000000000125" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "000000000000000000000123";
+			"productName" = "Crypto";
+		};
+		"000000000000000000000126" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "000000000000000000000123";
+			"productName" = "CryptoExtras";
+		};
+		"000000000000000000000127" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "000000000000000000000124";
+		};
+		"000000000000000000000128" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "000000000000000000000125";
+		};
+		"000000000000000000000129" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "000000000000000000000126";
+		};
+		"000000000000000000000078" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = 0;
+			"path" = "Rainbrook.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"000000000000000000000014" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"000000000000000000000064",
+				"000000000000000000000065",
+				"000000000000000000000066",
+				"000000000000000000000067",
+				"000000000000000000000068",
+				"000000000000000000000069",
+				"00000000000000000000006A",
+				"00000000000000000000006B",
+				"000000000000000000000071",
+				"000000000000000000000072",
+				"000000000000000000000073",
+				"000000000000000000000074",
+				"000000000000000000000076",
+				"000000000000000000000077",
+				"00000000000000000000006E",
+				"00000000000000000000006F",
+				"000000000000000000000070",
+				"000000000000000000000075",
+				"000000000000000000000100",
+				"000000000000000000000101",
+				"000000000000000000000102",
+				"000000000000000000000103",
+				"000000000000000000000104",
+				"000000000000000000000105",
+				"000000000000000000000106",
+				"000000000000000000000107",
+				"000000000000000000000108",
+				"000000000000000000000109",
+				"00000000000000000000010A",
+				"00000000000000000000010B",
+				"00000000000000000000010C",
+				"00000000000000000000010D",
+				"00000000000000000000010E",
+				"00000000000000000000010F",
+				"000000000000000000000110",
+				"00000000000000000000012A",
+				"00000000000000000000012C",
+				"00000000000000000000012E",
+				"000000000000000000000130",
+				"000000000000000000000132",
+				"000000000000000000000134",
+				"000000000000000000000136",
+				"000000000000000000000138",
+				"00000000000000000000013A",
+				"00000000000000000000013C",
+				"00000000000000000000013E",
+				"000000000000000000000140",
+				"000000000000000000000142",
+				"000000000000000000000144",
+				"000000000000000000000146",
+				"000000000000000000000148",
+				"00000000000000000000014A",
+				"00000000000000000000014C",
+				"00000000000000000000014E",
+				"000000000000000000000150",
+				"000000000000000000000152",
+				"000000000000000000000154",
+				"000000000000000000000156",
+				"000000000000000000000158",
+				"00000000000000000000015A",
+				"00000000000000000000015C",
+				"00000000000000000000015E",
+				"000000000000000000000160",
+				"000000000000000000000162",
+				"000000000000000000000164",
+				"000000000000000000000166",
+				"000000000000000000000168",
+				"00000000000000000000016A",
+				"00000000000000000000016C",
+				"00000000000000000000016E",
+				"000000000000000000000170",
+				"000000000000000000000172",
+				"000000000000000000000174",
+				"000000000000000000000176",
+				"000000000000000000000178",
+				"00000000000000000000017A",
+				"00000000000000000000017C",
+				"00000000000000000000017E",
+			);
+			"path" = "Rainbrook";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000015" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"000000000000000000000078",
+			);
+			"name" = "Products";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000016" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"000000000000000000000014",
+				"000000000000000000000015",
+			);
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000001E" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"0000000000000000000000C8",
+				"0000000000000000000000C9",
+				"0000000000000000000000CA",
+				"0000000000000000000000CB",
+				"0000000000000000000000CC",
+				"0000000000000000000000CD",
+				"0000000000000000000000CE",
+				"0000000000000000000000CF",
+				"0000000000000000000000D5",
+				"0000000000000000000000D6",
+				"0000000000000000000000D7",
+				"0000000000000000000000D8",
+				"0000000000000000000000DA",
+				"0000000000000000000000DB",
+				"000000000000000000000111",
+				"000000000000000000000112",
+				"000000000000000000000113",
+				"000000000000000000000114",
+				"000000000000000000000115",
+				"000000000000000000000116",
+				"000000000000000000000117",
+				"000000000000000000000118",
+				"000000000000000000000119",
+				"00000000000000000000011A",
+				"00000000000000000000011B",
+				"00000000000000000000011C",
+				"00000000000000000000011D",
+				"00000000000000000000011E",
+				"00000000000000000000011F",
+				"000000000000000000000120",
+				"000000000000000000000121",
+				"00000000000000000000012B",
+				"00000000000000000000012D",
+				"00000000000000000000012F",
+				"000000000000000000000131",
+				"000000000000000000000133",
+				"000000000000000000000135",
+				"000000000000000000000137",
+				"000000000000000000000139",
+				"00000000000000000000013B",
+				"00000000000000000000013D",
+				"00000000000000000000013F",
+				"000000000000000000000141",
+				"000000000000000000000143",
+				"000000000000000000000145",
+				"000000000000000000000147",
+				"000000000000000000000149",
+				"00000000000000000000014B",
+				"00000000000000000000014D",
+				"00000000000000000000014F",
+				"000000000000000000000151",
+				"000000000000000000000153",
+				"000000000000000000000155",
+				"000000000000000000000157",
+				"000000000000000000000159",
+				"00000000000000000000015B",
+				"00000000000000000000015D",
+				"00000000000000000000015F",
+				"000000000000000000000161",
+				"000000000000000000000163",
+				"000000000000000000000165",
+				"000000000000000000000167",
+				"000000000000000000000169",
+				"00000000000000000000016B",
+				"00000000000000000000016D",
+				"00000000000000000000016F",
+				"000000000000000000000171",
+				"000000000000000000000173",
+				"000000000000000000000175",
+				"000000000000000000000177",
+				"000000000000000000000179",
+				"00000000000000000000017B",
+				"00000000000000000000017D",
+				"00000000000000000000017F",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"00000000000000000000001F" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"000000000000000000000127",
+				"000000000000000000000128",
+				"000000000000000000000129",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000020" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"0000000000000000000000D3",
+				"0000000000000000000000D4",
+				"0000000000000000000000D9",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000028" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "6.0";
+				"SWIFT_STRICT_CONCURRENCY" = "targeted";
+				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
+				"GCC_C_LANGUAGE_STANDARD" = "gnu17";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"ENABLE_TESTABILITY" = "YES";
+				"GCC_OPTIMIZATION_LEVEL" = "0";
+				"ONLY_ACTIVE_ARCH" = "YES";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG $(inherited)";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+			};
+		};
+		"000000000000000000000029" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "6.0";
+				"SWIFT_STRICT_CONCURRENCY" = "targeted";
+				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
+				"GCC_C_LANGUAGE_STANDARD" = "gnu17";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+				"SWIFT_COMPILATION_MODE" = "wholemodule";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"VALIDATE_PRODUCT" = "YES";
+			};
+		};
+		"00000000000000000000002A" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"000000000000000000000028",
+				"000000000000000000000029",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"00000000000000000000002B" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"INFOPLIST_FILE" = "Rainbrook/Info.plist";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"MARKETING_VERSION" = "0.1.0";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "org.rainbrook.Rainbrook";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SUPPORTS_MACCATALYST" = "NO";
+				"TARGETED_DEVICE_FAMILY" = "1";
+				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+			};
+		};
+		"00000000000000000000002C" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"INFOPLIST_FILE" = "Rainbrook/Info.plist";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"MARKETING_VERSION" = "0.1.0";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "org.rainbrook.Rainbrook";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SUPPORTS_MACCATALYST" = "NO";
+				"TARGETED_DEVICE_FAMILY" = "1";
+				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+			};
+		};
+		"00000000000000000000002D" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"00000000000000000000002B",
+				"00000000000000000000002C",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"000000000000000000000002" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "00000000000000000000002D";
+			"buildPhases" = (
+				"00000000000000000000001E",
+				"00000000000000000000001F",
+				"000000000000000000000020",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"name" = "Rainbrook";
+			"packageProductDependencies" = (
+				"000000000000000000000124",
+				"000000000000000000000125",
+				"000000000000000000000126",
+			);
+			"productName" = "Rainbrook";
+			"productReference" = "000000000000000000000078";
+			"productType" = "com.apple.product-type.application";
+		};
+		"000000000000000000000001" = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"BuildIndependentTargetsInParallel" = "YES";
+				"LastSwiftUpdateCheck" = "1500";
+				"LastUpgradeCheck" = "1500";
+				"TargetAttributes" = {
+					"000000000000000000000002" = {
+						"CreatedOnToolsVersion" = "15.0";
+						"SystemCapabilities" = {
+							"com.apple.BackgroundModes" = {
+								"enabled" = 1;
+							};
+						};
+					};
+				};
+			};
+			"buildConfigurationList" = "00000000000000000000002A";
+			"compatibilityVersion" = "Xcode 14.0";
+			"developmentRegion" = "en";
+			"knownRegions" = (
+				"en",
+				"Base",
+			);
+			"mainGroup" = "000000000000000000000016";
+			"packageReferences" = (
+				"000000000000000000000122",
+				"000000000000000000000123",
+			);
+			"productRefGroup" = "000000000000000000000015";
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"targets" = (
+				"000000000000000000000002",
+			);
+		};
+	};
+	"rootObject" = "000000000000000000000001";
+}

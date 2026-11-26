@@ -1,4 +1,9 @@
-# Rainbrook
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/rainbrook-lockup-horizontal.svg">
+    <img alt="Rainbrook" src="docs/assets/rainbrook-lockup-horizontal-ink.svg" width="420">
+  </picture>
+</h1>
 
 Rainbrook is a native iPhone app for an Icecast or HLS radio station.
 Add a station in the app settings, then play it.

@@ -155,7 +155,7 @@
 		"000000000000000000000075" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "audio.wav";
-			"path" = "forcdchime.wav";
+			"path" = "chime.wav";
 			"sourceTree" = "<group>";
 		};
 		"0000000000000000000000D9" = {

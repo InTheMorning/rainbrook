@@ -127,7 +127,7 @@ The package and the Xcode target use Swift 6 language mode and an iOS 17 deploym
 It contains no Xcode build variables.
 xtool supplies the bundle identifier, executable name, and minimum OS version from its configuration and the package.
 The overrides retain background audio, HTTP media access, local network access text, and iPhone orientations.
-The icon uses `iconPath`. The privacy manifest, `forcdchime.wav` and the App Intents metadata use the root `resources` list.
+The icon uses `iconPath`. The privacy manifest, `chime.wav` and the App Intents metadata use the root `resources` list.
 See xtool's [configuration schema](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/PackSchema.swift) and [plist assembly](https://github.com/xtool-org/xtool/blob/main/Sources/PackLib/Planner.swift).
 
 The Swift package compiles `RadioIntents.swift` like the Xcode target.
@@ -160,7 +160,7 @@ See [background execution modes](https://developer.apple.com/documentation/xcode
 
 - A repeated Play request keeps an active connection to the same stream.
 - The player activates and deactivates the audio session on a serial background queue, not on the main thread. See [ADR 0006](../adr/0006-audio-session-off-main-thread.md).
-- If the chime setting is on, `forcdchime.wav` plays in a loop while the state is `connecting`. It stops at all other states.
+- If the chime setting is on, `chime.wav` plays in a loop while the state is `connecting`. It stops at all other states.
 - AVPlayer controls the buffer. After a stall, the state is `connecting` and the player calls `play()` again. See [ADR 0014](../adr/0014-player-screen-with-boost-button.md).
 - The Play intent returns success after AVPlayer reports playback.
 - Invalid settings and connection failures return an error to Shortcuts.

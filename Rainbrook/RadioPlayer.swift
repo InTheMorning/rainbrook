@@ -618,7 +618,7 @@ final class RadioPlayer: ObservableObject {
             return
         }
         guard chime == nil,
-              let url = Bundle.main.url(forResource: "forcdchime", withExtension: "wav"),
+              let url = Bundle.main.url(forResource: "chime", withExtension: "wav"),
               let player = try? AVAudioPlayer(contentsOf: url) else { return }
         player.numberOfLoops = -1
         player.play()

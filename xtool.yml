@@ -5,5 +5,5 @@ infoPath: Configuration/xtool-info.plist
 iconPath: Rainbrook/Assets.xcassets/AppIcon.appiconset/icon.png
 resources:
   - Rainbrook/PrivacyInfo.xcprivacy
-  - Rainbrook/forcdchime.wav
+  - Rainbrook/chime.wav
   - Configuration/AppIntents/Metadata.appintents

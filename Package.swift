@@ -19,7 +19,7 @@ let package = Package(
                 "Core",
                 "Info.plist",
                 "PrivacyInfo.xcprivacy",
-                "forcdchime.wav"
+                "chime.wav"
             ]
         ),
         .target(

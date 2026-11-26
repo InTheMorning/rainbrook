@@ -3,6 +3,7 @@
 - Status: accepted. The visual acceptance criteria are open.
 - Date: 2026-10-06
 - Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
+- Revised: 2026-11-25. The chime file is `chime.wav`, an original sound. It replaces `forcdchime.wav`. Operator choice.
 - Class: situational. Supersede this record when the primary screen changes, or when a setting moves into or out of the settings sheet.
 - Changed by: [ADR 0028](0028-station-title-and-image-from-the-dead-block.md)
 - Supersedes: [ADR 0010](../archive/adr/0010-player-screen-without-extra-buffer.md)
@@ -43,7 +44,7 @@ The settings sheet contains:
 - After a stall, the playback state is `connecting`, and the app calls `play()` again.
 - The connection timeout is 20 seconds, for each connection and each stall.
 
-When the chime setting is on, `forcdchime.wav` plays in a loop while the playback state is `connecting`.
+When the chime setting is on, `chime.wav` plays in a loop while the playback state is `connecting`.
 
 ### Live value address
 

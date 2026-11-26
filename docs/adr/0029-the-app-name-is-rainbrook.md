@@ -4,6 +4,8 @@
 - Date: 2026-11-25
 - Bar: crosses repositories. The `project-baseline` skill and the `AGENTS.md` of musicindex-research cite the paths
   of this app. The bundle ID is also difficult to change, because a new bundle ID makes a new app on the iPhone.
+- Changes: [ADR 0017](0017-stations-with-alternate-stream.md) §The first start after the update, and the items of
+  §Consequences, §Invariants and §Acceptance criteria that name that rule.
 - Related: HitIt ADR 0096 (`~/build/HitIt/docs/adr/0096-the-app-name-is-hitit.md`) is the example for Decision 7.
 
 ## Context
@@ -33,6 +35,8 @@ CitizenRadio. The Xcode project, the Swift package targets and the source folder
 5. The app does not move the data of CitizenRadio. iOS installs Rainbrook as a new app. The saved stations, the
    settings, the playback log, the boost history and the Keychain wallet connection stay in CitizenRadio. The
    operator enters them again. The app has no migration code for them.
+   The first start rule of ADR 0017 is removed, because a new install has no keys of the single station. With no
+   stored station list, the list is empty and no station is selected.
 6. The app icon is concept A of musicindex-research commit `31fb3a9`. The AppIcon set uses
    `research_notes/ui-design/rainbrook-logo/rainbrook-icon-square-1024.png` with square corners, because iOS applies
    the mask.
@@ -52,8 +56,6 @@ CitizenRadio. The Xcode project, the Swift package targets and the source folder
   `scripts/check.sh` looks for these names. The previous names `PlayB6IntentV` and `StopB6IntentV` used a Swift
   mangling substitution. `B6` pointed to the word "Radio" in the module name CitizenRadio. The module name
   Rainbrook has no word "Radio", so the mangled name spells `PlayRadioIntent` in full.
-- Inference: the change of the previous keys in `StationStore` (ADR 0017) finds no previous keys in a new install. A
-  subsequent change can remove that code with a change to ADR 0017.
 - The orchestrator changes the `Rainbrook/Core/` paths and the section name of this app in the `project-baseline`
   skill and in the `AGENTS.md` of musicindex-research.
 - No test enforces Decisions 1 to 4, because no incident broke them. A person examines the home screen name, the

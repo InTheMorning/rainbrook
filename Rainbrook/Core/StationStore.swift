@@ -1,24 +1,18 @@
 import Foundation
 
 /// Stores the list of stations and the selected station, in UserDefaults.
-/// ADR 0017 §The station and §The first start after the update.
+/// ADR 0017 §The station. With no stored list, the list is empty and no station is selected (ADR 0029).
 public struct StationStore {
     /// The highest number of stations the list keeps.
     public static let maximumCount = 20
 
     private static let stationsKey = "rainbrook.stations"
     private static let selectedIDKey = "rainbrook.selectedStationID"
-    private static let oldStreamURLKey = "rainbrook.streamURL"
-    private static let oldRelayEventURIKey = "rainbrook.relayEventURI"
 
     private let defaults: UserDefaults
 
-    /// Runs the first-start rule of ADR 0017 one time.
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        if defaults.object(forKey: Self.stationsKey) == nil {
-            Self.runFirstStart(defaults: defaults)
-        }
     }
 
     /// The stored stations. A stored list that does not decode gives an empty list.
@@ -80,35 +74,5 @@ public struct StationStore {
     private static func save(_ stations: [Station], defaults: UserDefaults) {
         let data = (try? JSONEncoder().encode(stations)) ?? Data()
         defaults.set(data, forKey: stationsKey)
-    }
-
-    /// ADR 0017 §The first start after the update.
-    ///
-    /// This rule runs one time, only while the stations key is missing. It reads
-    /// the old stream URL and the old live value address, makes one station from
-    /// them, and removes the two old keys.
-    private static func runFirstStart(defaults: UserDefaults) {
-        defer {
-            defaults.removeObject(forKey: oldStreamURLKey)
-            defaults.removeObject(forKey: oldRelayEventURIKey)
-        }
-
-        let oldStreamText = defaults.string(forKey: oldStreamURLKey) ?? ""
-        let oldRelayText = defaults.string(forKey: oldRelayEventURIKey) ?? ""
-        // The old relay text becomes the live value address only when it still parses.
-        let trackInfoText = (try? RelayEvent(uri: oldRelayText)) != nil ? oldRelayText : ""
-
-        guard let station = try? Station(
-            name: "",
-            streamText: oldStreamText,
-            alternateStreamText: "",
-            trackInfoText: trackInfoText
-        ) else {
-            save([], defaults: defaults)
-            return
-        }
-
-        save([station], defaults: defaults)
-        defaults.set(station.id.uuidString, forKey: selectedIDKey)
     }
 }

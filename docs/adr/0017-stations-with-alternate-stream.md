@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-10-06
 - Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
+- Changed by: [ADR 0029](0029-the-app-name-is-rainbrook.md)
 - Class: situational. Supersede this record when the station data, the fallback rule or the place of the station list changes.
 - Related:
   - [ADR 0011](0011-icy-sync-of-the-relay-display.md): a fallback starts a new ICY session.

@@ -2,13 +2,10 @@ import Foundation
 import XCTest
 @testable import RainbrookCore
 
-/// ADR 0017 §The station and §The first start after the update.
+/// ADR 0017 §The station. ADR 0029 Decision 5: no list gives an empty list.
 final class StationStoreTests: XCTestCase {
-    private let oldStreamKey = "rainbrook.streamURL"
-    private let oldRelayKey = "rainbrook.relayEventURI"
     private let streamText = "https://bastone.heycitizen.xyz/stream"
     private let otherStreamText = "https://other.example.org/stream"
-    private let trackInfoText = "https://api.musicindex.org/v1/liveitems/DFnUwDM1mzcljaF4pI9Q6w"
 
     private var defaults: UserDefaults!
     private var suiteName: String!
@@ -26,60 +23,13 @@ final class StationStoreTests: XCTestCase {
         try Station(name: "", streamText: streamText, alternateStreamText: "", trackInfoText: "")
     }
 
-    // MARK: - First start
+    // MARK: - No stored list
 
-    func testFirstStartWithOldStreamAndRelayGivesOneSelectedStationWithBoth() {
-        defaults.set(streamText, forKey: oldStreamKey)
-        defaults.set(trackInfoText, forKey: oldRelayKey)
-
-        let store = StationStore(defaults: defaults)
-
-        XCTAssertEqual(store.stations.count, 1)
-        let station = store.stations[0]
-        XCTAssertEqual(station.stream.absoluteString, streamText)
-        XCTAssertEqual(station.trackInfo, trackInfoText)
-        XCTAssertEqual(store.selectedID, station.id)
-        XCTAssertNil(defaults.string(forKey: oldStreamKey))
-        XCTAssertNil(defaults.string(forKey: oldRelayKey))
-    }
-
-    func testFirstStartWithOldStreamAndBadRelayGivesOneStationWithNoTrackInfo() {
-        defaults.set(streamText, forKey: oldStreamKey)
-        defaults.set("not a relay uri", forKey: oldRelayKey)
-
-        let store = StationStore(defaults: defaults)
-
-        XCTAssertEqual(store.stations.count, 1)
-        XCTAssertNil(store.stations[0].trackInfo)
-        XCTAssertNil(defaults.string(forKey: oldRelayKey))
-    }
-
-    func testFirstStartWithNoOldKeysGivesAnEmptyListAndNoSelection() {
+    func testNoStoredListGivesAnEmptyListAndNoSelection() {
         let store = StationStore(defaults: defaults)
 
         XCTAssertTrue(store.stations.isEmpty)
         XCTAssertNil(store.selectedID)
-    }
-
-    func testFirstStartWithAnInvalidOldStreamGivesAnEmptyList() {
-        defaults.set("not a url", forKey: oldStreamKey)
-
-        let store = StationStore(defaults: defaults)
-
-        XCTAssertTrue(store.stations.isEmpty)
-        XCTAssertNil(defaults.string(forKey: oldStreamKey))
-    }
-
-    func testASecondInitDoesNotRunTheFirstStartRuleAgain() {
-        defaults.set(streamText, forKey: oldStreamKey)
-        let first = StationStore(defaults: defaults)
-        XCTAssertEqual(first.stations.count, 1)
-
-        // A leftover old key must not start the rule a second time.
-        defaults.set(otherStreamText, forKey: oldStreamKey)
-        let second = StationStore(defaults: defaults)
-
-        XCTAssertEqual(second.stations, first.stations)
     }
 
     func testAStoredListThatDoesNotDecodeGivesAnEmptyList() {

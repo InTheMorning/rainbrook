@@ -7,7 +7,7 @@ MusicIndex relay or from the ICY title. It pays boosts through a Nostr Wallet Co
 the app.
 
 The app is also the base and the example for a client app of the suite. Write code for reuse in
-`Rainbrook/Core/`. The `project-baseline` skill, section "rainbrook Is The Example Client App", owns this rule.
+`Rainbrook/Core/`. The `project-baseline` skill, section "Rainbrook Is The Example Client App", owns this rule.
 
 The app name is Rainbrook, with the bundle ID `org.rainbrook.Rainbrook` (ADR 0029). Records with a date before
 2026-11-25 use the name CitizenRadio. ADR 0029 Decision 7 gives the meaning of that name in them.

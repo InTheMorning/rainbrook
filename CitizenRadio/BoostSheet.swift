@@ -73,11 +73,12 @@ struct BoostSheet: View {
 
                 // ADR 0013 §Manual boost: the split for the amount, before Send.
                 if !isFinished, let amount {
-                    let parts = boost.manualParts(track: track, amountSats: amount)
-                    if !parts.isEmpty {
+                    // Each recipient shows, also a recipient that gets 0 sats after rounding.
+                    let shares = boost.manualShares(track: track, amountSats: amount)
+                    if !shares.isEmpty {
                         Section("Split") {
-                            ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
-                                LabeledContent(part.destination.name ?? "Recipient", value: "\(part.sats) sats")
+                            ForEach(Array(shares.enumerated()), id: \.offset) { _, share in
+                                splitRow(share)
                             }
                         }
                     }
@@ -119,6 +120,30 @@ struct BoostSheet: View {
                 }
             }
         }
+    }
+
+    /// One recipient: the name and its split value, then the percentage and the sats that the app pays.
+    private func splitRow(_ share: BoostShare) -> some View {
+        LabeledContent {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(Self.decimal(share.percent))%")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Text("\(Self.decimal(Double(share.sats))) sats")
+            }
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(share.destination.name ?? "Recipient")
+                Text("(\(Self.decimal(share.destination.split)))")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// A number with 0 to 2 decimals, for example "97", "96.04" or "0.5".
+    private static func decimal(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0...2)))
     }
 
     /// Starts the boost in a task. The task continues when the sheet closes.

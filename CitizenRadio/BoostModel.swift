@@ -194,13 +194,14 @@ final class BoostModel: ObservableObject {
 
     // MARK: - Manual boost
 
-    /// The parts that a manual boost of the amount pays for the track, or an empty list.
+    /// Each payable recipient of a manual boost of the amount, with its percentage and its paid sats.
+    /// It gives an empty list when the app cannot pay the boost.
     /// The boost sheet shows them before Send (ADR 0013 §Manual boost).
-    func manualParts(track: TrackDisplay?, amountSats: Int) -> [BoostPart] {
-        guard case .pay(_, let parts) = BoostPlan.decideManual(amountSats: amountSats, track: track, pairing: pairing) else {
+    func manualShares(track: TrackDisplay?, amountSats: Int) -> [BoostShare] {
+        guard case .pay(let payload, _) = BoostPlan.decideManual(amountSats: amountSats, track: track, pairing: pairing) else {
             return []
         }
-        return parts
+        return BoostSplit.shares(amountSats: amountSats, destinations: payload.destinations)
     }
 
     /// The result of one manual boost for the boost sheet.

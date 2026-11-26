@@ -75,4 +75,37 @@ final class BoostSplitTests: XCTestCase {
     func testNoDestinationsGivesNoParts() {
         XCTAssertEqual(BoostSplit.parts(amountSats: 100, destinations: []), [])
     }
+
+    /// The boost sheet on 2026-11-25: Phil Owen 97 and four recipients of 1 each, 100 sats.
+    /// Each 1 % part is 990 msat. The app pays 0 sats for it, but the share stays in the list.
+    func testSharesKeepARecipientUnderOneSat() {
+        let phil = destination("phil", split: 97)
+        let small = (1...4).map { destination("small\($0)", split: 1) }
+
+        let shares = BoostSplit.shares(amountSats: 100, destinations: [phil] + small)
+
+        XCTAssertEqual(shares.map(\.sats), [96, 0, 0, 0, 0])
+        XCTAssertEqual(shares[0].percent, 9700.0 / 101, accuracy: 1e-9)
+        XCTAssertEqual(shares[1].percent, 100.0 / 101, accuracy: 1e-9)
+        XCTAssertEqual(BoostSplit.parts(amountSats: 100, destinations: [phil] + small).map(\.sats), [96])
+    }
+
+    func testSharePercentUsesTheFeeSplitAndTheRest() {
+        let a = destination("a", split: 90)
+        let b = destination("b", split: 10)
+        let fee = destination("fee", split: 5, fee: true)
+
+        let shares = BoostSplit.shares(amountSats: 100, destinations: [a, b, fee])
+
+        XCTAssertEqual(shares.map(\.percent), [85.5, 9.5, 5])
+        XCTAssertEqual(shares.map(\.sats), [85, 9, 5])
+    }
+
+    func testFeeSplitsOverOneHundredPercentGiveNoShares() {
+        let a = destination("a", split: 100)
+        let fee1 = destination("fee1", split: 60, fee: true)
+        let fee2 = destination("fee2", split: 50, fee: true)
+
+        XCTAssertEqual(BoostSplit.shares(amountSats: 100, destinations: [a, fee1, fee2]), [])
+    }
 }

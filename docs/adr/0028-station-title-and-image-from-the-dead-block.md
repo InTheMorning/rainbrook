@@ -18,6 +18,7 @@
 - Changes: [ADR 0013](0013-boosts.md) §Manual boost: a track whose value block ended has no manual target.
 - Changes: [ADR 0022](0022-playback-log-and-artwork-retry.md) §The playback log item 2, and §The artwork retry items
   1 and 3.
+- Changed by: [ADR 0030](0030-the-hls-segment-frame-releases-the-display-state.md)
 - Operator choice, 2026-11-24, relayed by the orchestrator session: during a jingle the app shows the dead block title
   and image. The other option was the art and the title of the last live item.
 - Class: situational. Supersede this record when the publisher changes the dead block, or when the app gets the

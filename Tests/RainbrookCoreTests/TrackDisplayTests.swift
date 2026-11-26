@@ -396,4 +396,27 @@ final class TrackDisplayTests: XCTestCase {
             XCTAssertEqual(track?.title, "T", body)
         }
     }
+
+    // MARK: - playId (ADR 0030)
+
+    func testDecodeReadsPlayId() throws {
+        let json = #"{"track": {"artist": "A", "title": "T", "playId": "ls-1795667992160-3-30665"}}"#
+        let track = try TrackDisplay.decode(json.data(using: .utf8)!)
+
+        XCTAssertEqual(track?.playId, "ls-1795667992160-3-30665")
+    }
+
+    func testMissingEmptyNullOrNonStringPlayIdGivesNil() throws {
+        let bodies = [
+            #"{"track": {"artist": "A", "title": "T"}}"#,
+            #"{"track": {"artist": "A", "title": "T", "playId": ""}}"#,
+            #"{"track": {"artist": "A", "title": "T", "playId": null}}"#,
+            #"{"track": {"artist": "A", "title": "T", "playId": 12}}"#,
+        ]
+        for body in bodies {
+            let track = try TrackDisplay.decode(body.data(using: .utf8)!)
+            XCTAssertNil(track?.playId, body)
+            XCTAssertEqual(track?.title, "T", body)
+        }
+    }
 }

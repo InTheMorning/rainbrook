@@ -5,6 +5,7 @@
 - Revised: 2026-11-22. The field **Track info** has the shown word **Live value address** (musicindex `docs/glossary.md` at `b6cdb6a`). The orchestrator session relayed the operator choice.
 - Changed by: [ADR 0024](0024-song-line-is-the-icy-key.md)
 - Changed by: [ADR 0025](0025-the-icy-text-of-an-hls-stream.md)
+- Changed by: [ADR 0030](0030-the-hls-segment-frame-releases-the-display-state.md)
 - Class: situational. Supersede this record when the app gets the time of a track change from a different signal.
 - Plan: [ICY sync phase plan](../plans/icy-sync-plan.md)
 - Related:

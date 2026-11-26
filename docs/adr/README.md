@@ -32,3 +32,4 @@ ADR from number 0024 has a `- Bar:` line or a `- Supersedes:` line.
 | [ADR 0027](0027-title-alone-match-on-hls.md) | The match of the ID3 title alone on HLS | accepted |
 | [ADR 0028](0028-station-title-and-image-from-the-dead-block.md) | The station title and image from the dead block | accepted |
 | [ADR 0029](0029-the-app-name-is-rainbrook.md) | The app name is Rainbrook | accepted. The App Intents metadata and the visual acceptance criteria are open. |
+| [ADR 0030](0030-the-hls-segment-frame-releases-the-display-state.md) | The HLS segment frame releases the display state | accepted. The visual acceptance criteria are open. |

@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-06
+- Changed by: [ADR 0030](0030-the-hls-segment-frame-releases-the-display-state.md)
 - Class: situational. Supersede this record when the relay routes, their timelines or their replay rules change.
 - Related:
   - [ADR 0008](0008-relay-display-metadata.md) §Transport: this record adds the replay rule and the snapshot error rule for the value client.

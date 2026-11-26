@@ -173,25 +173,22 @@ final class IcySyncTests: XCTestCase {
 
     // MARK: - The list keeps 4 states
 
-    func testListKeepsFourStatesAndEvictsTheOldest() {
+    func testListKeepsEightStatesAndEvictsTheOldest() {
         var sync = IcySync()
-        let track1 = TrackDisplay(artist: "Artist1", title: "Title1", artwork: nil)
-        let track2 = TrackDisplay(artist: "Artist2", title: "Title2", artwork: nil)
-        let track3 = TrackDisplay(artist: "Artist3", title: "Title3", artwork: nil)
-        let track4 = TrackDisplay(artist: "Artist4", title: "Title4", artwork: nil)
-        let track5 = TrackDisplay(artist: "Artist5", title: "Title5", artwork: nil)
-
-        sync.receive(track1)
-        sync.receive(track2)
-        sync.receive(track3)
-        sync.receive(track4)
-        sync.receive(track5)
+        XCTAssertEqual(IcySync.capacity, 8)
+        let tracks = (1...9).map { TrackDisplay(artist: "Artist\($0)", title: "Title\($0)", artwork: nil) }
+        for track in tracks {
+            sync.receive(track)
+        }
 
         sync.receiveIcyText("Artist1 - Title1")
         XCTAssertNil(sync.relayTrack)
 
-        sync.receiveIcyText("Artist5 - Title5")
-        XCTAssertEqual(sync.relayTrack, track5)
+        sync.receiveIcyText("Artist2 - Title2")
+        XCTAssertEqual(sync.relayTrack, tracks[1])
+
+        sync.receiveIcyText("Artist9 - Title9")
+        XCTAssertEqual(sync.relayTrack, tracks[8])
     }
 
     // MARK: - A newer state with an equal key replaces the older state

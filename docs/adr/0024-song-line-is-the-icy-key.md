@@ -7,6 +7,7 @@
 - Changes: [ADR 0011](0011-icy-sync-of-the-relay-display.md) §The list and the selection item 2 and §Matching. The key
   of a state with a song line is that song line.
 - Changes: [ADR 0013](0013-boosts.md) §The trigger. A chapter change completes a candidate.
+- Changed by: [ADR 0030](0030-the-hls-segment-frame-releases-the-display-state.md)
 - Operator choice, 2026-11-22: a field in the relay event corrects the chapter display. The orchestrator session
   relayed the choice.
 - Operator choice, 2026-11-22: a chapter change ends an item for auto-boost. The orchestrator session relayed the

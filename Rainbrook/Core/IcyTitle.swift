@@ -12,15 +12,57 @@ public struct IcyTrack: Equatable, Sendable {
 }
 
 /// ADR 0027: the ICY text of one metadata group, with the ID3 title alone when the text joins an artist and a title.
+/// ADR 0030: also the segment frame of the group, when the group has one.
 public struct IcyText: Equatable, Sendable {
     /// The ICY text (ADR 0025).
     public let text: String
     /// The title item alone, when `text` is "artist - title" from ID3 items. Else nil.
     public let titleAlone: String?
+    /// The `musicindex.hls/2` frame of the group, or nil when the group has no such frame (ADR 0030).
+    public let segmentFrame: SegmentFrame?
 
-    public init(text: String, titleAlone: String? = nil) {
+    public init(text: String, titleAlone: String? = nil, segmentFrame: SegmentFrame? = nil) {
         self.text = text
         self.titleAlone = titleAlone
+        self.segmentFrame = segmentFrame
+    }
+
+    /// The same text with the segment frame of the group.
+    public func with(segmentFrame: SegmentFrame?) -> IcyText {
+        IcyText(text: text, titleAlone: titleAlone, segmentFrame: segmentFrame)
+    }
+}
+
+/// ADR 0030: the `musicindex.hls/2` frame of an HLS segment (publisher ADR 0038 §The Segment Frame).
+public struct SegmentFrame: Equatable, Sendable {
+    /// The schema value of the frame.
+    public static let schema = "musicindex.hls/2"
+
+    /// The play ID of the segment that starts at the frame, or nil for a jingle.
+    public let playId: String?
+
+    public init(playId: String?) {
+        self.playId = playId
+    }
+
+    /// Parses the value of a `TXXX` item. Gives nil when the value is not a `musicindex.hls/2` frame.
+    /// A missing `playId`, `null` or an empty string gives a frame with no play ID.
+    /// A `playId` of a different type gives nil.
+    public static func parse(_ value: String) -> SegmentFrame? {
+        guard let data = value.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data),
+              let dict = object as? [String: Any],
+              dict["schema"] as? String == schema else {
+            return nil
+        }
+        switch dict["playId"] {
+        case nil, is NSNull:
+            return SegmentFrame(playId: nil)
+        case let playId as String:
+            return SegmentFrame(playId: playId.isEmpty ? nil : playId)
+        default:
+            return nil
+        }
     }
 }
 

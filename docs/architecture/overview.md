@@ -81,7 +81,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `IcyTitle` | Parses the Icecast StreamTitle text into an artist and a title. |
 | `DisplayTiming` | Computes the wait before the app applies a streamed display state. |
 | `TrackLines` | Selects the title, the artist and the artwork to display, with the relay track as the priority. |
-| `IcySync` | Keeps the last display states, and selects the relay track that the ICY text names (ADR 0011, ADR 0024). |
+| `IcySync` | Keeps the last display states, and selects the relay track that the ICY text or the HLS segment frame names (ADR 0011, ADR 0024, ADR 0030). |
 | `ArtworkPolicy` | Accepts or rejects artwork data, and gives its cache key. |
 | `ArtworkFrames` | Selects the frames and the delays of an animated image, in the URL artwork limits (ADR 0015). |
 | `LRUCache` | Holds a fixed number of entries, and removes the oldest entry first. |
@@ -90,7 +90,7 @@ See [Apple's setting triggers](https://support.apple.com/guide/shortcuts/setting
 | `URLSessionEventStream` | Opens the relay event stream and reads the relay snapshot with URLSession. |
 | `NetworkPathMonitor` | Watches the network path with NWPathMonitor. |
 | `ArtworkLoader` | Downloads and decodes track artwork off the main thread, with a memory cache. |
-| `IcyMetadataReader` | Reads the Icecast stream title from the playing item, off the main thread. |
+| `IcyMetadataReader` | Reads the Icecast stream title, or the ID3 items and the segment frame of an HLS stream, from the playing item, off the main thread. |
 | `TrackInfoModel` | Runs the relay client while playback is connecting or playing, and selects the track and the artwork for the player screen and Now Playing. |
 | `LiveValue` | Holds a live value payload and its payable destinations (ADR 0013). |
 | `BoostPairing` | Selects the live value payload that pays a completed relay track (ADR 0013). |

@@ -205,7 +205,7 @@ final class TrackInfoModel: ObservableObject {
             snapshotURL: event.displayURL,
             streamURL: event.displayEventsURL,
             eventName: "display",
-            // ADR 0018 §The replay on connect: the replay count is IcySync.capacity.
+            // ADR 0018 §The replay on connect and ADR 0030 §The list: the replay count is IcySync.capacity.
             // GET /display has no seq on 2026-10-06, so this replay does not occur at this time.
             replayCount: IcySync.capacity,
             opener: opener,
@@ -527,10 +527,15 @@ final class TrackInfoModel: ObservableObject {
     private func icyTextChanged(_ icyText: IcyText?) {
         guard let icyText else { return }
         let text = icyText.text
-        PlaybackDiagnostics.record("ICY: \(text)")
+        if let frame = icyText.segmentFrame {
+            PlaybackDiagnostics.record("ICY: \(text), segment \(frame.playId ?? "null")")
+        } else {
+            PlaybackDiagnostics.record("ICY: \(text)")
+        }
         let firstIcyText = !sync.hasIcy
         // ADR 0027: the sync tries the ID3 title alone when the text gives no match.
-        sync.receiveIcyText(text, titleAlone: icyText.titleAlone)
+        // ADR 0030: a segment frame with a play ID releases the held state with the same play ID.
+        sync.receiveIcyText(text, titleAlone: icyText.titleAlone, segmentFrame: icyText.segmentFrame)
         // ADR 0016 §The switch back: give the relay track that the sync selects for this text.
         boost.icyText(text, track: sync.relayTrack)
         if firstIcyText {
